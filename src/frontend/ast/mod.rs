@@ -1,6 +1,6 @@
 use std::ops::Add;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Literal {
     Number(f64),
     String(String),
@@ -10,28 +10,37 @@ impl Literal {
         Node::Literal(self)
     }
 }
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum BinaryOperation {
     Add,
     Subtract,
     Multiply,
     Divide,
 }
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
+pub struct BinaryExpr {
+    pub lhs: Box<Node>,
+    pub rhs: Box<Node>,
+    pub op: BinaryOperation,
+}
+#[derive(Debug, PartialEq)]
 pub enum Expression {
     Grouping(Box<Node>),
-    Binary {
-        lhs: Box<Node>,
-        rhs: Box<Node>,
-        op: BinaryOperation,
-    },
+    Binary(BinaryExpr),
 }
+
 impl Expression {
     pub fn as_node(self) -> Node {
         Node::Expression(self)
     }
+    pub fn as_binary_expr(self) -> BinaryExpr {
+        let Expression::Binary(expr) = self else {
+            panic!()
+        };
+        return expr;
+    }
 }
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Node {
     Expression(Expression),
     Literal(Literal),

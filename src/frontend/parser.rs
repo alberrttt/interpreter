@@ -1,15 +1,14 @@
 use colored::Colorize;
 
 use super::{
-    ast::{BinaryOperation, Expression, Literal, Node},
+    ast::{BinaryExpr, BinaryOperation, Expression, Literal, Node},
     scanner::{Scanner, Token, TokenKind},
     Precedence,
 };
 
 pub struct Parser {
-    pub token: *mut Token,
-    pub token_start: *mut Token,
-    pub len: usize,
+    pub tokens: Vec<Token>,
+    pub index: usize,
 }
 pub struct Rule {
     pub precedence: Precedence,
@@ -47,15 +46,18 @@ impl Parser {
         };
         let rhs = self.expression();
 
-        Expression::Binary {
+        Expression::Binary(BinaryExpr {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
             op,
-        }
+        })
         .as_node()
     }
     pub fn number(&mut self) -> Node {
         Literal::Number(self.previous().value.parse::<f64>().unwrap()).as_node()
+    }
+    pub fn at_end(&mut self) -> bool {
+        self.index + 1 >= self.tokens.len()
     }
     pub fn precedence(&mut self, prec: Precedence) -> Node {
         self.next();
@@ -70,6 +72,9 @@ impl Parser {
         }
 
         loop {
+            if self.at_end() {
+                break expression;
+            }
             let current = self.current();
             let current_rule = Self::get_rule(current.kind);
             if current_rule.precedence == Precedence::Unimpl && cfg!(debug_assertions) {
@@ -104,36 +109,23 @@ impl Parser {
 }
 
 impl Parser {
-    pub fn new(scanner: &mut Scanner) -> Parser {
-        let slice = scanner.tokens.as_mut_slice();
-        let parser = Parser {
-            token: slice.as_mut_ptr(),
-            token_start: slice.as_mut_ptr(),
-            len: slice.len(),
-        };
+    pub fn new(tokens: Vec<Token>) -> Parser {
+        let parser = Parser { tokens, index: 0 };
 
         parser
     }
     pub fn previous(&mut self) -> &Token {
-        self.check();
-
-        unsafe { &*self.token.offset(-1) }
+        &self.tokens[self.index - 1]
     }
     pub fn current(&mut self) -> &Token {
-        self.check();
-        let token = unsafe { &*self.token };
-        token
+        &self.tokens[self.index]
     }
+
     pub fn next(&mut self) -> &Token {
-        let token = unsafe { &*self.token };
-        self.check();
-
-        unsafe { self.token = self.token.offset(1) };
-
-        token
+        self.index += 1;
+        &self.tokens[self.index - 1]
     }
     pub fn expect(&mut self, kind: TokenKind) -> &Token {
-        self.check();
         let next = self.next();
 
         if next.kind.eq(&kind) {
@@ -142,20 +134,8 @@ impl Parser {
             panic!()
         }
     }
-    #[inline]
-    fn check(&mut self) {
-        unsafe {
-            if self.token.is_null() || self.token_start.is_null() {
-                panic!()
-            }
-            let offset = self.token_start.offset_from(self.token);
-            if offset > self.len as isize {
-                panic!()
-            }
-        }
-    }
+
     pub fn peek(&mut self) -> &Token {
-        self.check();
-        unsafe { &*self.token.offset(1) }
+        &self.tokens[self.index + 1]
     }
 }

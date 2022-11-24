@@ -5,7 +5,7 @@ fn main() {
     let cli = Cli::parse();
     let mut scanner = Scanner::new(cli.source);
     scanner.scan_thru();
-    let mut parser = _Parser::new(&mut scanner);
+    let mut parser = _Parser::new(scanner.tokens.to_owned());
     println!("{:#?}", parser.parse());
 }
 
