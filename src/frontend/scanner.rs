@@ -1,0 +1,345 @@
+use std::{char, fmt};
+
+#[derive(Debug, Clone)]
+pub struct Scanner {
+    pub source: String,
+    pub start: usize,
+    pub current: usize,
+    pub line: usize,
+    pub tokens: Vec<Token>,
+    pub line_info: LineInfo,
+}
+macro_rules! token {
+    ($self:ident, Error, $reason:expr) => {{
+        Token {
+            kind: TokenKind::Error,
+            value: $reason,
+            line: $self.line,
+            length: $self.current - $self.start,
+            start: $self.start,
+            line_start: $self.line_info.start,
+        }
+    }};
+    ($self:ident, Identifier) => {{
+        Token {
+            kind: $self.to_identifier(),
+            value: $self.source[$self.start..$self.current].to_string(),
+            line: $self.line,
+            length: $self.current - $self.start,
+            start: $self.start,
+            line_start: $self.line_info.start,
+        }
+    }};
+    ($self:ident, $kind:ident) => {{
+        Token {
+            kind: TokenKind::$kind,
+            value: $self.source[$self.start..$self.current].to_string(),
+            line: $self.line,
+            length: $self.current - $self.start,
+            start: $self.start,
+            line_start: $self.line_info.start,
+        }
+    }};
+}
+#[derive(Clone, PartialEq, Debug)]
+pub struct Token {
+    pub kind: TokenKind,
+    pub value: String,
+    pub line: usize,
+    pub length: usize,
+    pub start: usize,
+    pub line_start: u16,
+}
+impl fmt::Display for Token {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Value: {} Kind: {}", self.value, self.kind)
+    }
+}
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub enum TokenKind {
+    Identifier,
+    Let,
+    Mut,
+    Use,
+    Return,
+
+    And,
+    Or,
+    If,
+    Else,
+    Nil,
+    While,
+    For,
+    False,
+    True,
+    Func,
+
+    RightBrace,
+    LeftBrace,
+    RightParen,
+    LeftParen,
+
+    Equal,
+    EqualEqual,
+
+    Number,
+    String,
+
+    Plus,
+    PlusEqual,
+    Dash,
+    DashEqual,
+    Slash,
+    SlashEqual,
+    Star,
+    StarEqual,
+    Bang,
+    BangEqual,
+    Less,
+    LessEqual,
+    Greater,
+    GreaterEqual,
+
+    SemiColon,
+    Comma,
+
+    Error,
+    WHITESPACE,
+    EOF,
+}
+
+impl fmt::Display for TokenKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+#[derive(Debug, Clone, PartialEq)]
+pub struct LineInfo {
+    pub current: u16,
+    pub start: u16,
+}
+impl Scanner {
+    pub fn scan_thru(&mut self) {
+        loop {
+            if self.at_end() {
+                break;
+            }
+            self.next();
+        }
+    }
+    pub fn new(source: String) -> Scanner {
+        Scanner {
+            source,
+            start: 0,
+            current: 0,
+            line: 0,
+            tokens: Vec::new(),
+            line_info: LineInfo {
+                current: 0,
+                start: 0,
+            },
+        }
+    }
+    pub fn reset(&mut self, source: String) {
+        self.source = source;
+        self.start = 0;
+        self.current = 0;
+        self.line = 0;
+        self.line_info.current = 0;
+        self.line_info.start = 0;
+        self.tokens.clear()
+    }
+    pub fn next(&mut self) -> Token {
+        self.ignore_whitespace();
+
+        if self.at_end() {
+            return token!(self, EOF);
+        }
+        self.start = self.current;
+        self.line_info.start = self.line_info.current;
+        let char = self.advance();
+        if char.is_alphabetic() {
+            let token = self.identifier();
+            self.tokens.push(token.clone());
+            return token;
+        }
+        if char.is_ascii_digit() {
+            let token = self.number();
+            self.tokens.push(token.clone());
+            return token;
+        }
+
+        let token = match char {
+            '"' => self.string(),
+            '=' => {
+                if self.matches('=') {
+                    return token!(self, EqualEqual);
+                }
+                token!(self, Equal)
+            }
+            '*' => token!(self, Star),
+            '/' => {
+                if self.matches('=') {
+                    return token!(self, SlashEqual);
+                }
+                token!(self, Slash)
+            }
+
+            '+' => {
+                if self.matches('=') {
+                    return token!(self, PlusEqual);
+                }
+                token!(self, Plus)
+            }
+            '-' => {
+                if self.matches('=') {
+                    return token!(self, DashEqual);
+                }
+                token!(self, Dash)
+            }
+            '>' => {
+                if self.matches('=') {
+                    return token!(self, GreaterEqual);
+                }
+                token!(self, Greater)
+            }
+            '<' => {
+                if self.matches('=') {
+                    return token!(self, LessEqual);
+                }
+                token!(self, Less)
+            }
+            '{' => token!(self, LeftBrace),
+            '(' => token!(self, LeftParen),
+            ')' => token!(self, RightParen),
+            '}' => token!(self, RightBrace),
+            ';' => token!(self, SemiColon),
+            ',' => token!(self, Comma),
+            '!' => {
+                if self.matches('=') {
+                    return token!(self, BangEqual);
+                }
+                token!(self, Bang)
+            }
+            _ => token!(self, Error, "unexpected character".to_string()),
+        };
+        self.tokens.push(token.clone());
+        token
+    }
+}
+impl Scanner {
+    fn advance(&mut self) -> char {
+        self.current += 1;
+        self.line_info.current += 1;
+        self.source.as_bytes()[self.current - 1] as char
+    }
+    fn peek(&self) -> char {
+        self.source.as_bytes()[self.current] as char
+    }
+    fn peek_next(&self) -> char {
+        if self.current + 1 >= self.source.len() {
+            '\0'
+        } else {
+            return self.source.as_bytes()[self.current + 1] as char;
+        }
+    }
+    fn at_end(&self) -> bool {
+        self.current >= self.source.len()
+    }
+    fn remaining(&self) -> usize {
+        self.source.len() - self.current
+    }
+    fn matches(&mut self, to: char) -> bool {
+        if self.at_end() || self.peek() != to {
+            false
+        } else {
+            self.current += 1;
+            true
+        }
+    }
+    fn lexeme(&self) -> &str {
+        &self.source[self.start..self.current]
+    }
+    fn ignore_whitespace(&mut self) {
+        while !self.at_end() {
+            let peeked = self.peek();
+            match peeked {
+                ' ' | '\t' | '\r' => {
+                    self.advance();
+                }
+                '\n' => {
+                    self.line += 1;
+                    self.advance();
+                    self.line_info.current = 0;
+                    self.line_info.start = 0;
+                }
+                '/' => {
+                    if self.peek_next() == '/' {
+                        while !self.at_end() && self.peek() != '\n' {
+                            self.advance();
+                        }
+                    } else {
+                        break;
+                    }
+                }
+                _x => {
+                    break;
+                }
+            }
+        }
+    }
+    fn string(&mut self) -> Token {
+        while !self.at_end() && self.peek() != '"' {
+            if self.peek() == '\n' {
+                self.line += 1
+            }
+            self.advance();
+        }
+        if self.at_end() {
+            return token!(self, Error, String::from("unterminated string"));
+        }
+        self.advance();
+        token!(self, String)
+    }
+    fn number(&mut self) -> Token {
+        while !self.at_end() && self.peek().is_ascii_digit() {
+            self.advance();
+        }
+        if self.remaining() >= 2 && self.peek() == '.' && self.peek_next().is_ascii_digit() {
+            self.advance();
+            while !self.at_end() && self.peek().is_ascii_digit() {
+                self.advance();
+            }
+        }
+        token!(self, Number)
+    }
+    fn to_identifier(&mut self) -> TokenKind {
+        match self.lexeme() {
+            "let" => TokenKind::Let,
+            "mut" => TokenKind::Mut,
+            "use" => TokenKind::Use,
+            "and" => TokenKind::And,
+            "or" => TokenKind::Or,
+            "if" => TokenKind::If,
+            "else" => TokenKind::Else,
+            "nil" => TokenKind::Nil,
+            "while" => TokenKind::While,
+            "for" => TokenKind::For,
+            "false" => TokenKind::False,
+            "true" => TokenKind::True,
+            "func" => TokenKind::Func,
+            "return" => TokenKind::Return,
+            _ => TokenKind::Identifier,
+        }
+    }
+    fn identifier(&mut self) -> Token {
+        while !self.at_end() && {
+            let char = self.peek();
+            char.is_alphanumeric() || char == '_'
+        } {
+            self.advance();
+        }
+        let tkn = token!(self, Identifier);
+        tkn
+    }
+}
