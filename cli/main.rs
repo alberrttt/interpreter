@@ -1,17 +1,32 @@
+use std::{ffi::OsString, fs::read_to_string, path::Path};
+
 use clap::Parser;
-use rottenmangos::frontend::{parser::Parser as _Parser, scanner::Scanner};
+use rottenmangos::{
+    backend::vm::VM,
+    cli_context,
+    frontend::{
+        compiler::{self, Compiler},
+        parser::Parser as _Parser,
+        scanner::Scanner,
+    },
+};
 
 fn main() {
     let cli = Cli::parse();
-    let mut scanner = Scanner::new(cli.source);
-    scanner.scan_thru();
-    let mut parser = _Parser::new(scanner.tokens.to_owned());
-    println!("{:#?}", parser.parse());
+    let path = Path::new(&cli.path);
+    let source = read_to_string(path).unwrap();
+
+    let mut context = cli_context::Context::new(path);
+    let mut compiler = Compiler::new(&mut context);
+
+    let compiled = compiler.compile(source);
+    let mut vm = VM::new();
+    vm.run(compiled.chunk);
 }
 
 #[derive(Parser)]
 #[clap(author, version, about)]
 struct Cli {
     #[clap(value_parser)]
-    source: String,
+    path: OsString,
 }

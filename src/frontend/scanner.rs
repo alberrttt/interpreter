@@ -63,6 +63,7 @@ pub enum TokenKind {
     Use,
     Return,
 
+    Print,
     And,
     Or,
     If,
@@ -299,7 +300,14 @@ impl Scanner {
             return token!(self, Error, String::from("unterminated string"));
         }
         self.advance();
-        token!(self, String)
+        Token {
+            kind: TokenKind::String,
+            value: self.source[self.start + 1..self.current - 1].to_string(),
+            line: self.line,
+            length: self.current - self.start,
+            start: self.start,
+            line_start: self.line_info.start,
+        }
     }
     fn number(&mut self) -> Token {
         while !self.at_end() && self.peek().is_ascii_digit() {
@@ -329,6 +337,7 @@ impl Scanner {
             "true" => TokenKind::True,
             "func" => TokenKind::Func,
             "return" => TokenKind::Return,
+            "print" => TokenKind::Print,
             _ => TokenKind::Identifier,
         }
     }

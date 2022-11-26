@@ -1,7 +1,16 @@
+use std::{fs::File, mem::transmute};
+
 use colored::Colorize;
 
 use super::{
-    ast::{BinaryExpr, BinaryOperation, Expression, Literal, Node},
+    ast::{
+        expression::{AsExpr, BinaryExpr, Expression},
+        literal::Literal,
+        node::{AsNode, Node},
+        statement::Statement,
+        BinaryOperation,
+    },
+    file::FileNode,
     scanner::{Scanner, Token, TokenKind},
     Precedence,
 };
@@ -24,10 +33,21 @@ impl Parser {
                 infix: None,
                 prefix: Some(Self::number),
             },
+            TokenKind::Star | TokenKind::Slash => Rule {
+                precedence: Precedence::Factor,
+                prefix: None,
+                infix: Some(Self::binary),
+            },
             TokenKind::Dash | TokenKind::Plus => Rule {
                 infix: Some(Self::binary),
                 prefix: None,
                 precedence: Precedence::Term,
+            },
+            TokenKind::String => Rule {
+                precedence: Precedence::None,
+                prefix: Some(Self::string),
+
+                infix: None,
             },
             _ => Rule {
                 precedence: Precedence::Unimpl,
@@ -36,7 +56,15 @@ impl Parser {
             },
         }
     }
+    pub fn string(&mut self) -> Node {
+        Literal::String(self.previous().value.clone()).as_node()
+    }
     pub fn binary(&mut self, lhs: Node) -> Node {
+        // the problem is somewhere here because
+        // lhs could be a binary expression with higher/same precedence
+        // ex. 2 / 3 * 7
+        // lhs: 2
+        let rule = Self::get_rule(self.previous().kind);
         let op = match self.previous().kind {
             TokenKind::Plus => BinaryOperation::Add,
             TokenKind::Dash => BinaryOperation::Subtract,
@@ -44,8 +72,15 @@ impl Parser {
             TokenKind::Slash => BinaryOperation::Divide,
             _ => panic!(),
         };
-        let rhs = self.expression();
-
+        // this sees 3 * 7 as its own expression and not as part of 2 / 3
+        let prec: Precedence = unsafe { transmute((rule.precedence as u8) + 1) };
+        let rhs = self.precedence(prec);
+        // thus
+        // lhs: 3 * 7
+        // rhs: 2
+        // when it should be
+        // lhs: 2 / 3
+        // rhs: 7
         Expression::Binary(BinaryExpr {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
@@ -60,7 +95,7 @@ impl Parser {
         self.index + 1 >= self.tokens.len()
     }
     pub fn precedence(&mut self, prec: Precedence) -> Node {
-        self.next();
+        self.advance();
         let previous = self.previous();
         let rule = Self::get_rule(previous.kind);
         #[allow(unused_assignments)]
@@ -68,7 +103,7 @@ impl Parser {
         if rule.prefix.is_some() {
             expression = rule.prefix.unwrap()(self);
         } else {
-            panic!("Expect expression");
+            panic!("expected expression");
         }
 
         loop {
@@ -84,11 +119,11 @@ impl Parser {
                     current.kind
                 );
             }
-            if prec > current_rule.precedence {
+            if prec >= current_rule.precedence {
                 break expression;
             }
 
-            self.next();
+            self.advance();
             let previous = self.previous();
 
             match Self::get_rule(previous.kind).infix {
@@ -97,14 +132,39 @@ impl Parser {
                     expression = infix(self, expression);
                 }
             }
-            return expression;
         }
     }
     pub fn expression(&mut self) -> Node {
         self.precedence(Precedence::None)
     }
-    pub fn parse(&mut self) -> Node {
-        self.expression()
+    pub fn parse_file(&mut self) -> FileNode {
+        let mut file = FileNode::default();
+        loop {
+            if self.at_end() {
+                break;
+            }
+            file.nodes.push(self.node());
+        }
+        file
+    }
+
+    pub fn node(&mut self) -> Node {
+        self.statement()
+    }
+    pub fn expression_statement(&mut self) -> Node {
+        let expr = self.expression();
+        self.consume(TokenKind::SemiColon, "Expected ';' after expression");
+        Statement::Expression(expr.as_expr()).as_node()
+    }
+    pub fn statement(&mut self) -> Node {
+        match self.current().kind {
+            TokenKind::Print => {
+                self.advance();
+                let node = Statement::Print(self.expression().as_expr()).as_node();
+                node
+            }
+            _ => self.expression_statement(),
+        }
     }
 }
 
@@ -114,6 +174,16 @@ impl Parser {
 
         parser
     }
+    pub fn match_token(&mut self, tk: TokenKind) -> bool {
+        if !self.check(tk) {
+            return false;
+        };
+        self.advance();
+        return true;
+    }
+    pub fn check(&mut self, tk: TokenKind) -> bool {
+        self.current().kind == tk
+    }
     pub fn previous(&mut self) -> &Token {
         &self.tokens[self.index - 1]
     }
@@ -121,21 +191,21 @@ impl Parser {
         &self.tokens[self.index]
     }
 
-    pub fn next(&mut self) -> &Token {
+    pub fn advance(&mut self) -> &Token {
         self.index += 1;
         &self.tokens[self.index - 1]
     }
-    pub fn expect(&mut self, kind: TokenKind) -> &Token {
-        let next = self.next();
+    pub fn consume(&mut self, kind: TokenKind, err: &str) -> &Token {
+        let advance = self.advance();
 
-        if next.kind.eq(&kind) {
-            return next;
+        if advance.kind.eq(&kind) {
+            return advance;
         } else {
-            panic!()
+            panic!("{}", err)
         }
     }
 
-    pub fn peek(&mut self) -> &Token {
-        &self.tokens[self.index + 1]
+    pub fn peek(&mut self, distance: usize) -> &Token {
+        &self.tokens[self.index - (distance)]
     }
 }
