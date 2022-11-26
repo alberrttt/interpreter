@@ -10,6 +10,15 @@ pub enum Value {
 pub trait AsValue {
     fn as_value(self) -> Value;
 }
+impl Value {
+    pub fn as_string(&self) -> &String {
+        if let Value::String(string) = self {
+            unsafe { &*string.as_ref().as_ptr() }
+        } else {
+            panic!()
+        }
+    }
+}
 impl AsValue for String {
     fn as_value(self) -> Value {
         Value::String(rcrf(self))

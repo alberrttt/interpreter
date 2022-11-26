@@ -1,7 +1,7 @@
 use crate::common::function::Function;
 
 use super::ast::{node::Node, CompileToBytecode};
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct FileNode {
     pub nodes: Vec<Node>,
 }

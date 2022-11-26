@@ -1,17 +1,18 @@
-use std::{fs::File, mem::transmute};
+use std::{mem::transmute, process::id};
 
 use colored::Colorize;
 
 use super::{
     ast::{
         expression::{AsExpr, BinaryExpr, Expression},
+        identifier::Identifier,
         literal::Literal,
         node::{AsNode, Node},
-        statement::Statement,
+        statement::{variable_declaration::VariableDeclaration, Statement},
         BinaryOperation,
     },
     file::FileNode,
-    scanner::{Scanner, Token, TokenKind},
+    scanner::{Token, TokenKind},
     Precedence,
 };
 
@@ -28,6 +29,16 @@ pub struct Rule {
 impl Parser {
     pub fn get_rule(kind: TokenKind) -> Rule {
         match kind {
+            TokenKind::Identifier => Rule {
+                precedence: Precedence::None,
+                prefix: Some(|parser| {
+                    Identifier {
+                        name: parser.previous().value.to_string(),
+                    }
+                    .as_node()
+                }),
+                infix: None,
+            },
             TokenKind::Number => Rule {
                 precedence: Precedence::None,
                 infix: None,
@@ -48,6 +59,11 @@ impl Parser {
                 prefix: Some(Self::string),
 
                 infix: None,
+            },
+            TokenKind::Equal | TokenKind::SemiColon => Rule {
+                precedence: Precedence::None,
+                infix: None,
+                prefix: None,
             },
             _ => Rule {
                 precedence: Precedence::Unimpl,
@@ -103,7 +119,11 @@ impl Parser {
         if rule.prefix.is_some() {
             expression = rule.prefix.unwrap()(self);
         } else {
-            panic!("expected expression");
+            panic!(
+                "expected expression run.mng:{}:{}",
+                previous.line + 1,
+                previous.line_start
+            );
         }
 
         loop {
@@ -156,12 +176,37 @@ impl Parser {
         self.consume(TokenKind::SemiColon, "Expected ';' after expression");
         Statement::Expression(expr.as_expr()).as_node()
     }
+    pub fn token_as_identifier(&mut self) -> Identifier {
+        self.advance();
+        Identifier {
+            name: self.previous().value.to_string(),
+        }
+    }
     pub fn statement(&mut self) -> Node {
         match self.current().kind {
             TokenKind::Print => {
                 self.advance();
-                let node = Statement::Print(self.expression().as_expr()).as_node();
+                let node = Statement::Print(Box::new(self.expression())).as_node();
+                self.consume(TokenKind::SemiColon, "");
                 node
+            }
+            TokenKind::Let => {
+                self.advance();
+                let identifier = self.token_as_identifier();
+
+                self.consume(TokenKind::Equal, "Expected '=' after variable name");
+                let initializer = self.expression().as_expr();
+                self.consume(
+                    TokenKind::SemiColon,
+                    "Expected ';' after variable declaration",
+                );
+
+                VariableDeclaration {
+                    intializer: initializer,
+                    identifier,
+                    is_global: true,
+                }
+                .as_node()
             }
             _ => self.expression_statement(),
         }

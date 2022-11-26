@@ -2,6 +2,7 @@ use crate::common::{function::Function, opcode::OpCode};
 
 use super::{
     expression::{AsExpr, BinaryExpr, Expression},
+    identifier::{self, Identifier},
     literal::Literal,
     statement::Statement,
     CompileToBytecode,
@@ -12,10 +13,19 @@ pub enum Node {
     Expression(Expression),
     Literal(Literal),
     Statement(Statement),
+
+    Identifier(Identifier),
     None,
 }
 
 impl Node {
+    pub fn as_identifier(self) -> Identifier {
+        let Node::Identifier(identifier) = self else {
+            panic!("{:?}", self)
+        };
+
+        identifier
+    }
     pub fn as_literal(self) -> Literal {
         let Node::Literal(literal) = self else {
             panic!()
@@ -26,11 +36,13 @@ impl Node {
 }
 impl AsExpr for Node {
     fn as_expr(self) -> Expression {
-        let Node::Expression(expr) = self else {
-            panic!("Expected {:?} to be an expression", self)
-        };
-
-        expr
+        match self {
+            Node::Expression(expr) => expr,
+            Node::Literal(literal) => Expression::Literal(literal),
+            Node::Statement(_) => panic!(),
+            Node::Identifier(_) => todo!(),
+            Node::None => panic!(),
+        }
     }
 }
 pub trait AsNode {
@@ -40,25 +52,11 @@ impl CompileToBytecode for Node {
     // we need it to emit constants
     fn to_bytecode(self, function: &mut Function) -> () {
         match self {
-            Node::Expression(expr) => match expr {
-                super::Expression::Grouping(inner) => inner.to_bytecode(function),
-                super::Expression::Binary(binary) => {
-                    let BinaryExpr { lhs, rhs, op } = binary;
-                    lhs.to_bytecode(function);
-                    rhs.to_bytecode(function);
-
-                    let chunk = &mut function.chunk;
-                    chunk.emit_op(match op {
-                        super::BinaryOperation::Add => OpCode::Add,
-                        super::BinaryOperation::Subtract => OpCode::Sub,
-                        super::BinaryOperation::Multiply => OpCode::Mul,
-                        super::BinaryOperation::Divide => OpCode::Div,
-                    })
-                }
-            },
+            Node::Expression(expr) => expr.to_bytecode(function),
             Node::Statement(statement) => statement.to_bytecode(function),
+            Node::Identifier(identifier) => identifier.to_bytecode(function),
             Node::Literal(literal) => literal.to_bytecode(function),
-            x => x.to_bytecode(function),
+            _ => unimplemented!(),
         }
     }
 }

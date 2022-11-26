@@ -1,8 +1,8 @@
 use crate::common::opcode::OpCode;
 
 use super::{
+    literal::Literal,
     node::{AsNode, Node},
-    statement::Statement,
     BinaryOperation, CompileToBytecode,
 };
 pub trait AsExpr {
@@ -23,6 +23,7 @@ impl AsExpr for BinaryExpr {
 pub enum Expression {
     Grouping(Box<Node>),
     Binary(BinaryExpr),
+    Literal(Literal),
 }
 impl AsNode for Expression {
     fn as_node(self) -> Node {
@@ -42,6 +43,7 @@ impl CompileToBytecode for Expression {
     fn to_bytecode(self, function: &mut crate::common::function::Function) -> () {
         match self {
             Expression::Grouping(inner) => inner.to_bytecode(function),
+            Expression::Literal(literal) => literal.to_bytecode(function),
             super::Expression::Binary(binary) => {
                 let BinaryExpr { lhs, rhs, op } = binary;
                 lhs.to_bytecode(function);

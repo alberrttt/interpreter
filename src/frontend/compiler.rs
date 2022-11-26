@@ -1,9 +1,9 @@
 use crate::{
-    cli_context::{self, Context},
+    cli_context::Context,
     common::{function::Function, opcode::OpCode},
 };
 
-use super::{ast::CompileToBytecode, parser::Parser, scanner::Scanner};
+use super::{parser::Parser, scanner::Scanner};
 
 pub struct Compiler<'a> {
     pub function: Function,
@@ -25,7 +25,7 @@ impl<'a> Compiler<'a> {
         let mut scanner = Scanner::new(source);
         scanner.scan_thru();
         let mut parser = Parser::new(scanner.tokens);
-        let mut parsed = parser.parse_file();
+        let parsed = parser.parse_file();
         let mut function = parsed.build_function();
         function.chunk.emit_many(vec![OpCode::Return]);
         function

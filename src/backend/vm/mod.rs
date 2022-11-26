@@ -1,4 +1,4 @@
-use std::{collections::HashMap, str::from_utf8_unchecked};
+use std::collections::HashMap;
 
 use crate::common::{
     chunk::Chunk,
@@ -28,6 +28,15 @@ impl VM {
             match instruction {
                 OpCode::Constant(index) => {
                     self.stack.push(chunk.constants[*index as usize].clone())
+                }
+                OpCode::GetGlobal(name) => {
+                    let name = chunk.constants[*name as usize].as_string();
+                    self.stack.push(self.globals.get(name).unwrap().clone())
+                }
+                OpCode::SetGlobal(name) => {
+                    let name = (chunk.constants[*name as usize].as_string()).to_owned();
+                    let value = self.stack.pop().unwrap();
+                    self.globals.insert(name, value);
                 }
                 OpCode::Add => {
                     let rhs = self.stack.pop().unwrap();
@@ -73,7 +82,7 @@ impl VM {
 
                     match lhs {
                         Value::Number(lhs) => {
-                            let Value::Number(rhs) = rhs else {
+                            let Value::Number(_rhs) = rhs else {
                                 panic!()
                             };
                             self.stack.push(Value::Number(lhs * 1.0))

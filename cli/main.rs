@@ -1,15 +1,7 @@
 use std::{ffi::OsString, fs::read_to_string, path::Path};
 
 use clap::Parser;
-use rottenmangos::{
-    backend::vm::VM,
-    cli_context,
-    frontend::{
-        compiler::{self, Compiler},
-        parser::Parser as _Parser,
-        scanner::Scanner,
-    },
-};
+use rottenmangos::{backend::vm::VM, cli_context, frontend::compiler::Compiler};
 
 fn main() {
     let cli = Cli::parse();
