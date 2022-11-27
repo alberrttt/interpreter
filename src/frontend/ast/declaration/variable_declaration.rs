@@ -1,11 +1,14 @@
 use crate::{
     common::{opcode::OpCode, value::AsValue},
     frontend::ast::{
-        expression::Expression, identifier::Identifier, node::AsNode, CompileToBytecode,
+        expression::Expression,
+        identifier::Identifier,
+        node::{AsNode, Node},
+        CompileToBytecode,
     },
 };
 
-use super::AsStatement;
+use super::AsDeclaration;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct VariableDeclaration {
@@ -24,13 +27,14 @@ impl CompileToBytecode for VariableDeclaration {
         }
     }
 }
-impl AsStatement for VariableDeclaration {
-    fn as_statement(self) -> super::Statement {
-        super::Statement::VariableDeclaration(self)
+
+impl AsDeclaration for VariableDeclaration {
+    fn as_declaration(self) -> super::Declaration {
+        super::Declaration::VariableDeclaration(self)
     }
 }
 impl AsNode for VariableDeclaration {
     fn as_node(self) -> crate::frontend::ast::node::Node {
-        self.as_statement().as_node()
+        Node::Declaration(self.as_declaration())
     }
 }

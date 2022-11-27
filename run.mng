@@ -3,5 +3,5 @@
 // defining them currently is the same as reassigning
 let a = 123;
 print a;
-let a = 239423;
+a = 239423;
 print a;

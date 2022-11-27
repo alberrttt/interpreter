@@ -1,18 +1,16 @@
 use crate::common::{opcode::OpCode, value::AsValue};
 
-use self::variable_declaration::VariableDeclaration;
-
 use super::{
     expression::{AsExpr, Expression},
+    identifier::Identifier,
     node::{AsNode, Node},
     CompileToBytecode,
 };
-pub mod variable_declaration;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
-    Expression(Expression),
+    Expression(Box<Node>),
+    VariableReassignment(Identifier, Expression),
     Print(Box<Node>),
-    VariableDeclaration(VariableDeclaration),
 }
 
 impl AsNode for Statement {
@@ -23,7 +21,7 @@ impl AsNode for Statement {
 impl AsExpr for Statement {
     fn as_expr(self) -> Expression {
         match self {
-            Statement::Expression(expr) => expr,
+            Statement::Expression(expr) => expr.as_expr(),
             _ => panic!(),
         }
     }
@@ -39,8 +37,10 @@ impl CompileToBytecode for Statement {
                 expr.to_bytecode(function);
                 function.chunk.emit_op(OpCode::Print);
             }
-            Statement::VariableDeclaration(variable_declaration) => {
-                variable_declaration.to_bytecode(function)
+            Statement::VariableReassignment(name, initializer) => {
+                initializer.to_bytecode(function);
+                let name = function.chunk.emit_value(name.name.as_value());
+                function.chunk.emit_op(OpCode::SetGlobal(name))
             }
         }
     }

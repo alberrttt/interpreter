@@ -1,6 +1,7 @@
 use crate::common::{function::Function, opcode::OpCode};
 
 use super::{
+    declaration::{self, Declaration},
     expression::{AsExpr, BinaryExpr, Expression},
     identifier::{self, Identifier},
     literal::Literal,
@@ -13,7 +14,7 @@ pub enum Node {
     Expression(Expression),
     Literal(Literal),
     Statement(Statement),
-
+    Declaration(Declaration),
     Identifier(Identifier),
     None,
 }
@@ -39,6 +40,7 @@ impl AsExpr for Node {
         match self {
             Node::Expression(expr) => expr,
             Node::Literal(literal) => Expression::Literal(literal),
+            Node::Declaration(_) => panic!(),
             Node::Statement(_) => panic!(),
             Node::Identifier(_) => todo!(),
             Node::None => panic!(),
@@ -56,6 +58,7 @@ impl CompileToBytecode for Node {
             Node::Statement(statement) => statement.to_bytecode(function),
             Node::Identifier(identifier) => identifier.to_bytecode(function),
             Node::Literal(literal) => literal.to_bytecode(function),
+            Node::Declaration(declaration) => declaration.to_bytecode(function),
             _ => unimplemented!(),
         }
     }

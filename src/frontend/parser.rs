@@ -4,11 +4,12 @@ use colored::Colorize;
 
 use super::{
     ast::{
+        declaration::variable_declaration::VariableDeclaration,
         expression::{AsExpr, BinaryExpr, Expression},
         identifier::Identifier,
         literal::Literal,
         node::{AsNode, Node},
-        statement::{variable_declaration::VariableDeclaration, Statement},
+        statement::Statement,
         BinaryOperation,
     },
     file::FileNode,
@@ -32,10 +33,15 @@ impl Parser {
             TokenKind::Identifier => Rule {
                 precedence: Precedence::None,
                 prefix: Some(|parser| {
-                    Identifier {
-                        name: parser.previous().value.to_string(),
+                    let name = parser.previous().value.to_string();
+                    if parser.match_token(TokenKind::Equal) {
+                        return Statement::VariableReassignment(
+                            Identifier { name },
+                            parser.expression().as_expr(),
+                        )
+                        .as_node();
                     }
-                    .as_node()
+                    Identifier { name }.as_node()
                 }),
                 infix: None,
             },
@@ -174,7 +180,7 @@ impl Parser {
     pub fn expression_statement(&mut self) -> Node {
         let expr = self.expression();
         self.consume(TokenKind::SemiColon, "Expected ';' after expression");
-        Statement::Expression(expr.as_expr()).as_node()
+        Statement::Expression(Box::new(expr)).as_node()
     }
     pub fn token_as_identifier(&mut self) -> Identifier {
         self.advance();
