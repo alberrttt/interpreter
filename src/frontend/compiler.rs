@@ -3,8 +3,9 @@ use crate::{
     common::{function::Function, opcode::OpCode},
 };
 
-use super::{parser::Parser, scanner::Scanner};
+use super::{ast::CompileToBytecode, file::FileNode, parser::Parser, scanner::Scanner};
 
+#[derive(Debug)]
 pub struct Compiler<'a> {
     pub function: Function,
     pub scanner: Scanner,
@@ -21,13 +22,22 @@ impl<'a> Compiler<'a> {
             context,
         }
     }
-    pub fn compile(&mut self, source: String) -> Function {
-        let mut scanner = Scanner::new(source);
-        scanner.scan_thru();
-        let mut parser = Parser::new(scanner.tokens);
-        let parsed = parser.parse_file();
-        let mut function = parsed.build_function();
-        function.chunk.emit_many(vec![OpCode::Return]);
-        function
+    pub fn compile(mut self, source: String) -> Function {
+        let scanner = Scanner::new(source);
+        self.scanner = scanner;
+
+        self.scanner.scan_thru();
+        let parser = Parser::new(self.scanner.tokens.clone());
+        self.parser = parser;
+
+        let parsed = self.parser.parse_file();
+
+        let function = Function::new();
+        self.function = function;
+        for node in parsed.nodes {
+            node.to_bytecode(&mut self)
+        }
+        self.function.chunk.emit_many(vec![OpCode::Return]);
+        self.function
     }
 }

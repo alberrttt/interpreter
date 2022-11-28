@@ -1,6 +1,9 @@
-use crate::common::{
-    opcode::OpCode,
-    value::{AsValue, Value},
+use crate::{
+    common::{
+        opcode::OpCode,
+        value::{AsValue, Value},
+    },
+    frontend::compiler::Compiler,
 };
 
 use super::{node::Node, CompileToBytecode};
@@ -24,7 +27,13 @@ impl Literal {
 }
 
 impl CompileToBytecode for Literal {
-    fn to_bytecode(self, function: &mut crate::common::function::Function) -> () {
+    fn to_bytecode(self, compiler: &mut Compiler) -> () {
+        let Compiler {
+            function,
+            scanner,
+            parser,
+            context,
+        } = compiler;
         let pos = match self {
             Literal::Number(number) => function.chunk.emit_value(Value::Number(number)),
             Literal::String(string) => function.chunk.emit_value(string.to_string().as_value()),

@@ -2,6 +2,5 @@
 // not reassign them
 // defining them currently is the same as reassigning
 let a = 123;
-print a;
-a = 239423;
-print a;
+let hello_world = "hello world";
+print hello_world;

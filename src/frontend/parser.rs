@@ -17,6 +17,7 @@ use super::{
     Precedence,
 };
 
+#[derive(Debug)]
 pub struct Parser {
     pub tokens: Vec<Token>,
     pub index: usize,
@@ -163,7 +164,7 @@ impl Parser {
     pub fn expression(&mut self) -> Node {
         self.precedence(Precedence::None)
     }
-    pub fn parse_file(&mut self) -> FileNode {
+    pub fn parse_file<'a>(&mut self) -> FileNode<'a> {
         let mut file = FileNode::default();
         loop {
             if self.at_end() {

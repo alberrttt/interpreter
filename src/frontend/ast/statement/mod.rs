@@ -1,4 +1,7 @@
-use crate::common::{opcode::OpCode, value::AsValue};
+use crate::{
+    common::{opcode::OpCode, value::AsValue},
+    frontend::compiler::Compiler,
+};
 
 use super::{
     expression::{AsExpr, Expression},
@@ -27,20 +30,20 @@ impl AsExpr for Statement {
     }
 }
 impl CompileToBytecode for Statement {
-    fn to_bytecode(self, function: &mut crate::common::function::Function) -> () {
+    fn to_bytecode(self, compiler: &mut Compiler) -> () {
         match self {
             Statement::Expression(expr) => {
-                expr.to_bytecode(function);
-                function.chunk.emit_op(OpCode::Pop)
+                expr.to_bytecode(compiler);
+                compiler.function.chunk.emit_op(OpCode::Pop)
             }
             Statement::Print(expr) => {
-                expr.to_bytecode(function);
-                function.chunk.emit_op(OpCode::Print);
+                expr.to_bytecode(compiler);
+                compiler.function.chunk.emit_op(OpCode::Print);
             }
             Statement::VariableReassignment(name, initializer) => {
-                initializer.to_bytecode(function);
-                let name = function.chunk.emit_value(name.name.as_value());
-                function.chunk.emit_op(OpCode::SetGlobal(name))
+                initializer.to_bytecode(compiler);
+                let name = compiler.function.chunk.emit_value(name.name.as_value());
+                compiler.function.chunk.emit_op(OpCode::SetGlobal(name))
             }
         }
     }

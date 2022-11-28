@@ -1,6 +1,8 @@
 use crate::common::function::Function;
 
 use self::expression::Expression;
+
+use super::compiler::{self, Compiler};
 pub mod declaration;
 pub mod expression;
 pub mod identifier;
@@ -16,5 +18,5 @@ pub enum BinaryOperation {
 }
 
 pub trait CompileToBytecode {
-    fn to_bytecode(self, function: &mut Function) -> ();
+    fn to_bytecode(self, compiler: &mut Compiler) -> ();
 }

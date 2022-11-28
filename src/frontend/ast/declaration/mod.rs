@@ -1,3 +1,5 @@
+use crate::frontend::compiler::Compiler;
+
 use self::variable_declaration::VariableDeclaration;
 
 use super::CompileToBytecode;
@@ -9,9 +11,15 @@ pub enum Declaration {
 }
 
 impl CompileToBytecode for Declaration {
-    fn to_bytecode(self, function: &mut crate::common::function::Function) -> () {
+    fn to_bytecode(self, compiler: &mut Compiler) -> () {
+        let Compiler {
+            function,
+            scanner,
+            parser,
+            context,
+        } = compiler;
         match self {
-            Declaration::VariableDeclaration(declaration) => declaration.to_bytecode(function),
+            Declaration::VariableDeclaration(declaration) => declaration.to_bytecode(compiler),
         }
     }
 }

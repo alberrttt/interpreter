@@ -5,10 +5,16 @@ use std::{cell::RefCell, fmt::Display, rc::Rc};
 #[derive(Clone, Debug)]
 pub enum Value {
     Number(f64),
+    Boolean(bool),
     String(Ptr<String>),
 }
 pub trait AsValue {
     fn as_value(self) -> Value;
+}
+impl AsValue for bool {
+    fn as_value(self) -> Value {
+        Value::Boolean(self)
+    }
 }
 impl Value {
     pub fn as_string(&self) -> &String {
@@ -41,6 +47,9 @@ impl Display for Value {
             Value::Number(number) => write!(f, "{}", number),
             Value::String(string) => {
                 write!(f, "{}", *string.borrow())
+            }
+            Value::Boolean(bool) => {
+                write!(f, "{}", bool)
             }
         }
     }

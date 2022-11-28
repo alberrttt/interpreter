@@ -1,4 +1,7 @@
-use crate::common::{function::Function, opcode::OpCode};
+use crate::{
+    common::{function::Function, opcode::OpCode},
+    frontend::compiler::Compiler,
+};
 
 use super::{
     declaration::{self, Declaration},
@@ -52,13 +55,19 @@ pub trait AsNode {
 }
 impl CompileToBytecode for Node {
     // we need it to emit constants
-    fn to_bytecode(self, function: &mut Function) -> () {
+    fn to_bytecode(self, compiler: &mut Compiler) -> () {
+        let Compiler {
+            function,
+            scanner,
+            parser,
+            context,
+        } = compiler;
         match self {
-            Node::Expression(expr) => expr.to_bytecode(function),
-            Node::Statement(statement) => statement.to_bytecode(function),
-            Node::Identifier(identifier) => identifier.to_bytecode(function),
-            Node::Literal(literal) => literal.to_bytecode(function),
-            Node::Declaration(declaration) => declaration.to_bytecode(function),
+            Node::Expression(expr) => expr.to_bytecode(compiler),
+            Node::Statement(statement) => statement.to_bytecode(compiler),
+            Node::Identifier(identifier) => identifier.to_bytecode(compiler),
+            Node::Literal(literal) => literal.to_bytecode(compiler),
+            Node::Declaration(declaration) => declaration.to_bytecode(compiler),
             _ => unimplemented!(),
         }
     }

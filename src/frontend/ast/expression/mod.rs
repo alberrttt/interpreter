@@ -1,4 +1,7 @@
-use crate::common::opcode::OpCode;
+use crate::{
+    common::{function, opcode::OpCode},
+    frontend::compiler::Compiler,
+};
 
 use super::{
     literal::Literal,
@@ -40,16 +43,16 @@ impl Expression {
     }
 }
 impl CompileToBytecode for Expression {
-    fn to_bytecode(self, function: &mut crate::common::function::Function) -> () {
+    fn to_bytecode(self, compiler: &mut Compiler) -> () {
         match self {
-            Expression::Grouping(inner) => inner.to_bytecode(function),
-            Expression::Literal(literal) => literal.to_bytecode(function),
+            Expression::Grouping(inner) => inner.to_bytecode(compiler),
+            Expression::Literal(literal) => literal.to_bytecode(compiler),
             super::Expression::Binary(binary) => {
                 let BinaryExpr { lhs, rhs, op } = binary;
-                lhs.to_bytecode(function);
-                rhs.to_bytecode(function);
+                lhs.to_bytecode(compiler);
+                rhs.to_bytecode(compiler);
 
-                let chunk = &mut function.chunk;
+                let chunk = &mut compiler.function.chunk;
                 chunk.emit_op(match op {
                     super::BinaryOperation::Add => OpCode::Add,
                     super::BinaryOperation::Subtract => OpCode::Sub,

@@ -1,4 +1,7 @@
-use crate::common::{opcode::OpCode, value::AsValue};
+use crate::{
+    common::{opcode::OpCode, value::AsValue},
+    frontend::compiler::Compiler,
+};
 
 use super::{
     node::{AsNode, Node},
@@ -11,7 +14,13 @@ pub struct Identifier {
 }
 
 impl CompileToBytecode for Identifier {
-    fn to_bytecode(self, function: &mut crate::common::function::Function) -> () {
+    fn to_bytecode(self, compiler: &mut Compiler) -> () {
+        let Compiler {
+            function,
+            scanner,
+            parser,
+            context,
+        } = compiler;
         let name = function.chunk.emit_value(self.name.as_value());
         function.chunk.emit_op(OpCode::GetGlobal(name));
     }

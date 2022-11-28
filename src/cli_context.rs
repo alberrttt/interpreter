@@ -2,6 +2,7 @@ use std::{path::Path, ptr::null};
 
 use colored::Colorize;
 
+#[derive(Debug)]
 pub struct Diaganostics<'a> {
     pub context: *const Context<'a>,
 }
@@ -33,6 +34,7 @@ impl<'a> Diaganostics<'a> {
     }
 }
 
+#[derive(Debug)]
 pub struct Context<'a> {
     pub file_path: &'a Path,
     pub diagnostics: Box<Diaganostics<'a>>,
