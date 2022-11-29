@@ -1,6 +1,11 @@
-// you can only define variables
-// not reassign them
-// defining them currently is the same as reassigning
-let a = 123;
-let hello_world = "hello world";
-print hello_world;
+let a = 2;
+let b = 3;
+let c = 4;
+let d = 5;
+
+b=c*d;
+
+let p = c*d;
+print p;
+
+print b;

@@ -24,7 +24,7 @@ pub struct Parser {
 }
 pub struct Rule {
     pub precedence: Precedence,
-    pub prefix: Option<fn(&mut Parser) -> Node>,
+    pub prefix: Option<fn(&mut Parser, can_assign: bool) -> Node>,
     pub infix: Option<fn(&mut Parser, previous: Node) -> Node>,
 }
 
@@ -33,9 +33,9 @@ impl Parser {
         match kind {
             TokenKind::Identifier => Rule {
                 precedence: Precedence::None,
-                prefix: Some(|parser| {
+                prefix: Some(|parser, can_assign| {
                     let name = parser.previous().value.to_string();
-                    if parser.match_token(TokenKind::Equal) {
+                    if can_assign && parser.match_token(TokenKind::Equal) {
                         return Statement::VariableReassignment(
                             Identifier { name },
                             parser.expression().as_expr(),
@@ -79,14 +79,10 @@ impl Parser {
             },
         }
     }
-    pub fn string(&mut self) -> Node {
+    pub fn string(&mut self, can_assign: bool) -> Node {
         Literal::String(self.previous().value.clone()).as_node()
     }
     pub fn binary(&mut self, lhs: Node) -> Node {
-        // the problem is somewhere here because
-        // lhs could be a binary expression with higher/same precedence
-        // ex. 2 / 3 * 7
-        // lhs: 2
         let rule = Self::get_rule(self.previous().kind);
         let op = match self.previous().kind {
             TokenKind::Plus => BinaryOperation::Add,
@@ -95,15 +91,10 @@ impl Parser {
             TokenKind::Slash => BinaryOperation::Divide,
             _ => panic!(),
         };
-        // this sees 3 * 7 as its own expression and not as part of 2 / 3
+        // the precedence is +1 so it'll compile it as the rhs
         let prec: Precedence = unsafe { transmute((rule.precedence as u8) + 1) };
         let rhs = self.precedence(prec);
-        // thus
-        // lhs: 3 * 7
-        // rhs: 2
-        // when it should be
-        // lhs: 2 / 3
-        // rhs: 7
+
         Expression::Binary(BinaryExpr {
             lhs: Box::new(lhs),
             rhs: Box::new(rhs),
@@ -111,7 +102,7 @@ impl Parser {
         })
         .as_node()
     }
-    pub fn number(&mut self) -> Node {
+    pub fn number(&mut self, can_assign: bool) -> Node {
         Literal::Number(self.previous().value.parse::<f64>().unwrap()).as_node()
     }
     pub fn at_end(&mut self) -> bool {
@@ -121,10 +112,11 @@ impl Parser {
         self.advance();
         let previous = self.previous();
         let rule = Self::get_rule(previous.kind);
+        let can_assign: bool = prec <= Precedence::Assignment;
         #[allow(unused_assignments)]
         let mut expression: Node = Node::None;
         if rule.prefix.is_some() {
-            expression = rule.prefix.unwrap()(self);
+            expression = rule.prefix.unwrap()(self, can_assign);
         } else {
             panic!(
                 "expected expression run.mng:{}:{}",

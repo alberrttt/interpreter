@@ -31,7 +31,6 @@ impl<'a> Compiler<'a> {
         self.parser = parser;
 
         let parsed = self.parser.parse_file();
-
         let function = Function::new();
         self.function = function;
         for node in parsed.nodes {

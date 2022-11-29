@@ -1,7 +1,9 @@
 use std::{ffi::OsString, fs::read_to_string, path::Path};
 
 use clap::Parser;
-use rottenmangos::{backend::vm::VM, cli_context, frontend::compiler::Compiler};
+use rottenmangos::{
+    backend::vm::VM, cli_context, common::debug::dissasemble_chunk, frontend::compiler::Compiler,
+};
 
 fn main() {
     let cli = Cli::parse();
@@ -12,7 +14,9 @@ fn main() {
     let mut compiler = Compiler::new(&mut context);
 
     let compiled = compiler.compile(source);
+    dissasemble_chunk(&compiled.chunk);
     let mut vm = VM::new();
+
     vm.run(compiled.chunk);
 }
 
