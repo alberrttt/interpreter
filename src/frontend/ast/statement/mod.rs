@@ -1,11 +1,7 @@
-use crate::{
-    common::{opcode::OpCode, value::AsValue},
-    frontend::compiler::Compiler,
-};
+use crate::{common::opcode::OpCode, frontend::compiler::Compiler};
 
 use super::{
     expression::{AsExpr, Expression},
-    identifier::Identifier,
     node::{AsNode, Node},
     CompileToBytecode,
 };
@@ -13,6 +9,7 @@ use super::{
 pub enum Statement {
     Expression(Expression),
     Print(Box<Node>),
+    AssertEq(Expression, Expression),
 }
 
 impl AsNode for Statement {
@@ -38,6 +35,12 @@ impl CompileToBytecode for Statement {
             Statement::Print(expr) => {
                 expr.to_bytecode(compiler);
                 compiler.function.chunk.emit_op(OpCode::Print);
+            }
+            Statement::AssertEq(lhs, rhs) => {
+                lhs.to_bytecode(compiler);
+                rhs.to_bytecode(compiler);
+
+                compiler.function.chunk.emit_op(OpCode::AssertEq)
             }
         }
     }

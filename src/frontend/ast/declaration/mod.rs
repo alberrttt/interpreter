@@ -13,10 +13,10 @@ pub enum Declaration {
 impl CompileToBytecode for Declaration {
     fn to_bytecode(self, compiler: &mut Compiler) -> () {
         let Compiler {
-            function,
-            scanner,
-            parser,
-            context,
+            function: _,
+            scanner: _,
+            parser: _,
+            context: _,
         } = compiler;
         match self {
             Declaration::VariableDeclaration(declaration) => declaration.to_bytecode(compiler),

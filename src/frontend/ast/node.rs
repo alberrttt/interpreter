@@ -1,12 +1,11 @@
 use crate::{
-    common::{function::Function, opcode::OpCode},
     frontend::compiler::Compiler,
 };
 
 use super::{
-    declaration::{self, Declaration},
-    expression::{AsExpr, BinaryExpr, Expression},
-    identifier::{self, Identifier},
+    declaration::{Declaration},
+    expression::{AsExpr, Expression},
+    identifier::{Identifier},
     literal::Literal,
     statement::Statement,
     CompileToBytecode,
@@ -57,10 +56,10 @@ impl CompileToBytecode for Node {
     // we need it to emit constants
     fn to_bytecode(self, compiler: &mut Compiler) -> () {
         let Compiler {
-            function,
-            scanner,
-            parser,
-            context,
+            function: _,
+            scanner: _,
+            parser: _,
+            context: _,
         } = compiler;
         match self {
             Node::Expression(expr) => expr.to_bytecode(compiler),

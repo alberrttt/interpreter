@@ -26,6 +26,22 @@ impl VM {
             let instruction = &chunk.code[ip];
             ip += 1;
             match instruction {
+                OpCode::Not => {
+                    let pop = self.stack.pop().unwrap();
+                    if let Value::Boolean(bool) = pop {
+                        self.stack.push((!bool).as_value());
+                    } else {
+                        panic!("not cannot be applied to {} ", pop)
+                    }
+                }
+                OpCode::Negate => {
+                    let pop = self.stack.pop().unwrap();
+                    if let Value::Number(num) = pop {
+                        self.stack.push((-num).as_value());
+                    } else {
+                        panic!("negate cannot be applied to {} ", pop)
+                    }
+                }
                 OpCode::True => self.stack.push(true.as_value()),
                 OpCode::False => self.stack.push(false.as_value()),
                 OpCode::Constant(index) => {
@@ -117,6 +133,12 @@ impl VM {
                 }
                 OpCode::Print => {
                     println!("{}", self.stack.pop().unwrap());
+                }
+                OpCode::AssertEq => {
+                    let rhs = self.stack.pop().unwrap();
+                    let lhs = self.stack.pop().unwrap();
+
+                    assert_eq!(lhs, rhs);
                 }
                 OpCode::Return => {
                     break;

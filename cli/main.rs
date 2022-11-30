@@ -11,7 +11,7 @@ fn main() {
     let source = read_to_string(path).unwrap();
 
     let mut context = cli_context::Context::new(path);
-    let mut compiler = Compiler::new(&mut context);
+    let compiler = Compiler::new(&mut context);
 
     let compiled = compiler.compile(source);
     dissasemble_chunk(&compiled.chunk);

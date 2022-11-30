@@ -7,9 +7,11 @@ pub enum OpCode {
     DefineGlobal(u16),
     GetGlobal(u16),
     SetGlobal(u16),
+    AssertEq,
     True,
     False,
-
+    Not,
+    Negate,
     Pop,
     Print,
     Add,

@@ -1,7 +1,4 @@
-use crate::{
-    common::{function, opcode::OpCode},
-    frontend::compiler::Compiler,
-};
+use crate::{common::opcode::OpCode, frontend::compiler::Compiler};
 
 use self::variable_assignment::VariableAssignment;
 
@@ -31,6 +28,8 @@ pub enum Expression {
     Binary(BinaryExpr),
     Literal(Literal),
     VariableAssignment(VariableAssignment),
+    Not(Box<Expression>),
+    Negate(Box<Expression>),
 }
 impl AsNode for Expression {
     fn as_node(self) -> Node {
@@ -52,6 +51,14 @@ impl CompileToBytecode for Expression {
             Expression::Grouping(inner) => inner.to_bytecode(compiler),
             Expression::Literal(literal) => literal.to_bytecode(compiler),
             Expression::VariableAssignment(var) => var.to_bytecode(compiler),
+            Expression::Not(expr) => {
+                expr.to_bytecode(compiler);
+                compiler.function.chunk.emit_op(OpCode::Not);
+            }
+            Expression::Negate(expr) => {
+                expr.to_bytecode(compiler);
+                compiler.function.chunk.emit_op(OpCode::Negate);
+            }
             super::Expression::Binary(binary) => {
                 let BinaryExpr { lhs, rhs, op } = binary;
                 lhs.to_bytecode(compiler);

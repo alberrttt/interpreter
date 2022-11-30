@@ -17,9 +17,9 @@ impl CompileToBytecode for Identifier {
     fn to_bytecode(self, compiler: &mut Compiler) -> () {
         let Compiler {
             function,
-            scanner,
-            parser,
-            context,
+            scanner: _,
+            parser: _,
+            context: _,
         } = compiler;
         let name = function.chunk.emit_value(self.name.as_value());
         function.chunk.emit_op(OpCode::GetGlobal(name));

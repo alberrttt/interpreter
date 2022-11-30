@@ -1,7 +1,7 @@
 use super::{chunk::Chunk, opcode::OpCode};
-use std::fmt::Display;
+
 use std::string::ToString;
-use strum_macros;
+
 pub fn dissasemble_chunk(chunk: &Chunk) {
     let mut instruction_ptr: usize = 0;
 

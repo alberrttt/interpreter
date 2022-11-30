@@ -1,6 +1,8 @@
-use std::{mem::transmute, process::id};
+use std::mem::transmute;
 
 use colored::Colorize;
+
+use crate::cli_context::Context;
 
 use super::{
     ast::{
@@ -18,18 +20,19 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct Parser {
+pub struct Parser<'a> {
     pub tokens: Vec<Token>,
     pub index: usize,
+    pub context: Option<&'a mut Context<'a>>,
 }
-pub struct Rule {
+pub struct Rule<'a> {
     pub precedence: Precedence,
-    pub prefix: Option<fn(&mut Parser, can_assign: bool) -> Node>,
-    pub infix: Option<fn(&mut Parser, previous: Node) -> Node>,
+    pub prefix: Option<fn(&mut Parser<'a>, can_assign: bool) -> Node>,
+    pub infix: Option<fn(&mut Parser<'a>, previous: Node) -> Node>,
 }
 
-impl Parser {
-    pub fn get_rule(kind: TokenKind) -> Rule {
+impl<'a> Parser<'a> {
+    pub fn get_rule(kind: TokenKind) -> Rule<'a> {
         match kind {
             TokenKind::Identifier => Rule {
                 precedence: Precedence::None,
@@ -56,9 +59,17 @@ impl Parser {
                 prefix: None,
                 infix: Some(Self::binary),
             },
-            TokenKind::Dash | TokenKind::Plus => Rule {
+            TokenKind::Plus => Rule {
                 infix: Some(Self::binary),
                 prefix: None,
+                precedence: Precedence::Term,
+            },
+            TokenKind::Dash => Rule {
+                infix: Some(Self::binary),
+                prefix: Some(|parser, can_assign| {
+                    Expression::Negate(Box::new(parser.precedence(Precedence::Unary).as_expr()))
+                        .as_node()
+                }),
                 precedence: Precedence::Term,
             },
             TokenKind::String => Rule {
@@ -67,7 +78,7 @@ impl Parser {
 
                 infix: None,
             },
-            TokenKind::Equal | TokenKind::SemiColon => Rule {
+            TokenKind::Equal | TokenKind::SemiColon | TokenKind::Comma => Rule {
                 precedence: Precedence::None,
                 infix: None,
                 prefix: None,
@@ -79,37 +90,13 @@ impl Parser {
             },
         }
     }
-    pub fn string(&mut self, can_assign: bool) -> Node {
-        Literal::String(self.previous().value.clone()).as_node()
-    }
-    pub fn binary(&mut self, lhs: Node) -> Node {
-        let rule = Self::get_rule(self.previous().kind);
-        let op = match self.previous().kind {
-            TokenKind::Plus => BinaryOperation::Add,
-            TokenKind::Dash => BinaryOperation::Subtract,
-            TokenKind::Star => BinaryOperation::Multiply,
-            TokenKind::Slash => BinaryOperation::Divide,
-            _ => panic!(),
-        };
-        // the precedence is +1 so it'll compile it as the rhs
-        let prec: Precedence = unsafe { transmute((rule.precedence as u8) + 1) };
-        let rhs = self.precedence(prec);
 
-        Expression::Binary(BinaryExpr {
-            lhs: Box::new(lhs),
-            rhs: Box::new(rhs),
-            op,
-        })
-        .as_node()
-    }
-    pub fn number(&mut self, can_assign: bool) -> Node {
-        Literal::Number(self.previous().value.parse::<f64>().unwrap()).as_node()
-    }
     pub fn at_end(&mut self) -> bool {
         self.index + 1 >= self.tokens.len()
     }
     pub fn precedence(&mut self, prec: Precedence) -> Node {
         self.advance();
+        let path = self.context.as_ref().unwrap().file_path.to_str().unwrap();
         let previous = self.previous();
         let rule = Self::get_rule(previous.kind);
         let can_assign: bool = prec <= Precedence::Assignment;
@@ -119,9 +106,11 @@ impl Parser {
             expression = rule.prefix.unwrap()(self, can_assign);
         } else {
             panic!(
-                "expected expression run.mng:{}:{}",
+                "expected expression {}:{}:{}, got {}",
+                path,
                 previous.line + 1,
-                previous.line_start
+                previous.line_start,
+                previous.kind
             );
         }
 
@@ -156,7 +145,7 @@ impl Parser {
     pub fn expression(&mut self) -> Node {
         self.precedence(Precedence::None)
     }
-    pub fn parse_file<'a>(&mut self) -> FileNode<'a> {
+    pub fn parse_file(&mut self) -> FileNode<'a> {
         let mut file = FileNode::default();
         loop {
             if self.at_end() {
@@ -189,6 +178,16 @@ impl Parser {
                 self.consume(TokenKind::SemiColon, "");
                 node
             }
+            TokenKind::AssertEq => {
+                self.advance();
+                let lhs = self.expression().as_expr();
+                self.consume(TokenKind::Comma, "Expected comma to seperate lhs and rhs");
+                let rhs = self.expression().as_expr();
+                self.consume(TokenKind::SemiColon, "");
+
+                let node = Statement::AssertEq(lhs, rhs);
+                node.as_node()
+            }
             TokenKind::Let => {
                 self.advance();
                 let identifier = self.token_as_identifier();
@@ -211,10 +210,41 @@ impl Parser {
         }
     }
 }
+impl Parser<'_> {
+    pub fn string(&mut self, _can_assign: bool) -> Node {
+        Literal::String(self.previous().value.clone()).as_node()
+    }
+    pub fn binary(&mut self, lhs: Node) -> Node {
+        let rule = Self::get_rule(self.previous().kind);
+        let op = match self.previous().kind {
+            TokenKind::Plus => BinaryOperation::Add,
+            TokenKind::Dash => BinaryOperation::Subtract,
+            TokenKind::Star => BinaryOperation::Multiply,
+            TokenKind::Slash => BinaryOperation::Divide,
+            _ => panic!(),
+        };
+        // the precedence is +1 so it'll compile it as the rhs
+        let prec: Precedence = unsafe { transmute((rule.precedence as u8) + 1) };
+        let rhs = self.precedence(prec);
 
-impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Parser {
-        let parser = Parser { tokens, index: 0 };
+        Expression::Binary(BinaryExpr {
+            lhs: Box::new(lhs),
+            rhs: Box::new(rhs),
+            op,
+        })
+        .as_node()
+    }
+    pub fn number(&mut self, _can_assign: bool) -> Node {
+        Literal::Number(self.previous().value.parse::<f64>().unwrap()).as_node()
+    }
+}
+impl<'a> Parser<'a> {
+    pub fn new(tokens: Vec<Token>, context: Option<&'a mut Context<'a>>) -> Parser<'a> {
+        let parser = Parser {
+            tokens,
+            index: 0,
+            context,
+        };
 
         parser
     }

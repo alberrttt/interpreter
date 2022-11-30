@@ -13,7 +13,7 @@ pub struct FileNode<'a> {
 impl<'a> FileNode<'a> {
     pub fn build_function(mut self) -> Function {
         let mut compiler = self.compiler.take().unwrap();
-        let mut function = Function::new();
+        let function = Function::new();
         compiler.function = function;
         for node in self.nodes {
             node.to_bytecode(&mut compiler)

@@ -63,6 +63,7 @@ pub enum TokenKind {
     Use,
     Return,
 
+    AssertEq,
     Print,
     And,
     Or,
@@ -338,6 +339,7 @@ impl Scanner {
             "func" => TokenKind::Func,
             "return" => TokenKind::Return,
             "print" => TokenKind::Print,
+            "assert_eq" => TokenKind::AssertEq,
             _ => TokenKind::Identifier,
         }
     }
