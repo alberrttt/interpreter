@@ -38,7 +38,7 @@ impl VM {
                 OpCode::SetGlobal(name) => {
                     let name = (chunk.constants[*name as usize].as_string()).to_owned();
                     assert!(self.globals.contains_key(&name));
-                    let value = self.stack.pop().unwrap();
+                    let value = self.stack[self.stack.len() - 1].clone();
                     self.globals.insert(name, value);
                 }
                 OpCode::DefineGlobal(name) => {
@@ -90,10 +90,10 @@ impl VM {
 
                     match lhs {
                         Value::Number(lhs) => {
-                            let Value::Number(_rhs) = rhs else {
+                            let Value::Number(rhs) = rhs else {
                                 panic!()
                             };
-                            self.stack.push(Value::Number(lhs * 1.0))
+                            self.stack.push(Value::Number(lhs * rhs))
                         }
                         _ => unimplemented!(),
                     }

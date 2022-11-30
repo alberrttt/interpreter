@@ -5,7 +5,7 @@ use colored::Colorize;
 use super::{
     ast::{
         declaration::variable_declaration::VariableDeclaration,
-        expression::{AsExpr, BinaryExpr, Expression},
+        expression::{variable_assignment::VariableAssignment, AsExpr, BinaryExpr, Expression},
         identifier::Identifier,
         literal::Literal,
         node::{AsNode, Node},
@@ -36,10 +36,10 @@ impl Parser {
                 prefix: Some(|parser, can_assign| {
                     let name = parser.previous().value.to_string();
                     if can_assign && parser.match_token(TokenKind::Equal) {
-                        return Statement::VariableReassignment(
-                            Identifier { name },
-                            parser.expression().as_expr(),
-                        )
+                        return Expression::VariableAssignment(VariableAssignment {
+                            name: Identifier { name },
+                            initializer: Box::new(parser.expression().as_expr()),
+                        })
                         .as_node();
                     }
                     Identifier { name }.as_node()
@@ -171,9 +171,9 @@ impl Parser {
         self.statement()
     }
     pub fn expression_statement(&mut self) -> Node {
-        let expr = self.expression();
+        let expr = self.expression().as_expr();
         self.consume(TokenKind::SemiColon, "Expected ';' after expression");
-        Statement::Expression(Box::new(expr)).as_node()
+        Statement::Expression(expr).as_node()
     }
     pub fn token_as_identifier(&mut self) -> Identifier {
         self.advance();

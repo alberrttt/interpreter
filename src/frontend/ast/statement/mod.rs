@@ -11,8 +11,7 @@ use super::{
 };
 #[derive(Debug, Clone, PartialEq)]
 pub enum Statement {
-    Expression(Box<Node>),
-    VariableReassignment(Identifier, Expression),
+    Expression(Expression),
     Print(Box<Node>),
 }
 
@@ -24,7 +23,7 @@ impl AsNode for Statement {
 impl AsExpr for Statement {
     fn as_expr(self) -> Expression {
         match self {
-            Statement::Expression(expr) => expr.as_expr(),
+            Statement::Expression(expr) => expr,
             _ => panic!(),
         }
     }
@@ -39,11 +38,6 @@ impl CompileToBytecode for Statement {
             Statement::Print(expr) => {
                 expr.to_bytecode(compiler);
                 compiler.function.chunk.emit_op(OpCode::Print);
-            }
-            Statement::VariableReassignment(name, initializer) => {
-                initializer.to_bytecode(compiler);
-                let name = compiler.function.chunk.emit_value(name.name.as_value());
-                compiler.function.chunk.emit_op(OpCode::SetGlobal(name))
             }
         }
     }

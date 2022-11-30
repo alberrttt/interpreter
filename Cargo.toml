@@ -11,3 +11,5 @@ path = "cli/main.rs"
 [dependencies]
 clap = { version = "4.0.26", features = ["derive"] }
 colored = "2.0.0"
+strum = { version = "0.24.1", features = ["derive"] }
+strum_macros = "0.24.3"

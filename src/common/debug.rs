@@ -1,7 +1,7 @@
-use std::fmt::Display;
-
 use super::{chunk::Chunk, opcode::OpCode};
-
+use std::fmt::Display;
+use std::string::ToString;
+use strum_macros;
 pub fn dissasemble_chunk(chunk: &Chunk) {
     let mut instruction_ptr: usize = 0;
 
@@ -23,19 +23,5 @@ pub fn dissasemble_chunk(chunk: &Chunk) {
             _ => println!("{}", instruction.to_string()),
         }
         instruction_ptr += 1;
-    }
-}
-
-impl Display for OpCode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            OpCode::Constant(pos)
-            | OpCode::DefineGlobal(pos)
-            | OpCode::GetGlobal(pos)
-            | OpCode::SetGlobal(pos) => {
-                write!(f, "{:?}", self)
-            }
-            x => write!(f, "{:?}", x),
-        }
     }
 }

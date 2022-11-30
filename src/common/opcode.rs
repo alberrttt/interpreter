@@ -1,4 +1,5 @@
-#[derive(Debug)]
+use strum::Display;
+#[derive(Debug, Display)]
 pub enum OpCode {
     Constant(u16),
     // use string interning ? maybe
@@ -6,7 +7,6 @@ pub enum OpCode {
     DefineGlobal(u16),
     GetGlobal(u16),
     SetGlobal(u16),
-
     True,
     False,
 

@@ -3,6 +3,8 @@ use crate::{
     frontend::compiler::Compiler,
 };
 
+use self::variable_assignment::VariableAssignment;
+
 use super::{
     literal::Literal,
     node::{AsNode, Node},
@@ -11,6 +13,7 @@ use super::{
 pub trait AsExpr {
     fn as_expr(self) -> Expression;
 }
+pub mod variable_assignment;
 #[derive(Debug, PartialEq, Clone)]
 pub struct BinaryExpr {
     pub lhs: Box<Node>,
@@ -27,6 +30,7 @@ pub enum Expression {
     Grouping(Box<Node>),
     Binary(BinaryExpr),
     Literal(Literal),
+    VariableAssignment(VariableAssignment),
 }
 impl AsNode for Expression {
     fn as_node(self) -> Node {
@@ -47,6 +51,7 @@ impl CompileToBytecode for Expression {
         match self {
             Expression::Grouping(inner) => inner.to_bytecode(compiler),
             Expression::Literal(literal) => literal.to_bytecode(compiler),
+            Expression::VariableAssignment(var) => var.to_bytecode(compiler),
             super::Expression::Binary(binary) => {
                 let BinaryExpr { lhs, rhs, op } = binary;
                 lhs.to_bytecode(compiler);
