@@ -60,6 +60,9 @@ impl CompileToBytecode for Node {
             scanner: _,
             parser: _,
             context: _,
+            scope_depth,
+            locals,
+            enclosing,
         } = compiler;
         match self {
             Node::Expression(expr) => expr.to_bytecode(compiler),

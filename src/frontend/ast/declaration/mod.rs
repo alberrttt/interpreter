@@ -17,6 +17,9 @@ impl CompileToBytecode for Declaration {
             scanner: _,
             parser: _,
             context: _,
+            scope_depth,
+            locals,
+            enclosing,
         } = compiler;
         match self {
             Declaration::VariableDeclaration(declaration) => declaration.to_bytecode(compiler),

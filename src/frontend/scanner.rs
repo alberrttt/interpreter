@@ -1,4 +1,4 @@
-use std::{char, fmt};
+use std::{char, default, fmt};
 
 #[derive(Debug, Clone)]
 pub struct Scanner {
@@ -41,7 +41,7 @@ macro_rules! token {
         }
     }};
 }
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Default)]
 pub struct Token {
     pub kind: TokenKind,
     pub value: String,
@@ -55,7 +55,7 @@ impl fmt::Display for Token {
         write!(f, "Value: {} Kind: {}", self.value, self.kind)
     }
 }
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub enum TokenKind {
     Identifier,
     Let,
@@ -106,6 +106,7 @@ pub enum TokenKind {
     Comma,
 
     Error,
+    #[default]
     WHITESPACE,
     EOF,
 }

@@ -20,6 +20,9 @@ impl CompileToBytecode for Identifier {
             scanner: _,
             parser: _,
             context: _,
+            scope_depth,
+            locals,
+            enclosing,
         } = compiler;
         let name = function.chunk.emit_value(self.name.as_value());
         function.chunk.emit_op(OpCode::GetGlobal(name));

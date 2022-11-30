@@ -15,8 +15,13 @@ pub enum Literal {
 }
 
 impl Literal {
+    pub fn test() {}
     pub fn as_node(self) -> Node {
-        Node::Literal(self)
+        {
+            let a = "";
+            a;
+        }
+        return Node::Literal(self);
     }
     pub fn as_number(self) -> f64 {
         match self {
@@ -33,6 +38,9 @@ impl CompileToBytecode for Literal {
             scanner: _,
             parser: _,
             context: _,
+            scope_depth,
+            locals,
+            enclosing,
         } = compiler;
         let pos = match self {
             Literal::Number(number) => function.chunk.emit_value(Value::Number(number)),
