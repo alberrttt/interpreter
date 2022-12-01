@@ -4,6 +4,7 @@ use self::{block::Block, variable_assignment::VariableAssignment};
 
 use super::{
     declaration::Declaration,
+    identifier::Identifier,
     literal::Literal,
     node::{AsNode, Node},
     BinaryOperation, CompileToBytecode,
@@ -26,13 +27,14 @@ impl AsExpr for BinaryExpr {
 }
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
-    Grouping(Box<Node>),
+    Grouping(Box<Expression>),
     Binary(BinaryExpr),
     Literal(Literal),
     VariableAssignment(VariableAssignment),
     Not(Box<Expression>),
     Negate(Box<Expression>),
     Block(Block),
+    Identifier(Identifier),
 }
 impl AsNode for Expression {
     fn as_node(self) -> Node {
@@ -63,6 +65,7 @@ impl CompileToBytecode for Expression {
                 compiler.function.chunk.emit_op(OpCode::Negate);
             }
             Expression::Block(block) => block.to_bytecode(compiler),
+            Expression::Identifier(identifier) => identifier.to_bytecode(compiler),
             super::Expression::Binary(binary) => {
                 let BinaryExpr { lhs, rhs, op } = binary;
                 lhs.to_bytecode(compiler);

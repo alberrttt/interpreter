@@ -22,13 +22,13 @@ impl<'a> Diaganostics<'a> {
             msg
         )
     }
-    pub fn log_wall(&mut self, title: &str, msg: String) {
+    pub fn log_wall(&mut self, title: &str, msg: &[String]) {
         println!(
             "[ {} ] - {title}\n\t{}",
             "rottenmangos".bold().black(),
             format!("{}", self.file_path().bold()).yellow()
         );
-        msg.split('\n').for_each(|line| {
+        msg.iter().for_each(|line| {
             println!("\t\t{}", line);
         });
     }

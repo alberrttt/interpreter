@@ -1,11 +1,9 @@
-use crate::{
-    frontend::compiler::Compiler,
-};
+use crate::frontend::{compiler::Compiler, scanner::Position};
 
 use super::{
-    declaration::{Declaration},
+    declaration::Declaration,
     expression::{AsExpr, Expression},
-    identifier::{Identifier},
+    identifier::Identifier,
     literal::Literal,
     statement::Statement,
     CompileToBytecode,
@@ -44,7 +42,7 @@ impl AsExpr for Node {
             Node::Literal(literal) => Expression::Literal(literal),
             Node::Declaration(_) => panic!(),
             Node::Statement(_) => panic!(),
-            Node::Identifier(_) => todo!(),
+            Node::Identifier(identifier) => Expression::Identifier(identifier),
             Node::None => panic!(),
         }
     }
@@ -60,9 +58,9 @@ impl CompileToBytecode for Node {
             scanner: _,
             parser: _,
             context: _,
-            scope_depth,
-            locals,
-            enclosing,
+            scope_depth: _,
+            enclosing: _,
+            locals: _,
         } = compiler;
         match self {
             Node::Expression(expr) => expr.to_bytecode(compiler),
@@ -73,4 +71,8 @@ impl CompileToBytecode for Node {
             _ => unimplemented!(),
         }
     }
+}
+
+pub trait AstPosition {
+    fn position(&self) -> &Position;
 }

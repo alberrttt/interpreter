@@ -1,4 +1,4 @@
-use std::mem::transmute;
+use std::{mem::transmute, ops::Range};
 
 use colored::Colorize;
 
@@ -15,7 +15,7 @@ use super::{
         BinaryOperation,
     },
     file::FileNode,
-    scanner::{Token, TokenKind},
+    scanner::{Scanner, Token, TokenKind},
     Precedence,
 };
 
@@ -24,6 +24,9 @@ pub struct Parser<'a> {
     pub tokens: Vec<Token>,
     pub index: usize,
     pub context: Option<&'a mut Context<'a>>,
+    pub had_error: bool,
+    pub scanner: Option<Box<Scanner>>,
+    pub panic_mode: bool,
 }
 pub struct Rule<'a> {
     pub precedence: Precedence,
@@ -108,8 +111,8 @@ impl<'a> Parser<'a> {
             panic!(
                 "expected expression {}:{}:{}, got {}",
                 path,
-                previous.line + 1,
-                previous.line_start,
+                previous.position.line.start + 1,
+                previous.position.start.start,
                 previous.kind
             );
         }
@@ -239,11 +242,51 @@ impl Parser<'_> {
     }
 }
 impl<'a> Parser<'a> {
-    pub fn new(tokens: Vec<Token>, context: Option<&'a mut Context<'a>>) -> Parser<'a> {
+    pub fn error(&mut self, msg: &str) {
+        let previous = self.previous().to_owned();
+
+        self.error_at(&previous, msg);
+        self.had_error = true;
+    }
+    pub fn error_at(&mut self, token: &Token, msg: &str) {
+        if self.panic_mode {
+            return;
+        }
+        self.panic_mode = true;
+        println!("{} ->", "Compiler".yellow(),);
+        print!(
+            "    {}",
+            format!(
+                "[test.miso:{}:{}]: ",
+                token.line + 1,
+                token.position.start.start + 1
+            )
+            .blue(),
+        );
+        match token.kind {
+            TokenKind::EOF => {
+                print!("Error at EOF");
+            }
+
+            _ => {
+                let range: Range<usize> =
+                    (token.position.start.start as usize)..(token.position.start.end as usize);
+                print!(
+                    "Error at '{}'",
+                    self.scanner.as_ref().unwrap().source[range].to_string()
+                );
+            }
+        }
+        println!(", {}", msg.red());
+    }
+    pub fn new(scanner: Box<Scanner>, context: Option<&'a mut Context<'a>>) -> Parser<'a> {
         let parser = Parser {
-            tokens,
+            tokens: scanner.tokens.to_owned(),
             index: 0,
             context,
+            scanner: Some(scanner),
+            had_error: false,
+            panic_mode: false,
         };
 
         parser

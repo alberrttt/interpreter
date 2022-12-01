@@ -1,3 +1,5 @@
+use std::iter::Scan;
+
 use crate::{
     cli_context::Context,
     common::{function::Function, opcode::OpCode},
@@ -6,7 +8,7 @@ use crate::{
 use super::{
     ast::CompileToBytecode,
     parser::Parser,
-    scanner::{Scanner, Token, TokenKind},
+    scanner::{Position, Scanner, Token, TokenKind},
 };
 
 #[derive(Debug)]
@@ -48,14 +50,16 @@ const LOCAL: Local = Local {
         value: String::new(),
         line: 9999,
         length: 9999,
-        start: 9999,
-        line_start: 9999,
+        position: Position {
+            start: 9999..9999,
+            line: 9999..9999,
+        },
     },
     depth: 0,
 };
 impl<'a> Compiler<'a> {
     pub fn new(context: &'a mut Context<'a>) -> Compiler<'a> {
-        let parser = Parser::new(vec![], None);
+        let parser = Parser::new(Box::new(Scanner::new("".to_string())), None);
         Compiler {
             function: Function::new(),
             scanner: Scanner::new(String::from("")),
@@ -67,14 +71,10 @@ impl<'a> Compiler<'a> {
         }
     }
     pub fn compile(mut self, source: String) -> Function {
-        let scanner = Scanner::new(source);
-        self.scanner = scanner;
+        let mut scanner = Box::new(Scanner::new(source));
 
-        self.scanner.scan_thru();
-        let parser = Parser::new(
-            self.scanner.tokens.clone(),
-            Some(self.context.take().unwrap()),
-        );
+        scanner.scan_thru();
+        let parser = Parser::new(scanner, Some(self.context.take().unwrap()));
         self.parser = parser;
 
         let parsed = self.parser.parse_file();

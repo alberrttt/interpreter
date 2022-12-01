@@ -1,6 +1,6 @@
-use std::{char, default, fmt};
+use std::{char, default, fmt, ops::Range};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Scanner {
     pub source: String,
     pub start: usize,
@@ -16,8 +16,10 @@ macro_rules! token {
             value: $reason,
             line: $self.line,
             length: $self.current - $self.start,
-            start: $self.start,
-            line_start: $self.line_info.start,
+            position: Position {
+                line: $self.start..$self.start,
+                start: $self.line_info.start..$self.line_info.start,
+            },
         }
     }};
     ($self:ident, Identifier) => {{
@@ -26,8 +28,10 @@ macro_rules! token {
             value: $self.source[$self.start..$self.current].to_string(),
             line: $self.line,
             length: $self.current - $self.start,
-            start: $self.start,
-            line_start: $self.line_info.start,
+            position: Position {
+                line: $self.start..$self.start,
+                start: $self.line_info.start..$self.line_info.start,
+            },
         }
     }};
     ($self:ident, $kind:ident) => {{
@@ -36,8 +40,10 @@ macro_rules! token {
             value: $self.source[$self.start..$self.current].to_string(),
             line: $self.line,
             length: $self.current - $self.start,
-            start: $self.start,
-            line_start: $self.line_info.start,
+            position: Position {
+                line: $self.start..$self.start,
+                start: $self.line_info.start..$self.line_info.start,
+            },
         }
     }};
 }
@@ -47,8 +53,12 @@ pub struct Token {
     pub value: String,
     pub line: usize,
     pub length: usize,
-    pub start: usize,
-    pub line_start: u16,
+    pub position: Position,
+}
+#[derive(Clone, PartialEq, Debug, Default)]
+pub struct Position {
+    pub line: Range<usize>,
+    pub start: Range<u16>,
 }
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -116,7 +126,7 @@ impl fmt::Display for TokenKind {
         write!(f, "{:?}", self)
     }
 }
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub struct LineInfo {
     pub current: u16,
     pub start: u16,
@@ -307,8 +317,11 @@ impl Scanner {
             value: self.source[self.start + 1..self.current - 1].to_string(),
             line: self.line,
             length: self.current - self.start,
-            start: self.start,
-            line_start: self.line_info.start,
+            position: Position {
+                line: self.line..self.line,
+                start: (self.line_info.start + 1
+                    ..self.line_info.start + 1 + (self.current - self.start) as u16),
+            },
         }
     }
     fn number(&mut self) -> Token {
