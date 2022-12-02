@@ -16,7 +16,7 @@ impl CompileToBytecode for VariableAssignment {
         let name = compiler
             .function
             .chunk
-            .emit_value(self.name.name.as_value());
+            .emit_value(self.name.name.value.as_value());
         compiler.function.chunk.emit_op(OpCode::SetGlobal(name))
     }
 }

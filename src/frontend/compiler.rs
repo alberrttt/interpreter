@@ -70,6 +70,7 @@ impl<'a> Compiler<'a> {
             enclosing: None,
         }
     }
+ 
     pub fn compile(mut self, source: String) -> Function {
         let mut scanner = Box::new(Scanner::new(source));
 

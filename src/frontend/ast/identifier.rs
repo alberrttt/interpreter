@@ -1,6 +1,6 @@
 use crate::{
     common::{opcode::OpCode, value::AsValue},
-    frontend::compiler::Compiler,
+    frontend::{compiler::Compiler, scanner::Token},
 };
 
 use super::{
@@ -10,7 +10,7 @@ use super::{
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Identifier {
-    pub name: String,
+    pub name: Token,
 }
 
 impl CompileToBytecode for Identifier {
@@ -24,7 +24,7 @@ impl CompileToBytecode for Identifier {
             locals,
             enclosing,
         } = compiler;
-        let name = function.chunk.emit_value(self.name.as_value());
+        let name = function.chunk.emit_value(self.name.value.as_value());
         function.chunk.emit_op(OpCode::GetGlobal(name));
     }
 }

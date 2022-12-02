@@ -1,5 +1,9 @@
 use crate::frontend::{
-    ast::{declaration::Declaration, node::AsNode, CompileToBytecode},
+    ast::{
+        declaration::Declaration,
+        node::{AsNode, Node},
+        CompileToBytecode,
+    },
     compiler::Compiler,
 };
 
@@ -7,16 +11,25 @@ use super::AsExpr;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Block {
-    pub declarations: Vec<Declaration>,
+    pub declarations: Vec<Node>,
 }
 
 impl CompileToBytecode for Block {
     fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
-        todo!()
+        compiler.begin_scope();
+        for dec in self.declarations {
+            dec.to_bytecode(compiler)
+        }
+        compiler.end_scope();
     }
 }
 impl<'a> Compiler<'a> {
-    pub fn begin_scope(&mut self) {}
+    pub fn begin_scope(&mut self) {
+        self.scope_depth += 1;
+    }
+    pub fn end_scope(&mut self) {
+        self.scope_depth -= 1;
+    }
 }
 impl AsExpr for Block {
     fn as_expr(self) -> super::Expression {

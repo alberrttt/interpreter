@@ -7,7 +7,9 @@ use crate::cli_context::Context;
 use super::{
     ast::{
         declaration::variable_declaration::VariableDeclaration,
-        expression::{variable_assignment::VariableAssignment, AsExpr, BinaryExpr, Expression},
+        expression::{
+            block::Block, variable_assignment::VariableAssignment, AsExpr, BinaryExpr, Expression,
+        },
         identifier::Identifier,
         literal::Literal,
         node::{AsNode, Node},
@@ -15,7 +17,7 @@ use super::{
         BinaryOperation,
     },
     file::FileNode,
-    scanner::{Scanner, Token, TokenKind},
+    scanner::{Position, Scanner, Token, TokenKind},
     Precedence,
 };
 
@@ -27,6 +29,7 @@ pub struct Parser<'a> {
     pub had_error: bool,
     pub scanner: Option<Box<Scanner>>,
     pub panic_mode: bool,
+    pub scope_depth: usize,
 }
 pub struct Rule<'a> {
     pub precedence: Precedence,
@@ -37,18 +40,38 @@ pub struct Rule<'a> {
 impl<'a> Parser<'a> {
     pub fn get_rule(kind: TokenKind) -> Rule<'a> {
         match kind {
+            TokenKind::LeftBrace => Rule {
+                precedence: Precedence::None,
+                prefix: Some(|parser, can_assign| {
+                    parser.begin_scope();
+                    let mut block = Block {
+                        declarations: Vec::new(),
+                    };
+                    loop {
+                        if !parser.check(TokenKind::RightBrace) && !parser.check(TokenKind::EOF) {
+                            block.declarations.push(parser.node())
+                        } else {
+                            break;
+                        }
+                    }
+                    parser.consume(TokenKind::RightBrace, "Expected '}' after block to close");
+                    parser.end_scope();
+                    return block.as_node();
+                }),
+                infix: None,
+            },
             TokenKind::Identifier => Rule {
                 precedence: Precedence::None,
                 prefix: Some(|parser, can_assign| {
-                    let name = parser.previous().value.to_string();
+                    let token = parser.previous().clone();
                     if can_assign && parser.match_token(TokenKind::Equal) {
                         return Expression::VariableAssignment(VariableAssignment {
-                            name: Identifier { name },
+                            name: Identifier { name: token },
                             initializer: Box::new(parser.expression().as_expr()),
                         })
                         .as_node();
                     }
-                    Identifier { name }.as_node()
+                    Identifier { name: token }.as_node()
                 }),
                 infix: None,
             },
@@ -170,7 +193,7 @@ impl<'a> Parser<'a> {
     pub fn token_as_identifier(&mut self) -> Identifier {
         self.advance();
         Identifier {
-            name: self.previous().value.to_string(),
+            name: self.previous().clone(),
         }
     }
     pub fn statement(&mut self) -> Node {
@@ -205,7 +228,7 @@ impl<'a> Parser<'a> {
                 VariableDeclaration {
                     intializer: initializer,
                     identifier,
-                    is_global: true,
+                    is_global: if self.scope_depth > 0 { false } else { true },
                 }
                 .as_node()
             }
@@ -241,7 +264,23 @@ impl Parser<'_> {
         Literal::Number(self.previous().value.parse::<f64>().unwrap()).as_node()
     }
 }
+const EOF: &Token = &Token {
+    kind: TokenKind::EOF,
+    value: String::new(),
+    line: 0,
+    length: 0,
+    position: Position {
+        line: 0..0,
+        start: 0..0,
+    },
+};
 impl<'a> Parser<'a> {
+    pub fn begin_scope(&mut self) {
+        self.scope_depth += 1;
+    }
+    pub fn end_scope(&mut self) {
+        self.scope_depth -= 1;
+    }
     pub fn error(&mut self, msg: &str) {
         let previous = self.previous().to_owned();
 
@@ -283,10 +322,12 @@ impl<'a> Parser<'a> {
         let parser = Parser {
             tokens: scanner.tokens.to_owned(),
             index: 0,
+
             context,
             scanner: Some(scanner),
             had_error: false,
             panic_mode: false,
+            scope_depth: 0,
         };
 
         parser
@@ -305,7 +346,11 @@ impl<'a> Parser<'a> {
         &self.tokens[self.index - 1]
     }
     pub fn current(&mut self) -> &Token {
-        &self.tokens[self.index]
+        if self.index > self.tokens.len() - 1 {
+            return EOF;
+        } else {
+            &self.tokens[self.index]
+        }
     }
 
     pub fn advance(&mut self) -> &Token {

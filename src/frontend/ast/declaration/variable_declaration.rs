@@ -22,15 +22,14 @@ pub struct VariableDeclaration {
 }
 impl CompileToBytecode for VariableDeclaration {
     fn to_bytecode(self, compiler: &mut Compiler) -> () {
-        assert!(self.is_global);
+        self.intializer.to_bytecode(compiler);
         if !self.is_global {
             return;
         }
-        self.intializer.to_bytecode(compiler);
         let function = &mut compiler.function;
         let name = function
             .chunk
-            .emit_value(self.identifier.name.as_value().clone());
+            .emit_value(self.identifier.name.value.as_value().clone());
         function.chunk.emit_op(OpCode::DefineGlobal(name))
     }
 }

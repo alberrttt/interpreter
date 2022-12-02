@@ -18,7 +18,7 @@ pub fn dissasemble_chunk(chunk: &Chunk) {
             | OpCode::GetGlobal(pos) => {
                 let constant = &chunk.constants[*pos as usize];
 
-                println!("{} {}", instruction.to_string(), constant)
+                println!("{} <{}>", instruction.to_string(), constant)
             }
             _ => println!("{}", instruction.to_string()),
         }
