@@ -43,7 +43,7 @@ impl<'a> Parser<'a> {
         match kind {
             TokenKind::LeftBrace => Rule {
                 precedence: Precedence::None,
-                prefix: Some(|parser, can_assign| {
+                prefix: Some(|parser, _can_assign| {
                     parser.begin_scope();
                     let mut block = Block {
                         declarations: Vec::new(),
@@ -95,7 +95,7 @@ impl<'a> Parser<'a> {
             },
             TokenKind::Dash => Rule {
                 infix: Some(Self::binary),
-                prefix: Some(|parser, can_assign| {
+                prefix: Some(|parser, _can_assign| {
                     Expression::Negate(Box::new(parser.precedence(Precedence::Unary).as_expr()))
                         .as_node()
                 }),

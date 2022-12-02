@@ -6,7 +6,6 @@ use crate::{
         opcode::OpCode,
         value::{AsValue, Value},
     },
-    frontend::compiler::Local,
 };
 
 pub mod ops;

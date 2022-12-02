@@ -3,7 +3,6 @@ use crate::{common::opcode::OpCode, frontend::compiler::Compiler};
 use self::{block::Block, variable_assignment::VariableAssignment};
 
 use super::{
-    declaration::Declaration,
     identifier::Identifier,
     literal::Literal,
     node::{AsNode, Node},

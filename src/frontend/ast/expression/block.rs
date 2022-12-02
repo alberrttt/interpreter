@@ -2,7 +2,6 @@ use crate::{
     common::opcode::OpCode,
     frontend::{
         ast::{
-            declaration::Declaration,
             node::{AsNode, Node},
             CompileToBytecode,
         },
