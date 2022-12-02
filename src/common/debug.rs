@@ -15,7 +15,10 @@ pub fn dissasemble_chunk(chunk: &Chunk) {
             OpCode::DefineGlobal(pos)
             | OpCode::Constant(pos)
             | OpCode::SetGlobal(pos)
-            | OpCode::GetGlobal(pos) => {
+            | OpCode::GetGlobal(pos)
+            | OpCode::DefineLocal(pos)
+            | OpCode::GetLocal(pos)
+            | OpCode::SetLocal(pos) => {
                 let constant = &chunk.constants[*pos as usize];
 
                 println!("{} <{}>", instruction.to_string(), constant)

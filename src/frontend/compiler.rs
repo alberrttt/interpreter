@@ -29,12 +29,13 @@ pub struct Compiler<'a> {
     pub context: Option<&'a mut Context<'a>>,
     pub scope_depth: u8,
     pub locals: [Local; 512],
+    pub local_count: usize,
     pub enclosing: Option<Enclosing<'a>>,
 }
 #[derive(Debug, Default, Clone)]
 pub struct Local {
-    name: Token,
-    depth: u8,
+    pub name: Token,
+    pub depth: u8,
 }
 impl Local {
     pub fn new() -> Local {
@@ -66,11 +67,12 @@ impl<'a> Compiler<'a> {
             parser,
             context: Some(context),
             locals: [LOCAL; 512],
+            local_count: 0,
             scope_depth: 0,
             enclosing: None,
         }
     }
- 
+
     pub fn compile(mut self, source: String) -> Function {
         let mut scanner = Box::new(Scanner::new(source));
 

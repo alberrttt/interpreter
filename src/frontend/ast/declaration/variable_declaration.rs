@@ -1,5 +1,8 @@
 use crate::{
-    common::{opcode::OpCode, value::AsValue},
+    common::{
+        opcode::OpCode,
+        value::{AsValue, Value},
+    },
     frontend::{
         ast::{
             expression::Expression,
@@ -8,6 +11,7 @@ use crate::{
             CompileToBytecode,
         },
         compiler::Compiler,
+        scanner::Token,
     },
 };
 
@@ -24,6 +28,11 @@ impl CompileToBytecode for VariableDeclaration {
     fn to_bytecode(self, compiler: &mut Compiler) -> () {
         self.intializer.to_bytecode(compiler);
         if !self.is_global {
+            let OpCode::Constant(index) = compiler.function.chunk.code.pop().unwrap() else {
+                panic!()
+            };
+            compiler.function.chunk.emit_op(OpCode::DefineLocal(index));
+            compiler.add_local(self.identifier.name);
             return;
         }
         let function = &mut compiler.function;
@@ -33,7 +42,15 @@ impl CompileToBytecode for VariableDeclaration {
         function.chunk.emit_op(OpCode::DefineGlobal(name))
     }
 }
+impl<'a> Compiler<'a> {
+    pub fn add_local(&mut self, name: Token) {
+        let local = &mut self.locals[self.local_count];
+        self.local_count += 1;
 
+        local.name = name;
+        local.depth = self.scope_depth;
+    }
+}
 impl AsDeclaration for VariableDeclaration {
     fn as_declaration(self) -> super::Declaration {
         super::Declaration::VariableDeclaration(self)

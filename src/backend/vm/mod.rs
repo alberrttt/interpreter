@@ -1,9 +1,12 @@
 use std::collections::HashMap;
 
-use crate::common::{
-    chunk::Chunk,
-    opcode::OpCode,
-    value::{AsValue, Value},
+use crate::{
+    common::{
+        chunk::Chunk,
+        opcode::OpCode,
+        value::{AsValue, Value},
+    },
+    frontend::compiler::Local,
 };
 
 pub mod ops;
@@ -26,6 +29,7 @@ impl VM {
             let instruction = &chunk.code[ip];
             ip += 1;
             match instruction {
+                OpCode::Nop => {}
                 OpCode::Not => {
                     let pop = self.stack.pop().unwrap();
                     if let Value::Boolean(bool) = pop {
@@ -44,8 +48,15 @@ impl VM {
                 }
                 OpCode::True => self.stack.push(true.as_value()),
                 OpCode::False => self.stack.push(false.as_value()),
-                OpCode::Constant(index) => {
-                    self.stack.push(chunk.constants[*index as usize].clone())
+                OpCode::Constant(location) => {
+                    self.stack.push(chunk.constants[*location as usize].clone())
+                }
+                OpCode::GetLocal(index) => self.stack.push(self.stack[*index as usize].clone()),
+                OpCode::SetLocal(index) => {
+                    self.stack[*index as usize] = self.stack.last().unwrap().clone();
+                }
+                OpCode::DefineLocal(location) => {
+                    self.stack.push(chunk.constants[*location as usize].clone())
                 }
                 OpCode::GetGlobal(name) => {
                     let name = chunk.constants[*name as usize].as_string();

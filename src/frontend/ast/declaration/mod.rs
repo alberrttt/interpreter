@@ -12,15 +12,7 @@ pub enum Declaration {
 
 impl CompileToBytecode for Declaration {
     fn to_bytecode(self, compiler: &mut Compiler) -> () {
-        let Compiler {
-            function: _,
-            scanner: _,
-            parser: _,
-            context: _,
-            scope_depth,
-            locals,
-            enclosing,
-        } = compiler;
+        let function = &mut compiler.function;
         match self {
             Declaration::VariableDeclaration(declaration) => declaration.to_bytecode(compiler),
         }

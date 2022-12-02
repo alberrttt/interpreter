@@ -1,10 +1,16 @@
 use strum::Display;
+
+pub type ConstantLocation = u16;
 #[derive(Debug, Display)]
 pub enum OpCode {
-    Constant(u16),
+    Constant(ConstantLocation),
     // use string interning ? maybe
     // u16 is the location in the constant pool
-    DefineGlobal(u16),
+    GetLocal(u16),
+    DefineLocal(ConstantLocation),
+    SetLocal(u16),
+
+    DefineGlobal(ConstantLocation),
     GetGlobal(u16),
     SetGlobal(u16),
     AssertEq,
@@ -19,4 +25,5 @@ pub enum OpCode {
     Div,
     Mul,
     Return,
+    Nop,
 }

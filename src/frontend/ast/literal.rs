@@ -33,15 +33,7 @@ impl Literal {
 
 impl CompileToBytecode for Literal {
     fn to_bytecode(self, compiler: &mut Compiler) -> () {
-        let Compiler {
-            function,
-            scanner: _,
-            parser: _,
-            context: _,
-            scope_depth,
-            locals,
-            enclosing,
-        } = compiler;
+        let function = &mut compiler.function;
         let pos = match self {
             Literal::Number(number) => function.chunk.emit_value(Value::Number(number)),
             Literal::String(string) => function.chunk.emit_value(string.to_string().as_value()),

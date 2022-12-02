@@ -1,10 +1,13 @@
-use crate::frontend::{
-    ast::{
-        declaration::Declaration,
-        node::{AsNode, Node},
-        CompileToBytecode,
+use crate::{
+    common::opcode::OpCode,
+    frontend::{
+        ast::{
+            declaration::Declaration,
+            node::{AsNode, Node},
+            CompileToBytecode,
+        },
+        compiler::Compiler,
     },
-    compiler::Compiler,
 };
 
 use super::AsExpr;
@@ -29,6 +32,10 @@ impl<'a> Compiler<'a> {
     }
     pub fn end_scope(&mut self) {
         self.scope_depth -= 1;
+        while self.local_count > 0 && self.locals[self.local_count - 1].depth > self.scope_depth {
+            self.function.chunk.emit_op(OpCode::Pop);
+            self.local_count -= 1;
+        }
     }
 }
 impl AsExpr for Block {

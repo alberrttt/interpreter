@@ -1,3 +1,4 @@
+/// the parser will make an ast
 use std::{mem::transmute, ops::Range};
 
 use colored::Colorize;
@@ -64,10 +65,12 @@ impl<'a> Parser<'a> {
                 precedence: Precedence::None,
                 prefix: Some(|parser, can_assign| {
                     let token = parser.previous().clone();
+                    let global = if parser.scope_depth > 0 { true } else { false };
                     if can_assign && parser.match_token(TokenKind::Equal) {
                         return Expression::VariableAssignment(VariableAssignment {
                             name: Identifier { name: token },
                             initializer: Box::new(parser.expression().as_expr()),
+                            global
                         })
                         .as_node();
                     }
