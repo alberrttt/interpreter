@@ -1,7 +1,10 @@
 use strum::Display;
 
 pub type ConstantLocation = u16;
-#[derive(Debug, Display)]
+
+pub type SlotIndex = u8;
+
+#[derive(Debug, Display, Clone)]
 pub enum OpCode {
     Constant(ConstantLocation),
     // use string interning ? maybe
@@ -11,11 +14,14 @@ pub enum OpCode {
     SetLocal(u16),
 
     DefineGlobal(ConstantLocation),
-    GetGlobal(u16),
-    SetGlobal(u16),
+    GetGlobal(ConstantLocation),
+    SetGlobal(ConstantLocation),
+    TakeTempSlot(SlotIndex),
+    SetTempSlot(SlotIndex),
     AssertEq,
     True,
     False,
+    Void,
     Not,
     Negate,
     Pop,

@@ -17,8 +17,9 @@ macro_rules! token {
             line: $self.line,
             length: $self.current - $self.start,
             position: Position {
-                line: $self.start..$self.start,
-                start: $self.line_info.start..$self.line_info.start,
+                line: $self.line,
+                start_in_line: $self.line_info.start,
+                start_in_source: ($self.start as u16),
             },
         }
     }};
@@ -29,8 +30,9 @@ macro_rules! token {
             line: $self.line,
             length: $self.current - $self.start,
             position: Position {
-                line: $self.start..$self.start,
-                start: $self.line_info.start..$self.line_info.start,
+                line: $self.line,
+                start_in_line: $self.line_info.start,
+                start_in_source: ($self.start as u16),
             },
         }
     }};
@@ -41,8 +43,9 @@ macro_rules! token {
             line: $self.line,
             length: $self.current - $self.start,
             position: Position {
-                line: $self.start..$self.start,
-                start: $self.line_info.start..$self.line_info.start,
+                line: $self.line,
+                start_in_line: $self.line_info.start,
+                start_in_source: ($self.start as u16),
             },
         }
     }};
@@ -57,8 +60,9 @@ pub struct Token {
 }
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct Position {
-    pub line: Range<usize>,
-    pub start: Range<u16>,
+    pub line: usize,
+    pub start_in_line: u16,
+    pub start_in_source: u16,
 }
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -256,7 +260,7 @@ impl Scanner {
             return self.source.as_bytes()[self.current + 1] as char;
         }
     }
-    fn at_end(&self) -> bool {
+    pub fn at_end(&self) -> bool {
         self.current >= self.source.len()
     }
     fn remaining(&self) -> usize {
@@ -318,9 +322,9 @@ impl Scanner {
             line: self.line,
             length: self.current - self.start,
             position: Position {
-                line: self.line..self.line,
-                start: (self.line_info.start + 1
-                    ..self.line_info.start + 1 + (self.current - self.start) as u16),
+                line: self.line,
+                start_in_line: self.line_info.start,
+                start_in_source: self.start as u16,
             },
         }
     }

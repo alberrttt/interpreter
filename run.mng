@@ -1,4 +1,7 @@
-{
-    let a = 1;
-    print a;
+let abc = {
+    let local = 48;
+    print local;
+    return 348;
 };
+print abc;
+

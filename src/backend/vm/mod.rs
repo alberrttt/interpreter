@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 
-use crate::{
-    common::{
-        chunk::Chunk,
-        opcode::OpCode,
-        value::{AsValue, Value},
-    },
+use crate::common::{
+    chunk::Chunk,
+    opcode::OpCode,
+    value::{AsValue, NoneValue, Value},
 };
 
 pub mod ops;
@@ -24,6 +22,16 @@ impl VM {
     }
     pub fn run(&mut self, chunk: Chunk) {
         let mut ip: usize = 0;
+        let mut misc_slots: [Value; 8] = [
+            Value::None,
+            Value::None,
+            Value::None,
+            Value::None,
+            Value::None,
+            Value::None,
+            Value::None,
+            Value::None,
+        ];
         loop {
             let instruction = &chunk.code[ip];
             ip += 1;
@@ -72,6 +80,7 @@ impl VM {
                     let value = self.stack.pop().unwrap();
                     self.globals.insert(name, value);
                 }
+                OpCode::Void => self.stack.push(Value::Void),
                 OpCode::Add => {
                     let rhs = self.stack.pop().unwrap();
                     let lhs = self.stack.pop().unwrap();
@@ -152,6 +161,13 @@ impl VM {
                 }
                 OpCode::Return => {
                     break;
+                }
+                OpCode::TakeTempSlot(slot) => {
+                    let slot = std::mem::replace(&mut misc_slots[*slot as usize], Value::None);
+                    self.stack.push(slot)
+                }
+                OpCode::SetTempSlot(slot) => {
+                    misc_slots[*slot as usize] = self.stack.pop().unwrap();
                 }
             }
         }

@@ -2,6 +2,8 @@ use std::{path::Path, ptr::null};
 
 use colored::Colorize;
 
+use crate::frontend::{compiler::Compiler, scanner::Position};
+
 #[derive(Debug)]
 pub struct Diaganostics<'a> {
     pub context: *const Context<'a>,
@@ -14,11 +16,15 @@ impl<'a> Diaganostics<'a> {
     pub fn file_path(&mut self) -> &str {
         self.context().file_path.to_str().unwrap()
     }
-    pub fn log_line(&mut self, title: &str, msg: String) {
-        println!(
+    pub fn log(&mut self, position: Option<&Position>, title: &str, msg: String) {
+        let mut location: String = String::new();
+        if let Some(position) = position {
+            location = format!("{}:{}", position.line + 1, position.start_in_line + 1);
+        }
+        print!(
             "[ {} ] - {title} \n\t{} - {}",
             "rottenmangos".bold(),
-            format!("{}", self.file_path()).bold().yellow(),
+            format!("{}:{location}", self.file_path()).bold().yellow(),
             msg
         )
     }

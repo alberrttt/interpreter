@@ -14,23 +14,32 @@ use super::{
         identifier::Identifier,
         literal::Literal,
         node::{AsNode, Node},
-        statement::Statement,
+        statement::{return_stmt::ReturnStmt, Statement},
         BinaryOperation,
     },
+    compiler::{Compiler, FunctionType},
     file::FileNode,
     scanner::{Position, Scanner, Token, TokenKind},
     Precedence,
 };
 
 #[derive(Debug)]
+pub struct CompilerRef<'a>(pub *const Compiler<'a>);
+impl<'a> CompilerRef<'a> {
+    pub fn as_ref(&self) -> &Compiler<'a> {
+        unsafe { &*self.0 }
+    }
+}
+#[derive(Debug)]
 pub struct Parser<'a> {
     pub tokens: Vec<Token>,
     pub index: usize,
     pub context: Option<&'a mut Context<'a>>,
     pub had_error: bool,
-    pub scanner: Option<Box<Scanner>>,
+    pub scanner: Box<Scanner>,
     pub panic_mode: bool,
     pub scope_depth: usize,
+    pub compiler: CompilerRef<'a>,
 }
 pub struct Rule<'a> {
     pub precedence: Precedence,
@@ -69,8 +78,8 @@ impl<'a> Parser<'a> {
                     if can_assign && parser.match_token(TokenKind::Equal) {
                         return Expression::VariableAssignment(VariableAssignment {
                             name: Identifier { name: token },
-                            initializer: Box::new(parser.expression().as_expr()),
-                            global
+                            initializer: Box::new(parser.expression().unwrap().as_expr()),
+                            global,
                         })
                         .as_node();
                     }
@@ -96,8 +105,10 @@ impl<'a> Parser<'a> {
             TokenKind::Dash => Rule {
                 infix: Some(Self::binary),
                 prefix: Some(|parser, _can_assign| {
-                    Expression::Negate(Box::new(parser.precedence(Precedence::Unary).as_expr()))
-                        .as_node()
+                    Expression::Negate(Box::new(
+                        parser.precedence(Precedence::Unary).unwrap().as_expr(),
+                    ))
+                    .as_node()
                 }),
                 precedence: Precedence::Term,
             },
@@ -123,7 +134,7 @@ impl<'a> Parser<'a> {
     pub fn at_end(&mut self) -> bool {
         self.index + 1 >= self.tokens.len()
     }
-    pub fn precedence(&mut self, prec: Precedence) -> Node {
+    pub fn precedence(&mut self, prec: Precedence) -> Result<Node, &str> {
         self.advance();
         let path = self.context.as_ref().unwrap().file_path.to_str().unwrap();
         let previous = self.previous();
@@ -134,30 +145,25 @@ impl<'a> Parser<'a> {
         if rule.prefix.is_some() {
             expression = rule.prefix.unwrap()(self, can_assign);
         } else {
-            panic!(
-                "expected expression {}:{}:{}, got {}",
-                path,
-                previous.position.line.start + 1,
-                previous.position.start.start,
-                previous.kind
-            );
+            self.backwards();
+            return Err("no expr");
         }
 
         loop {
             if self.at_end() {
-                break expression;
+                break Ok(expression);
             }
             let current = self.current();
             let current_rule = Self::get_rule(current.kind);
-            if current_rule.precedence == Precedence::Unimpl && cfg!(debug_assertions) {
-                println!(
-                    "{} {}",
-                    format!("Unimplemented rule:").bold().on_red().yellow(),
-                    current.kind
-                );
-            }
+            // if current_rule.precedence == Precedence::Unimpl && cfg!(debug_assertions) {
+            //     println!(
+            //         "{} {}",
+            //         format!("Unimplemented rule:").bold().on_red().yellow(),
+            //         current.kind
+            //     );
+            // }
             if prec >= current_rule.precedence {
-                break expression;
+                break Ok(expression);
             }
 
             self.advance();
@@ -171,7 +177,7 @@ impl<'a> Parser<'a> {
             }
         }
     }
-    pub fn expression(&mut self) -> Node {
+    pub fn expression(&mut self) -> Result<Node, &str> {
         self.precedence(Precedence::None)
     }
     pub fn parse_file(&mut self) -> FileNode<'a> {
@@ -186,10 +192,14 @@ impl<'a> Parser<'a> {
     }
 
     pub fn node(&mut self) -> Node {
-        self.statement()
+        let node = self.statement();
+        if self.panic_mode {
+            self.synchronize();
+        }
+        node
     }
     pub fn expression_statement(&mut self) -> Node {
-        let expr = self.expression().as_expr();
+        let expr = self.expression().unwrap().as_expr();
         self.consume(TokenKind::SemiColon, "Expected ';' after expression");
         Statement::Expression(expr).as_node()
     }
@@ -203,16 +213,16 @@ impl<'a> Parser<'a> {
         match self.current().kind {
             TokenKind::Print => {
                 self.advance();
-                let node = Statement::Print(Box::new(self.expression())).as_node();
-                self.consume(TokenKind::SemiColon, "");
+                let node = Statement::Print(Box::new(self.expression().unwrap())).as_node();
+                self.consume(TokenKind::SemiColon, "Expected ';' ");
                 node
             }
             TokenKind::AssertEq => {
                 self.advance();
-                let lhs = self.expression().as_expr();
-                self.consume(TokenKind::Comma, "Expected comma to seperate lhs and rhs");
-                let rhs = self.expression().as_expr();
-                self.consume(TokenKind::SemiColon, "");
+                let lhs = self.expression().unwrap().as_expr();
+                self.consume(TokenKind::Comma, "Expected ','' to seperate lhs and rhs");
+                let rhs = self.expression().unwrap().as_expr();
+                self.consume(TokenKind::SemiColon, "Expected ';'");
 
                 let node = Statement::AssertEq(lhs, rhs);
                 node.as_node()
@@ -222,7 +232,7 @@ impl<'a> Parser<'a> {
                 let identifier = self.token_as_identifier();
 
                 self.consume(TokenKind::Equal, "Expected '=' after variable name");
-                let initializer = self.expression().as_expr();
+                let initializer = self.expression().unwrap().as_expr();
                 self.consume(
                     TokenKind::SemiColon,
                     "Expected ';' after variable declaration",
@@ -234,6 +244,26 @@ impl<'a> Parser<'a> {
                     is_global: if self.scope_depth > 0 { false } else { true },
                 }
                 .as_node()
+            }
+            TokenKind::Return => {
+                self.advance();
+                if self.scope_depth == 0
+                    && self
+                        .compiler
+                        .as_ref()
+                        .function_type
+                        .eq(&FunctionType::Script)
+                {
+                    self.error("Cannot return from the top level of a script")
+                }
+                if let Ok(expr) = self.expression() {
+                    let expr = expr.as_expr();
+                    self.consume(TokenKind::SemiColon, "Expected ';' after expression");
+                    return Statement::Return(ReturnStmt { expr: Some(expr) }).as_node();
+                } else {
+                    self.consume(TokenKind::SemiColon, "Expected ';' after return statement");
+                    return Statement::Return(ReturnStmt { expr: None }).as_node();
+                }
             }
             _ => self.expression_statement(),
         }
@@ -254,7 +284,7 @@ impl Parser<'_> {
         };
         // the precedence is +1 so it'll compile it as the rhs
         let prec: Precedence = unsafe { transmute((rule.precedence as u8) + 1) };
-        let rhs = self.precedence(prec);
+        let rhs = self.precedence(prec).unwrap();
 
         Expression::Binary(BinaryExpr {
             lhs: Box::new(lhs),
@@ -273,8 +303,9 @@ const EOF: &Token = &Token {
     line: 0,
     length: 0,
     position: Position {
-        line: 0..0,
-        start: 0..0,
+        line: 0,
+        start_in_source: 0,
+        start_in_line: 0,
     },
 };
 impl<'a> Parser<'a> {
@@ -285,55 +316,76 @@ impl<'a> Parser<'a> {
         self.scope_depth -= 1;
     }
     pub fn error(&mut self, msg: &str) {
-        let previous = self.previous().to_owned();
-
-        self.error_at(&previous, msg);
         self.had_error = true;
+
+        let previous = self.previous().to_owned();
+        self.error_at(&previous, msg);
+    }
+    pub fn error_at_current(&mut self, msg: &str) {
+        self.had_error = true;
+        let current = self.current().to_owned();
+        self.error_at(&current, msg)
+    }
+    pub fn synchronize(&mut self) {
+        self.panic_mode = false;
+        loop {
+            if self.current().kind.eq(&TokenKind::EOF) {
+                return;
+            }
+            if self.previous().kind.eq(&TokenKind::SemiColon) {
+                return;
+            };
+            println!("{}", self.current().kind);
+            match self.current().kind {
+                TokenKind::Return | TokenKind::Print | TokenKind::Func | TokenKind::Let => {
+                    return;
+                }
+                _ => {}
+            }
+
+            self.advance();
+        }
     }
     pub fn error_at(&mut self, token: &Token, msg: &str) {
-        if self.panic_mode {
-            return;
-        }
         self.panic_mode = true;
-        println!("{} ->", "Compiler".yellow(),);
-        print!(
-            "    {}",
-            format!(
-                "[test.miso:{}:{}]: ",
-                token.line + 1,
-                token.position.start.start + 1
-            )
-            .blue(),
-        );
+        let diagnostics = &mut self.context.as_mut().unwrap().diagnostics;
+
         match token.kind {
             TokenKind::EOF => {
-                print!("Error at EOF");
+                diagnostics.log(
+                    Some(&token.position),
+                    "Compiler",
+                    format!("Error at EOF: ",),
+                );
             }
 
             _ => {
-                let range: Range<usize> =
-                    (token.position.start.start as usize)..(token.position.start.end as usize);
-                print!(
-                    "Error at '{}'",
-                    self.scanner.as_ref().unwrap().source[range].to_string()
+                let range: Range<usize> = (token.position.start_in_source as usize)
+                    ..(token.position.start_in_source as usize + token.length as usize);
+                diagnostics.log(
+                    Some(&token.position),
+                    "Compiler",
+                    format!("Error at `{}`: ", self.scanner.source[range].to_string()),
                 );
             }
         }
-        println!(", {}", msg.red());
+        println!("{}", msg.red());
     }
-    pub fn new(scanner: Box<Scanner>, context: Option<&'a mut Context<'a>>) -> Parser<'a> {
-        let parser = Parser {
+    pub fn new(
+        scanner: Box<Scanner>,
+        context: Option<&'a mut Context<'a>>,
+        compiler: *const Compiler<'a>,
+    ) -> Parser<'a> {
+        Parser {
             tokens: scanner.tokens.to_owned(),
             index: 0,
-
+            compiler: CompilerRef(compiler),
             context,
-            scanner: Some(scanner),
+            scanner: scanner,
             had_error: false,
             panic_mode: false,
             scope_depth: 0,
-        };
-
-        parser
+        }
     }
     pub fn match_token(&mut self, tk: TokenKind) -> bool {
         if !self.check(tk) {
@@ -357,16 +409,21 @@ impl<'a> Parser<'a> {
     }
 
     pub fn advance(&mut self) -> &Token {
+        if self.index == self.tokens.len() {
+            return EOF;
+        }
         self.index += 1;
         &self.tokens[self.index - 1]
     }
-    pub fn consume(&mut self, kind: TokenKind, err: &str) -> &Token {
+    pub fn backwards(&mut self) {
+        self.index -= 1;
+    }
+    pub fn consume(&mut self, kind: TokenKind, err: &str) {
         let advance = self.advance();
 
-        if advance.kind.eq(&kind) {
-            return advance;
-        } else {
-            panic!("{}", err)
+        if advance.kind.ne(&kind) {
+            self.error_at_current(err);
+            self.backwards();
         }
     }
 

@@ -1,4 +1,6 @@
 use crate::{common::opcode::OpCode, frontend::compiler::Compiler};
+pub mod return_stmt;
+use self::return_stmt::ReturnStmt;
 
 use super::{
     expression::{AsExpr, Expression},
@@ -10,6 +12,7 @@ pub enum Statement {
     Expression(Expression),
     Print(Box<Node>),
     AssertEq(Expression, Expression),
+    Return(ReturnStmt),
 }
 
 impl AsNode for Statement {
@@ -28,6 +31,7 @@ impl AsExpr for Statement {
 impl CompileToBytecode for Statement {
     fn to_bytecode(self, compiler: &mut Compiler) -> () {
         match self {
+            Statement::Return(return_stmt) => return_stmt.to_bytecode(compiler),
             Statement::Expression(expr) => {
                 expr.to_bytecode(compiler);
                 compiler.function.chunk.emit_op(OpCode::Pop)

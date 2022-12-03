@@ -35,6 +35,9 @@ impl<'a> Compiler<'a> {
             self.function.chunk.emit_op(OpCode::Pop);
             self.local_count -= 1;
         }
+        self.function
+            .chunk
+            .emit_many(std::mem::replace(&mut self.emit_after_block, Vec::new()))
     }
 }
 impl AsExpr for Block {

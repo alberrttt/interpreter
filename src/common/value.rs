@@ -7,7 +7,10 @@ pub enum Value {
     Number(f64),
     Boolean(bool),
     String(Ptr<String>),
+    Void,
+    None,
 }
+pub const NoneValue: Value = Value::None;
 impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -60,6 +63,9 @@ impl Display for Value {
             }
             Value::Boolean(bool) => {
                 write!(f, "{}", bool)
+            }
+            Value::None | Value::Void => {
+                panic!("cannot print a void or none");
             }
         }
     }
