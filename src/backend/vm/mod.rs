@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::common::{
     chunk::Chunk,
     opcode::OpCode,
-    value::{AsValue, NoneValue, Value},
+    value::{AsValue, Value},
 };
 
 pub mod ops;

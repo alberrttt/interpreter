@@ -2,7 +2,7 @@ use std::{path::Path, ptr::null};
 
 use colored::Colorize;
 
-use crate::frontend::{compiler::Compiler, scanner::Position};
+use crate::frontend::{scanner::Position};
 
 #[derive(Debug)]
 pub struct Diaganostics<'a> {

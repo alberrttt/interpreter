@@ -1,4 +1,4 @@
-use std::{char, fmt, ops::Range};
+use std::{char, fmt};
 
 #[derive(Debug, Clone, Default)]
 pub struct Scanner {

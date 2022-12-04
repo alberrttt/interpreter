@@ -75,7 +75,7 @@ impl<'a> Parser<'a> {
                 precedence: Precedence::None,
                 prefix: Some(|parser, can_assign| {
                     let token = parser.previous().clone();
-                    let global = if parser.scope_depth > 0 { false } else { true };
+                    let _global = if parser.scope_depth > 0 { false } else { true };
                     if can_assign && parser.match_token(TokenKind::Equal) {
                         return Expression::VariableAssignment(VariableAssignment {
                             name: Identifier { name: token },
@@ -136,7 +136,7 @@ impl<'a> Parser<'a> {
     }
     pub fn precedence(&mut self, prec: Precedence) -> Result<Node, String> {
         self.advance();
-        let path = self.context.as_ref().unwrap().file_path.to_str().unwrap();
+        let _path = self.context.as_ref().unwrap().file_path.to_str().unwrap();
         let previous = self.previous();
         let rule = Self::get_rule(previous.kind);
         let can_assign: bool = prec <= Precedence::Assignment;
