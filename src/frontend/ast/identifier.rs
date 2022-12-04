@@ -31,7 +31,7 @@ impl CompileToBytecode for Identifier {
 }
 impl<'a> Compiler<'a> {
     pub fn resolve_local(&mut self, name: &Token) -> Option<usize> {
-        for (i, token) in self.locals[0..self.local_count].iter().enumerate() {
+        for (i, token) in self.locals[0..self.local_count].iter().enumerate().rev() {
             if name.value.eq(&token.name.value) {
                 return Some(i);
             }

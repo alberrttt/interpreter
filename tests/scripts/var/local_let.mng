@@ -3,6 +3,6 @@
     let test = 1; // Local 1
     let test = test + 1; // Local 2
     let test = test + 1; // Local 3
-    assert_eq test, 3; // test compiles to `GetLocal <1>` instead of what it should compile to: `GetLocal <3>`
+    assert_eq test, 3; 
     assert_eq var1, "awdawd";
 };
