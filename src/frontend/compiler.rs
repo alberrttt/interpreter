@@ -90,7 +90,6 @@ impl<'a> Compiler<'a> {
     pub fn compile(mut self, source: String) -> Result<Function, CompileResult> {
         let mut scanner = Box::new(Scanner::new(source));
 
-        scanner.scan_thru();
         let parser = Parser::new(scanner, Some(self.context.take().unwrap()), &self);
         self.parser = parser;
 

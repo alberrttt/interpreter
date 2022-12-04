@@ -1,0 +1,6 @@
+let foo = "bar";
+let bar = 10;
+foo + "foo";
+bar + 4;
+assert_eq foo, "bar";
+assert_eq bar, 10;

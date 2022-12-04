@@ -32,14 +32,14 @@ impl<'a> CompilerRef<'a> {
 }
 #[derive(Debug)]
 pub struct Parser<'a> {
-    pub tokens: Vec<Token>,
-    pub index: usize,
     pub context: Option<&'a mut Context<'a>>,
     pub had_error: bool,
     pub scanner: Box<Scanner>,
     pub panic_mode: bool,
     pub scope_depth: usize,
     pub compiler: CompilerRef<'a>,
+    pub previous: Token,
+    pub current: Token,
 }
 pub struct Rule<'a> {
     pub precedence: Precedence,
@@ -74,12 +74,11 @@ impl<'a> Parser<'a> {
                 precedence: Precedence::None,
                 prefix: Some(|parser, can_assign| {
                     let token = parser.previous().clone();
-                    let global = if parser.scope_depth > 0 { true } else { false };
+                    let global = if parser.scope_depth > 0 { false } else { true };
                     if can_assign && parser.match_token(TokenKind::Equal) {
                         return Expression::VariableAssignment(VariableAssignment {
                             name: Identifier { name: token },
                             initializer: Box::new(parser.expression().unwrap().as_expr()),
-                            global,
                         })
                         .as_node();
                     }
@@ -132,7 +131,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn at_end(&mut self) -> bool {
-        self.index + 1 >= self.tokens.len()
+        self.scanner.at_end()
     }
     pub fn precedence(&mut self, prec: Precedence) -> Result<Node, &str> {
         self.advance();
@@ -145,7 +144,6 @@ impl<'a> Parser<'a> {
         if rule.prefix.is_some() {
             expression = rule.prefix.unwrap()(self, can_assign);
         } else {
-            self.backwards();
             return Err("no expr");
         }
 
@@ -182,6 +180,7 @@ impl<'a> Parser<'a> {
     }
     pub fn parse_file(&mut self) -> FileNode<'a> {
         let mut file = FileNode::default();
+        self.advance();
         loop {
             if self.at_end() {
                 break;
@@ -230,7 +229,6 @@ impl<'a> Parser<'a> {
             TokenKind::Let => {
                 self.advance();
                 let identifier = self.token_as_identifier();
-
                 self.consume(TokenKind::Equal, "Expected '=' after variable name");
                 let initializer = self.expression().unwrap().as_expr();
                 self.consume(
@@ -241,7 +239,6 @@ impl<'a> Parser<'a> {
                 VariableDeclaration {
                     intializer: initializer,
                     identifier,
-                    is_global: if self.scope_depth > 0 { false } else { true },
                 }
                 .as_node()
             }
@@ -377,14 +374,14 @@ impl<'a> Parser<'a> {
         compiler: *const Compiler<'a>,
     ) -> Parser<'a> {
         Parser {
-            tokens: scanner.tokens.to_owned(),
-            index: 0,
             compiler: CompilerRef(compiler),
             context,
             scanner: scanner,
             had_error: false,
             panic_mode: false,
             scope_depth: 0,
+            current: EOF.to_owned(),
+            previous: EOF.to_owned(),
         }
     }
     pub fn match_token(&mut self, tk: TokenKind) -> bool {
@@ -397,37 +394,32 @@ impl<'a> Parser<'a> {
     pub fn check(&mut self, tk: TokenKind) -> bool {
         self.current().kind == tk
     }
-    pub fn previous(&mut self) -> &Token {
-        &self.tokens[self.index - 1]
+    pub fn previous(&self) -> &Token {
+        &self.previous
     }
-    pub fn current(&mut self) -> &Token {
-        if self.index > self.tokens.len() - 1 {
-            return EOF;
-        } else {
-            &self.tokens[self.index]
-        }
+    pub fn current(&self) -> &Token {
+        &self.current
     }
 
     pub fn advance(&mut self) -> &Token {
-        if self.index == self.tokens.len() {
-            return EOF;
-        }
-        self.index += 1;
-        &self.tokens[self.index - 1]
-    }
-    pub fn backwards(&mut self) {
-        self.index -= 1;
-    }
-    pub fn consume(&mut self, kind: TokenKind, err: &str) {
-        let advance = self.advance();
+        let current = self.scanner.next();
 
-        if advance.kind.ne(&kind) {
+        self.previous = self.current.to_owned();
+        self.current = current;
+
+        &self.current
+    }
+
+    pub fn consume(&mut self, kind: TokenKind, err: &str) {
+        let current = self.current().kind;
+        if current.ne(&kind) {
             self.error_at_current(err);
-            self.backwards();
         }
+
+        self.advance();
     }
 
     pub fn peek(&mut self, distance: usize) -> &Token {
-        &self.tokens[self.index - (distance)]
+        &self.scanner.tokens[self.scanner.tokens.len() - (1 + distance)]
     }
 }

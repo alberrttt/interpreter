@@ -1,8 +1,5 @@
 use crate::{
-    common::{
-        opcode::OpCode,
-        value::{AsValue},
-    },
+    common::{opcode::OpCode, value::AsValue},
     frontend::{
         ast::{
             expression::Expression,
@@ -21,17 +18,12 @@ use super::AsDeclaration;
 pub struct VariableDeclaration {
     pub identifier: Identifier,
     pub intializer: Expression,
-    pub is_global: bool,
     // pub mutable: bool,
 }
 impl CompileToBytecode for VariableDeclaration {
     fn to_bytecode(self, compiler: &mut Compiler) -> () {
         self.intializer.to_bytecode(compiler);
-        if !self.is_global {
-            let OpCode::Constant(index) = compiler.function.chunk.code.pop().unwrap() else {
-                panic!()
-            };
-            compiler.function.chunk.emit_op(OpCode::DefineLocal(index));
+        if compiler.scope_depth > 0 {
             compiler.add_local(self.identifier.name);
             return;
         }

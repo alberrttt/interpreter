@@ -1,7 +1,9 @@
+let global = 123;
 let abc = {
     let local = 48;
     print local;
-    return 348;
+    local = global;
+    return local;
 };
 print abc;
 

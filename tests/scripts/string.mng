@@ -1,4 +1,1 @@
-1 + 2;
-let a = "awdawdAW";
-
-assert_eq "foobar"+"123", "foobar"+"123";
+assert_eq "foobar"+"123", "foobar123";
