@@ -30,6 +30,12 @@ impl AsValue for bool {
     }
 }
 impl Value {
+    pub fn as_bool(&self) -> &bool {
+        let Value::Boolean(bool) = &self else {
+            panic!()
+        };
+        bool
+    }
     pub fn as_string(&self) -> &String {
         if let Value::String(string) = self {
             unsafe { &*string.as_ref().as_ptr() }

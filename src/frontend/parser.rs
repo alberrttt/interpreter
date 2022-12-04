@@ -9,7 +9,8 @@ use super::{
     ast::{
         declaration::variable_declaration::VariableDeclaration,
         expression::{
-            block::Block, variable_assignment::VariableAssignment, AsExpr, BinaryExpr, Expression,
+            block::Block, if_expr::IfExpr, variable_assignment::VariableAssignment, AsExpr,
+            BinaryExpr, Expression,
         },
         identifier::Identifier,
         literal::Literal,
@@ -50,24 +51,24 @@ pub struct Rule<'a> {
 impl<'a> Parser<'a> {
     pub fn get_rule(kind: TokenKind) -> Rule<'a> {
         match kind {
+            TokenKind::If => Rule {
+                precedence: Precedence::None,
+                prefix: Some(Self::if_expr),
+                infix: None,
+            },
             TokenKind::LeftBrace => Rule {
                 precedence: Precedence::None,
-                prefix: Some(|parser, _can_assign| {
-                    parser.begin_scope();
-                    let mut block = Block {
-                        declarations: Vec::new(),
-                    };
-                    loop {
-                        if !parser.check(TokenKind::RightBrace) && !parser.check(TokenKind::EOF) {
-                            block.declarations.push(parser.node())
-                        } else {
-                            break;
-                        }
-                    }
-                    parser.consume(TokenKind::RightBrace, "Expected '}' after block to close");
-                    parser.end_scope();
-                    return block.as_node();
-                }),
+                prefix: Some(Self::block),
+                infix: None,
+            },
+            TokenKind::True => Rule {
+                precedence: Precedence::None,
+                prefix: Some(|_, _| Literal::Bool(true).as_node()),
+                infix: None,
+            },
+            TokenKind::False => Rule {
+                precedence: Precedence::None,
+                prefix: Some(|_, _| Literal::Bool(false).as_node()),
                 infix: None,
             },
             TokenKind::Identifier => Rule {
@@ -133,7 +134,7 @@ impl<'a> Parser<'a> {
     pub fn at_end(&mut self) -> bool {
         self.scanner.at_end()
     }
-    pub fn precedence(&mut self, prec: Precedence) -> Result<Node, &str> {
+    pub fn precedence(&mut self, prec: Precedence) -> Result<Node, String> {
         self.advance();
         let path = self.context.as_ref().unwrap().file_path.to_str().unwrap();
         let previous = self.previous();
@@ -144,7 +145,10 @@ impl<'a> Parser<'a> {
         if rule.prefix.is_some() {
             expression = rule.prefix.unwrap()(self, can_assign);
         } else {
-            return Err("no expr");
+            return Err(format!(
+                "no expr {}:{}",
+                previous.position.line, previous.position.start_in_line
+            ));
         }
 
         loop {
@@ -175,7 +179,7 @@ impl<'a> Parser<'a> {
             }
         }
     }
-    pub fn expression(&mut self) -> Result<Node, &str> {
+    pub fn expression(&mut self) -> Result<Node, String> {
         self.precedence(Precedence::None)
     }
     pub fn parse_file(&mut self) -> FileNode<'a> {
@@ -226,6 +230,16 @@ impl<'a> Parser<'a> {
                 let node = Statement::AssertEq(lhs, rhs);
                 node.as_node()
             }
+            TokenKind::AssertNe => {
+                self.advance();
+                let lhs = self.expression().unwrap().as_expr();
+                self.consume(TokenKind::Comma, "Expected ','' to seperate lhs and rhs");
+                let rhs = self.expression().unwrap().as_expr();
+                self.consume(TokenKind::SemiColon, "Expected ';'");
+
+                let node = Statement::AssertNe(lhs, rhs);
+                node.as_node()
+            }
             TokenKind::Let => {
                 self.advance();
                 let identifier = self.token_as_identifier();
@@ -267,6 +281,39 @@ impl<'a> Parser<'a> {
     }
 }
 impl Parser<'_> {
+    pub fn if_expr(&mut self, _can_assign: bool) -> Node {
+        let condition = self.expression().unwrap().as_expr();
+        let then = self.expression().unwrap().as_expr().as_block();
+        #[allow(unused_mut)]
+        let mut else_block = None;
+        if self.match_token(TokenKind::Else) {
+            let block = self.expression().unwrap().as_expr().as_block();
+            else_block = Some(block)
+        }
+        IfExpr {
+            condition: Box::new(condition),
+            then,
+            else_block,
+        }
+        .as_expr()
+        .as_node()
+    }
+    pub fn block(&mut self, _can_assign: bool) -> Node {
+        self.begin_scope();
+        let mut block = Block {
+            declarations: Vec::new(),
+        };
+        loop {
+            if !self.check(TokenKind::RightBrace) && !self.check(TokenKind::EOF) {
+                block.declarations.push(self.node())
+            } else {
+                break;
+            }
+        }
+        self.consume(TokenKind::RightBrace, "Expected '}' after block to close");
+        self.end_scope();
+        return block.as_node();
+    }
     pub fn string(&mut self, _can_assign: bool) -> Node {
         Literal::String(self.previous().value.clone()).as_node()
     }

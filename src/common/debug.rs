@@ -10,7 +10,7 @@ pub fn dissasemble_chunk(chunk: &Chunk) {
             break;
         }
         let instruction = &chunk.code[instruction_ptr];
-        print!("\t");
+        print!("{instruction_ptr} \t");
         match instruction {
             OpCode::DefineGlobal(pos)
             | OpCode::Constant(pos)
@@ -20,6 +20,13 @@ pub fn dissasemble_chunk(chunk: &Chunk) {
                 let constant = &chunk.constants[*pos as usize];
 
                 println!("{} <{}>", instruction.to_string(), constant)
+            }
+            OpCode::Jump(offset) | OpCode::JumpIfFalse(offset) => {
+                println!(
+                    "{} {}",
+                    instruction.to_string(),
+                    instruction_ptr + *offset as usize + 1
+                )
             }
             OpCode::GetLocal(pos) | OpCode::SetLocal(pos) => {
                 println!("{} {}", instruction.to_string(), pos)

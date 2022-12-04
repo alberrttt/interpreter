@@ -1,0 +1,3 @@
+assert_eq if true {
+    return 456;
+}, 456;

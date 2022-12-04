@@ -1,6 +1,6 @@
 use crate::{common::opcode::OpCode, frontend::compiler::Compiler};
 
-use self::{block::Block, variable_assignment::VariableAssignment};
+use self::{block::Block, if_expr::IfExpr, variable_assignment::VariableAssignment};
 
 use super::{
     identifier::Identifier,
@@ -12,6 +12,7 @@ pub trait AsExpr {
     fn as_expr(self) -> Expression;
 }
 pub mod block;
+pub mod if_expr;
 pub mod variable_assignment;
 #[derive(Debug, PartialEq, Clone)]
 pub struct BinaryExpr {
@@ -34,6 +35,7 @@ pub enum Expression {
     Negate(Box<Expression>),
     Block(Block),
     Identifier(Identifier),
+    If(IfExpr),
 }
 impl AsNode for Expression {
     fn as_node(self) -> Node {
@@ -42,6 +44,13 @@ impl AsNode for Expression {
 }
 
 impl Expression {
+    pub fn as_block(self) -> Block {
+        let Expression::Block(block) = self else {
+            panic!()
+        };
+
+        block
+    }
     pub fn as_binary_expr(self) -> BinaryExpr {
         let Expression::Binary(expr) = self else {
             panic!()
@@ -59,6 +68,7 @@ impl CompileToBytecode for Expression {
                 expr.to_bytecode(compiler);
                 compiler.function.chunk.emit_op(OpCode::Not);
             }
+            Expression::If(if_expr) => if_expr.to_bytecode(compiler),
             Expression::Negate(expr) => {
                 expr.to_bytecode(compiler);
                 compiler.function.chunk.emit_op(OpCode::Negate);

@@ -1,9 +1,3 @@
-let global = 123;
-let abc = {
-    let local = 48;
-    print local;
-    local = global;
-    return local;
+print if true {
+    return 123;
 };
-print abc;
-

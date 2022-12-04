@@ -12,6 +12,7 @@ use super::{node::Node, CompileToBytecode};
 pub enum Literal {
     Number(f64),
     String(String),
+    Bool(bool),
 }
 
 impl Literal {
@@ -22,7 +23,7 @@ impl Literal {
     pub fn as_number(self) -> f64 {
         match self {
             Literal::Number(number) => return number,
-            Literal::String(_) => panic!(),
+            _ => panic!(),
         }
     }
 }
@@ -33,6 +34,14 @@ impl CompileToBytecode for Literal {
         let pos = match self {
             Literal::Number(number) => function.chunk.emit_value(Value::Number(number)),
             Literal::String(string) => function.chunk.emit_value(string.to_string().as_value()),
+            Literal::Bool(bool) => {
+                if bool {
+                    function.chunk.emit_op(OpCode::True)
+                } else {
+                    function.chunk.emit_op(OpCode::False)
+                };
+                return;
+            }
         };
         function.chunk.emit_op(OpCode::Constant(pos))
     }

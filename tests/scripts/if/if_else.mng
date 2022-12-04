@@ -1,0 +1,6 @@
+assert_eq if false {
+    return 123;
+} else {
+    return 345;
+}, 345;
+

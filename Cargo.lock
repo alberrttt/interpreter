@@ -95,6 +95,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fc7fcc620a3bff7cdd7a365be3376c97191aeaccc2a603e600951e452615bf89"
 
 [[package]]
+name = "macros"
+version = "0.1.0"
+
+[[package]]
 name = "once_cell"
 version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -154,6 +158,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "colored",
+ "macros",
  "strum",
  "strum_macros",
 ]

@@ -1,9 +1,8 @@
 use strum::Display;
 
 pub type ConstantLocation = u16;
-
 pub type SlotIndex = u8;
-
+pub type Offset = u16;
 #[derive(Debug, Display, Clone)]
 pub enum OpCode {
     Constant(ConstantLocation),
@@ -18,7 +17,10 @@ pub enum OpCode {
     SetGlobal(ConstantLocation),
     TakeTempSlot(SlotIndex),
     SetTempSlot(SlotIndex),
+    JumpIfFalse(Offset),
+    Jump(Offset),
     AssertEq,
+    AssertNe,
     True,
     False,
     Void,

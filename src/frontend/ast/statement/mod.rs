@@ -12,6 +12,7 @@ pub enum Statement {
     Expression(Expression),
     Print(Box<Node>),
     AssertEq(Expression, Expression),
+    AssertNe(Expression, Expression),
     Return(ReturnStmt),
 }
 
@@ -45,6 +46,12 @@ impl CompileToBytecode for Statement {
                 rhs.to_bytecode(compiler);
 
                 compiler.function.chunk.emit_op(OpCode::AssertEq)
+            }
+            Statement::AssertNe(lhs, rhs) => {
+                lhs.to_bytecode(compiler);
+                rhs.to_bytecode(compiler);
+
+                compiler.function.chunk.emit_op(OpCode::AssertNe)
             }
         }
     }

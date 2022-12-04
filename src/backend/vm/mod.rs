@@ -35,7 +35,20 @@ impl VM {
         loop {
             let instruction = &chunk.code[ip];
             ip += 1;
+            #[cfg(debug_assertions)]
+            {
+                println!("Executing {instruction}")
+            }
             match instruction {
+                OpCode::Jump(offset) => {
+                    ip += *offset as usize;
+                }
+                OpCode::JumpIfFalse(offset) => {
+                    let condition = self.stack.last().unwrap().as_bool();
+                    if !condition {
+                        ip += *offset as usize;
+                    }
+                }
                 OpCode::Nop => {}
                 OpCode::Not => {
                     let pop = self.stack.pop().unwrap();
@@ -158,6 +171,12 @@ impl VM {
                     let lhs = self.stack.pop().unwrap();
 
                     assert_eq!(lhs, rhs);
+                }
+                OpCode::AssertNe => {
+                    let rhs = self.stack.pop().unwrap();
+                    let lhs = self.stack.pop().unwrap();
+
+                    assert_ne!(lhs, rhs);
                 }
                 OpCode::Return => {
                     break;
