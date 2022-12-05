@@ -21,7 +21,7 @@ impl VM {
         }
     }
     pub fn run(&mut self, chunk: Chunk) {
-        let mut ip: usize = 0;
+        let mut ip: isize = 0;
         let mut misc_slots: [Value; 8] = [
             Value::None,
             Value::None,
@@ -33,20 +33,20 @@ impl VM {
             Value::None,
         ];
         loop {
-            let instruction = &chunk.code[ip];
+            let instruction = &chunk.code[ip as usize];
             ip += 1;
-            #[cfg(debug_assertions)]
-            {
-                println!("Executing {instruction}")
-            }
+            // #[cfg(debug_assertions)]
+            // {
+            //     println!("{ip} Executing {instruction} ")
+            // }
             match instruction {
                 OpCode::Jump(offset) => {
-                    ip += *offset as usize;
+                    ip += *offset as isize;
                 }
                 OpCode::JumpIfFalse(offset) => {
                     let condition = self.stack.last().unwrap().as_bool();
                     if !condition {
-                        ip += *offset as usize;
+                        ip += *offset as isize;
                     }
                 }
                 OpCode::Nop => {}
@@ -187,6 +187,43 @@ impl VM {
                 }
                 OpCode::SetTempSlot(slot) => {
                     misc_slots[*slot as usize] = self.stack.pop().unwrap();
+                }
+                OpCode::Less => {
+                    let Some(Value::Number(rhs)) = self.stack.pop() else {
+                        panic!()
+                    };
+                    let tmp = self.stack.pop();
+                    let Some(Value::Number(lhs)) = tmp else {
+                        panic!("{:?}", tmp)
+                    };
+                    self.stack.push((lhs < rhs).as_value())
+                }
+                OpCode::LessEq => {
+                    let Some(Value::Number(rhs)) = self.stack.pop() else {
+                        panic!()
+                    };
+                    let Some(Value::Number(lhs)) = self.stack.pop() else {
+                        panic!()
+                    };
+                    self.stack.push((lhs <= rhs).as_value())
+                }
+                OpCode::Greater => {
+                    let Some(Value::Number(rhs)) = self.stack.pop() else {
+                        panic!()
+                    };
+                    let Some(Value::Number(lhs)) = self.stack.pop() else {
+                        panic!()
+                    };
+                    self.stack.push((lhs > rhs).as_value())
+                }
+                OpCode::GreaterEq => {
+                    let Some(Value::Number(rhs)) = self.stack.pop() else {
+                        panic!()
+                    };
+                    let Some(Value::Number(lhs)) = self.stack.pop() else {
+                        panic!()
+                    };
+                    self.stack.push((lhs >= rhs).as_value())
                 }
             }
         }

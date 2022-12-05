@@ -1,6 +1,9 @@
 use crate::{common::opcode::OpCode, frontend::compiler::Compiler};
 
-use self::{block::Block, if_expr::IfExpr, variable_assignment::VariableAssignment};
+use self::{
+    block::Block, comparison::Comparison, if_expr::IfExpr, variable_assignment::VariableAssignment,
+    while_expr::WhileExpr,
+};
 
 use super::{
     identifier::Identifier,
@@ -12,8 +15,10 @@ pub trait AsExpr {
     fn as_expr(self) -> Expression;
 }
 pub mod block;
+pub mod comparison;
 pub mod if_expr;
 pub mod variable_assignment;
+pub mod while_expr;
 #[derive(Debug, PartialEq, Clone)]
 pub struct BinaryExpr {
     pub lhs: Box<Node>,
@@ -36,6 +41,8 @@ pub enum Expression {
     Block(Block),
     Identifier(Identifier),
     If(IfExpr),
+    While(WhileExpr),
+    Comparison(Comparison),
 }
 impl AsNode for Expression {
     fn as_node(self) -> Node {
@@ -61,6 +68,7 @@ impl Expression {
 impl CompileToBytecode for Expression {
     fn to_bytecode(self, compiler: &mut Compiler) -> () {
         match self {
+            Expression::While(while_expr) => while_expr.to_bytecode(compiler),
             Expression::Grouping(inner) => inner.to_bytecode(compiler),
             Expression::Literal(literal) => literal.to_bytecode(compiler),
             Expression::VariableAssignment(var) => var.to_bytecode(compiler),
@@ -73,6 +81,7 @@ impl CompileToBytecode for Expression {
                 expr.to_bytecode(compiler);
                 compiler.function.chunk.emit_op(OpCode::Negate);
             }
+            Expression::Comparison(comparison) => comparison.to_bytecode(compiler),
             Expression::Block(block) => block.to_bytecode(compiler),
             Expression::Identifier(identifier) => identifier.to_bytecode(compiler),
             super::Expression::Binary(binary) => {

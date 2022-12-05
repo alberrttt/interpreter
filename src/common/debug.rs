@@ -25,7 +25,7 @@ pub fn dissasemble_chunk(chunk: &Chunk) {
                 println!(
                     "{} {}",
                     instruction.to_string(),
-                    instruction_ptr + *offset as usize + 1
+                    (instruction_ptr as isize) + *offset as isize + 1
                 )
             }
             OpCode::GetLocal(pos) | OpCode::SetLocal(pos) => {

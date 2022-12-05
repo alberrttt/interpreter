@@ -9,8 +9,12 @@ use super::{
     ast::{
         declaration::variable_declaration::VariableDeclaration,
         expression::{
-            block::Block, if_expr::IfExpr, variable_assignment::VariableAssignment, AsExpr,
-            BinaryExpr, Expression,
+            block::Block,
+            comparison::{Comparison, ComparisonKind},
+            if_expr::IfExpr,
+            variable_assignment::VariableAssignment,
+            while_expr::WhileExpr,
+            AsExpr, BinaryExpr, Expression,
         },
         identifier::Identifier,
         literal::Literal,
@@ -51,6 +55,28 @@ pub struct Rule<'a> {
 impl<'a> Parser<'a> {
     pub fn get_rule(kind: TokenKind) -> Rule<'a> {
         match kind {
+            TokenKind::While => Rule {
+                precedence: Precedence::None,
+                prefix: Some(Self::while_expr),
+                infix: None,
+            },
+            TokenKind::Greater
+            | TokenKind::Less
+            | TokenKind::LessEqual
+            | TokenKind::GreaterEqual => Rule {
+                precedence: Precedence::Comparison,
+                prefix: None,
+                infix: Some(|parser: &mut Parser, lhs: Node| {
+                    let comparison_token = parser.previous().kind;
+                    Comparison {
+                        lhs: Box::new(lhs.as_expr()),
+                        rhs: Box::new(parser.expression().unwrap().as_expr()),
+                        kind: comparison_token.try_into().unwrap(),
+                    }
+                    .as_expr()
+                    .as_node()
+                }),
+            },
             TokenKind::If => Rule {
                 precedence: Precedence::None,
                 prefix: Some(Self::if_expr),
@@ -281,6 +307,17 @@ impl<'a> Parser<'a> {
     }
 }
 impl Parser<'_> {
+    pub fn while_expr(&mut self, _can_assign: bool) -> Node {
+        let condition = self.expression().unwrap().as_expr();
+        let block = self.expression().unwrap().as_expr().as_block();
+
+        WhileExpr {
+            predicate: Box::new(condition),
+            block,
+        }
+        .as_expr()
+        .as_node()
+    }
     pub fn if_expr(&mut self, _can_assign: bool) -> Node {
         let condition = self.expression().unwrap().as_expr();
         let then = self.expression().unwrap().as_expr().as_block();
@@ -291,7 +328,7 @@ impl Parser<'_> {
             else_block = Some(block)
         }
         IfExpr {
-            condition: Box::new(condition),
+            predicate: Box::new(condition),
             then,
             else_block,
         }
