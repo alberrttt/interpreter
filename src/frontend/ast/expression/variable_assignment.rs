@@ -13,7 +13,7 @@ pub struct VariableAssignment {
 impl CompileToBytecode for VariableAssignment {
     fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
         self.initializer.to_bytecode(compiler);
-        let local = compiler.resolve_local(&self.name.name);
+        let local = compiler.resolve_local(&self.name.value);
         if let Some(local) = local {
             compiler
                 .function
@@ -24,7 +24,7 @@ impl CompileToBytecode for VariableAssignment {
         let name = compiler
             .function
             .chunk
-            .emit_value(self.name.name.value.as_value());
+            .emit_value(self.name.value.lexeme.as_value());
         compiler.function.chunk.emit_op(OpCode::SetGlobal(name))
     }
 }

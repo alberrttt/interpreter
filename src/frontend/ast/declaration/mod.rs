@@ -1,13 +1,15 @@
 use crate::frontend::compiler::Compiler;
 
-use self::variable_declaration::VariableDeclaration;
+use self::{function::FunctionDeclaration, variable_declaration::VariableDeclaration};
 
 use super::CompileToBytecode;
 
+pub mod function;
 pub mod variable_declaration;
 #[derive(Debug, Clone, PartialEq)]
 pub enum Declaration {
     VariableDeclaration(VariableDeclaration),
+    FunctionDeclaration(FunctionDeclaration),
 }
 
 impl CompileToBytecode for Declaration {
@@ -15,6 +17,7 @@ impl CompileToBytecode for Declaration {
         let _function = &mut compiler.function;
         match self {
             Declaration::VariableDeclaration(declaration) => declaration.to_bytecode(compiler),
+            Declaration::FunctionDeclaration(function_declaration) => function_declaration.to_bytecode(compiler),
         }
     }
 }

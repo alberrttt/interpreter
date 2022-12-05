@@ -16,7 +16,6 @@ pub enum Literal {
 }
 
 impl Literal {
-    pub fn test() {}
     pub fn as_node(self) -> Node {
         return Node::Literal(self);
     }

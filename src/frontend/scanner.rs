@@ -15,7 +15,7 @@ macro_rules! token {
     ($self:ident, Error, $reason:expr) => {{
         Token {
             kind: TokenKind::Error,
-            value: $reason,
+            lexeme: $reason,
             line: $self.line,
             length: $self.current - $self.start,
             position: Position {
@@ -28,7 +28,7 @@ macro_rules! token {
     ($self:ident, Identifier) => {{
         Token {
             kind: $self.to_identifier(),
-            value: $self.source[$self.start..$self.current].to_string(),
+            lexeme: $self.source[$self.start..$self.current].to_string(),
             line: $self.line,
             length: $self.current - $self.start,
             position: Position {
@@ -41,7 +41,7 @@ macro_rules! token {
     ($self:ident, $kind:ident) => {{
         Token {
             kind: TokenKind::$kind,
-            value: $self.source[$self.start..$self.current].to_string(),
+            lexeme: $self.source[$self.start..$self.current].to_string(),
             line: $self.line,
             length: $self.current - $self.start,
             position: Position {
@@ -55,7 +55,7 @@ macro_rules! token {
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct Token {
     pub kind: TokenKind,
-    pub value: String,
+    pub lexeme: String,
     pub line: usize,
     pub length: usize,
     pub position: Position,
@@ -68,7 +68,7 @@ pub struct Position {
 }
 impl fmt::Display for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Value: {} Kind: {}", self.value, self.kind)
+        write!(f, "Value: {} Kind: {}", self.lexeme, self.kind)
     }
 }
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
@@ -321,7 +321,7 @@ impl Scanner {
         self.advance();
         Token {
             kind: TokenKind::String,
-            value: self.source[self.start + 1..self.current - 1].to_string(),
+            lexeme: self.source[self.start + 1..self.current - 1].to_string(),
             line: self.line,
             length: self.current - self.start,
             position: Position {

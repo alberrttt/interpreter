@@ -2,9 +2,9 @@ use std::{path::Path, ptr::null};
 
 use colored::Colorize;
 
-use crate::frontend::{scanner::Position};
+use crate::frontend::scanner::Position;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Diaganostics<'a> {
     pub context: *const Context<'a>,
 }
@@ -40,7 +40,7 @@ impl<'a> Diaganostics<'a> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Context<'a> {
     pub file_path: &'a Path,
     pub diagnostics: Box<Diaganostics<'a>>,

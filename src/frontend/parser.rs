@@ -55,6 +55,13 @@ pub struct Rule<'a> {
 impl<'a> Parser<'a> {
     pub fn get_rule(kind: TokenKind) -> Rule<'a> {
         match kind {
+            TokenKind::LeftParen => Rule {
+                precedence: Precedence::Grouping,
+                prefix: Some(|parser: &mut Parser, can_assign: bool| {
+                    Expression::Grouping(Box::new(parser.expression().unwrap().as_expr())).as_node()
+                }),
+                infix: None,
+            },
             TokenKind::While => Rule {
                 precedence: Precedence::None,
                 prefix: Some(Self::while_expr),
@@ -104,12 +111,12 @@ impl<'a> Parser<'a> {
                     let _global = if parser.scope_depth > 0 { false } else { true };
                     if can_assign && parser.match_token(TokenKind::Equal) {
                         return Expression::VariableAssignment(VariableAssignment {
-                            name: Identifier { name: token },
+                            name: Identifier { value: token },
                             initializer: Box::new(parser.expression().unwrap().as_expr()),
                         })
                         .as_node();
                     }
-                    Identifier { name: token }.as_node()
+                    Identifier { value: token }.as_node()
                 }),
                 infix: None,
             },
@@ -137,6 +144,16 @@ impl<'a> Parser<'a> {
                     .as_node()
                 }),
                 precedence: Precedence::Term,
+            },
+            TokenKind::Bang => Rule {
+                precedence: Precedence::Unary,
+                prefix: Some(|parser, can_assign| {
+                    Expression::Not(Box::new(
+                        parser.precedence(Precedence::Unary).unwrap().as_expr(),
+                    ))
+                    .as_node()
+                }),
+                infix: None,
             },
             TokenKind::String => Rule {
                 precedence: Precedence::None,
@@ -172,8 +189,16 @@ impl<'a> Parser<'a> {
             expression = rule.prefix.unwrap()(self, can_assign);
         } else {
             return Err(format!(
-                "no expr {}:{}",
-                previous.position.line, previous.position.start_in_line
+                "no expr {}:{}:{}",
+                self.context
+                    .as_ref()
+                    .unwrap()
+                    .file_path
+                    .as_os_str()
+                    .to_str()
+                    .unwrap(),
+                previous.position.line + 1,
+                previous.position.start_in_line + 1,
             ));
         }
 
@@ -235,7 +260,7 @@ impl<'a> Parser<'a> {
     pub fn token_as_identifier(&mut self) -> Identifier {
         self.advance();
         Identifier {
-            name: self.previous().clone(),
+            value: self.previous().clone(),
         }
     }
     pub fn statement(&mut self) -> Node {
@@ -352,7 +377,7 @@ impl Parser<'_> {
         return block.as_node();
     }
     pub fn string(&mut self, _can_assign: bool) -> Node {
-        Literal::String(self.previous().value.clone()).as_node()
+        Literal::String(self.previous().lexeme.clone()).as_node()
     }
     pub fn binary(&mut self, lhs: Node) -> Node {
         let rule = Self::get_rule(self.previous().kind);
@@ -375,12 +400,12 @@ impl Parser<'_> {
         .as_node()
     }
     pub fn number(&mut self, _can_assign: bool) -> Node {
-        Literal::Number(self.previous().value.parse::<f64>().unwrap()).as_node()
+        Literal::Number(self.previous().lexeme.parse::<f64>().unwrap()).as_node()
     }
 }
 const EOF: &Token = &Token {
     kind: TokenKind::EOF,
-    value: String::new(),
+    lexeme: String::new(),
     line: 0,
     length: 0,
     position: Position {

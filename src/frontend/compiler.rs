@@ -7,7 +7,7 @@ use crate::{
 
 use super::{
     ast::CompileToBytecode,
-    parser::{Parser},
+    parser::Parser,
     scanner::{Position, Scanner, Token, TokenKind},
 };
 
@@ -55,7 +55,7 @@ impl Local {
 const LOCAL: Local = Local {
     name: Token {
         kind: TokenKind::Error,
-        value: String::new(),
+        lexeme: String::new(),
         line: 9999,
         length: 9999,
         position: Position {

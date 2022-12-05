@@ -1,5 +1,4 @@
 let i = 0;
-
 assert_eq while i < 10 {
     print i;
     i = i + 1;

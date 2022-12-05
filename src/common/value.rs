@@ -1,12 +1,15 @@
 // runtime value
 
-use std::{cell::RefCell, fmt::Display, rc::Rc};
+use std::{cell::RefCell, fmt::Display, ptr::addr_of, rc::Rc};
+
+use super::function::Function;
 
 #[derive(Clone, Debug)]
 pub enum Value {
     Number(f64),
     Boolean(bool),
     String(Ptr<String>),
+    Function(Ptr<Function>),
     Void,
     None,
 }
@@ -72,6 +75,9 @@ impl Display for Value {
             }
             Value::None | Value::Void => {
                 panic!("cannot print a void or none");
+            }
+            Value::Function(function) => {
+                write!(f, "<func {:?}>", addr_of!(function))
             }
         }
     }

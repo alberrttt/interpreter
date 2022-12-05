@@ -1,6 +1,7 @@
 use std::{
+    env,
     fs::{self, read_to_string},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use proc_macro::{self, TokenStream};
@@ -8,10 +9,14 @@ use proc_macro::{self, TokenStream};
 #[proc_macro]
 pub fn make_tests(_item: TokenStream) -> TokenStream {
     let mut stream = TokenStream::new();
-    recurse_dir(r#"tests\scripts"#.to_string(), &mut stream, String::new());
+    println!("{:?}", env::current_dir());
+    let mut path = PathBuf::new();
+    path.push("tests");
+    path.push("scripts");
+    recurse_dir(path.as_path(), &mut stream, String::new());
     stream
 }
-fn recurse_dir(path: String, stream: &mut TokenStream, post_pend: String) {
+fn recurse_dir(path: &Path, stream: &mut TokenStream, post_pend: String) {
     for (i, file) in fs::read_dir(path).unwrap().enumerate() {
         let file = file.unwrap();
         if file.file_type().unwrap().is_file() {
@@ -34,17 +39,25 @@ let mut vm = VM::new();
 
 vm.run(compiler.compile(source).unwrap().chunk);
 }}\n",
+                &post_pend,
                 file.path().file_stem().unwrap().to_str().unwrap(),
-                post_pend.clone()
             )
             .parse()
             .unwrap();
             stream.extend(t.into_iter());
         } else {
-            let mut post_pend = post_pend.to_owned();
-            post_pend
-                .push_str(&("_".to_owned() + file.path().file_stem().unwrap().to_str().unwrap()));
-            recurse_dir(file.path().to_string_lossy().to_string(), stream, post_pend);
+            let mut tmp = post_pend.clone();
+            tmp.push_str(
+                &(file
+                    .path()
+                    .file_stem()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_owned()
+                    + "_"),
+            );
+            recurse_dir(file.path().as_path(), stream, tmp);
         }
     }
 }

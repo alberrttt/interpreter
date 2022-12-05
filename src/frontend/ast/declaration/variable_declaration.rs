@@ -24,13 +24,13 @@ impl CompileToBytecode for VariableDeclaration {
     fn to_bytecode(self, compiler: &mut Compiler) -> () {
         self.intializer.to_bytecode(compiler);
         if compiler.scope_depth > 0 {
-            compiler.add_local(self.identifier.name);
+            compiler.add_local(self.identifier.value);
             return;
         }
         let function = &mut compiler.function;
         let name = function
             .chunk
-            .emit_value(self.identifier.name.value.as_value().clone());
+            .emit_value(self.identifier.value.lexeme.as_value().clone());
         function.chunk.emit_op(OpCode::DefineGlobal(name))
     }
 }
