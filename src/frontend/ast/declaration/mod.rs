@@ -2,7 +2,7 @@ use crate::frontend::compiler::Compiler;
 
 use self::{function::FunctionDeclaration, variable_declaration::VariableDeclaration};
 
-use super::CompileToBytecode;
+use super::{CompileToBytecode, node::AsNode};
 
 pub mod function;
 pub mod variable_declaration;
@@ -23,4 +23,9 @@ impl CompileToBytecode for Declaration {
 }
 pub trait AsDeclaration {
     fn as_declaration(self) -> Declaration;
+}
+impl AsNode for Declaration {
+    fn as_node(self) -> super::node::Node {
+        super::node::Node::Declaration(self)
+    }
 }

@@ -7,7 +7,9 @@ use crate::cli_context::Context;
 
 use super::{
     ast::{
-        declaration::variable_declaration::VariableDeclaration,
+        declaration::{
+            function::FunctionDeclaration, variable_declaration::VariableDeclaration, AsDeclaration,
+        },
         expression::{
             block::Block,
             comparison::{Comparison, ComparisonKind},
@@ -307,6 +309,18 @@ impl<'a> Parser<'a> {
                     intializer: initializer,
                     identifier,
                 }
+                .as_node()
+            }
+            TokenKind::Func => {
+                self.advance();
+                let identifier = self.token_as_identifier();
+                self.consume(TokenKind::LeftParen, "err");
+                self.consume(TokenKind::RightParen, "err");
+                FunctionDeclaration {
+                    name: identifier,
+                    block: self.block(false).as_expr().as_block(),
+                }
+                .as_declaration()
                 .as_node()
             }
             TokenKind::Return => {

@@ -6,6 +6,8 @@ use crate::{
     },
 };
 
+use super::AsDeclaration;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunctionDeclaration {
     pub name: Identifier,
@@ -29,5 +31,10 @@ impl CompileToBytecode for FunctionDeclaration {
             compiler.function.chunk.emit_op(OpCode::DefineGlobal(name))
         };
         compiler.context = temp_compiler.context.take();
+    }
+}
+impl AsDeclaration for FunctionDeclaration {
+    fn as_declaration(self) -> super::Declaration {
+        super::Declaration::FunctionDeclaration(self)
     }
 }
