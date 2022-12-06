@@ -1,5 +1,5 @@
 /// the parser will make an ast
-use std::{mem::transmute, ops::Range};
+use std::{mem::transmute, ops::Range, rc::Rc};
 
 use colored::Colorize;
 
@@ -43,8 +43,10 @@ pub struct Parser<'a> {
     pub panic_mode: bool,
     pub scope_depth: usize,
     pub compiler: CompilerRef<'a>,
-    pub previous: Token,
+    pub previous: Rc<Token>,
     pub current: Token,
+    pub tokens: Vec<Token>,
+    pub index: usize,
 }
 pub struct Rule<'a> {
     pub precedence: Precedence,
@@ -490,7 +492,9 @@ impl<'a> Parser<'a> {
             panic_mode: false,
             scope_depth: 0,
             current: EOF.to_owned(),
-            previous: EOF.to_owned(),
+            previous: Rc::new(EOF.to_owned()),
+            tokens: Vec::new(),
+            index: 0,
         }
     }
     pub fn match_token(&mut self, tk: TokenKind) -> bool {
@@ -510,15 +514,6 @@ impl<'a> Parser<'a> {
         &self.current
     }
 
-    pub fn advance(&mut self) -> &Token {
-        let current = self.scanner.next();
-
-        self.previous = self.current.to_owned();
-        self.current = current;
-
-        &self.current
-    }
-
     pub fn consume(&mut self, kind: TokenKind, err: &str) {
         let current = self.current().kind;
         if current.ne(&kind) {
@@ -530,5 +525,16 @@ impl<'a> Parser<'a> {
 
     pub fn peek(&mut self, distance: usize) -> &Token {
         &self.scanner.tokens[self.scanner.tokens.len() - (1 + distance)]
+    }
+}
+
+impl<'a> Parser<'a> {
+    pub fn advance(&mut self) -> &Token {
+        let current = self.scanner.next();
+        self.tokens.insert(self.index, self.current.to_owned());
+        self.previous = Rc::new(self.tokens[self.index].to_owned());
+        self.current = current;
+        self.index += 1;
+        &self.current
     }
 }
