@@ -21,12 +21,8 @@ pub fn dissasemble_chunk(chunk: &Chunk) {
 
                 println!("{} <{}>", instruction.to_string(), constant)
             }
-            OpCode::Jump(offset) | OpCode::JumpIfFalse(offset) => {
-                println!(
-                    "{} {}",
-                    instruction.to_string(),
-                    (instruction_ptr as isize) + *offset as isize + 1
-                )
+            OpCode::JumpTo(offset) | OpCode::JumpToIfFalse(offset) => {
+                println!("{} {}", instruction.to_string(), offset)
             }
             OpCode::GetLocal(pos) | OpCode::SetLocal(pos) => {
                 println!("{} {}", instruction.to_string(), pos)

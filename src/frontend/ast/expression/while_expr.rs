@@ -19,16 +19,19 @@ impl CompileToBytecode for WhileExpr {
         let predicate_location = compiler.function.chunk.code.len();
         self.predicate.to_bytecode(compiler);
         let jump_op = compiler.function.chunk.code.len();
-        compiler.function.chunk.emit_op(OpCode::JumpIfFalse(0xfff));
+        compiler
+            .function
+            .chunk
+            .emit_op(OpCode::JumpToIfFalse(0xfff));
         compiler.function.chunk.emit_op(OpCode::Pop);
         self.block.to_bytecode(compiler);
         let after_block = compiler.function.chunk.code.len();
-        compiler.function.chunk.emit_op(OpCode::Jump(
-            (predicate_location as i16).sub(after_block as i16) - 1,
-        ));
-        let after = compiler.function.chunk.code.len();
+        compiler
+            .function
+            .chunk
+            .emit_op(OpCode::JumpTo(predicate_location));
+        let pop_location = compiler.function.chunk.code.len();
         compiler.function.chunk.emit_op(OpCode::Pop);
-        let offset = after.sub(jump_op);
-        compiler.function.chunk.code[jump_op] = OpCode::JumpIfFalse((offset - 1) as i16);
+        compiler.function.chunk.code[jump_op] = OpCode::JumpToIfFalse(pop_location);
     }
 }

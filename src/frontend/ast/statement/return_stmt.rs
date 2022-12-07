@@ -1,10 +1,6 @@
-
-
 use crate::{
     common::opcode::OpCode,
-    frontend::{
-        ast::{expression::Expression, CompileToBytecode},
-    },
+    frontend::ast::{expression::Expression, CompileToBytecode},
 };
 
 #[derive(Debug, Clone, PartialEq)]
