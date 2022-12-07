@@ -316,6 +316,7 @@ impl<'a> Parser<'a> {
                 let identifier = self.token_as_identifier();
                 self.consume(TokenKind::LeftParen, "err");
                 self.consume(TokenKind::RightParen, "err");
+                self.consume(TokenKind::LeftBrace, "Expected '{'");
                 FunctionDeclaration {
                     name: identifier,
                     block: self.block(false).as_expr().as_block(),

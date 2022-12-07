@@ -1,5 +1,9 @@
 use crate::{
-    common::{function, opcode::OpCode, value::AsValue},
+    common::{
+        function,
+        opcode::OpCode,
+        value::{rcrf, AsValue, Value},
+    },
     frontend::{
         ast::{expression::block::Block, identifier::Identifier, CompileToBytecode},
         compiler::{Compiler, FunctionType},
@@ -19,7 +23,11 @@ impl CompileToBytecode for FunctionDeclaration {
         let context = compiler.context.take().unwrap();
         let mut temp_compiler = Compiler::new(context, FunctionType::Function);
         self.block.to_bytecode(&mut temp_compiler);
-
+        let function = temp_compiler.function;
+        compiler
+            .function
+            .chunk
+            .emit_constant(Value::Function(rcrf(function)));
         if compiler.scope_depth > 0 {
             compiler.add_local(self.name.value);
             return;

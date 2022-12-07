@@ -101,6 +101,10 @@ impl<'a> Compiler<'a> {
         let function = Function::new();
         self.function = function;
         for node in parsed.nodes {
+            #[cfg(debug_assertions)]
+            {
+                println!("{:?}", node)
+            }
             node.to_bytecode(&mut self)
         }
         self.function.chunk.emit_many(vec![OpCode::Return]);
