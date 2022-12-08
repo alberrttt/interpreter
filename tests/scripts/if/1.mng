@@ -1,15 +1,11 @@
 
 let a = 0;
-let b = false;
 let c = "Hello";
 
 while a < 10 {
-    if b {
-        b = !b;
-    } else {
+
     a = a + 1;
     c = c + " world";
-    };
 };
 
 

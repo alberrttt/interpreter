@@ -27,14 +27,14 @@ impl CompileToBytecode for IfExpr {
         self.then.to_bytecode(compiler);
         let skip = compiler.function.chunk.code.len();
         compiler.function.chunk.emit_op(OpCode::JumpTo(skip + 1));
-
+        let pop = compiler.function.chunk.code.len();
         compiler.function.chunk.emit_op(OpCode::Pop);
         if let Some(else_block) = self.else_block {
             else_block.to_bytecode(compiler);
             let after_else = compiler.function.chunk.code.len();
-            compiler.function.chunk.code[skip] = OpCode::JumpTo((after_else));
+            compiler.function.chunk.code[skip] = OpCode::JumpTo(after_else);
         }
 
-        compiler.function.chunk.code[jump_op] = OpCode::JumpToIfFalse((jump_op));
+        compiler.function.chunk.code[jump_op] = OpCode::JumpToIfFalse(pop);
     }
 }

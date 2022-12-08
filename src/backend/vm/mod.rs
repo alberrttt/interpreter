@@ -32,19 +32,35 @@ impl VM {
             Value::None,
             Value::None,
         ];
+        let mut jump_exhaust: usize = 0;
         loop {
             let instruction = &chunk.code[ip as usize];
             ip += 1;
-
+            #[cfg(debug_assertions)]
+            {
+                if match instruction {
+                    OpCode::JumpTo(_) | OpCode::JumpToIfFalse(_) => true,
+                    _ => false,
+                } {
+                    if jump_exhaust > 20 {
+                        panic!("Jump exhuasted!");
+                    }
+                } else if jump_exhaust > 0 {
+                    jump_exhaust -= 1;
+                }
+                println!("{ip} Executing {instruction} ")
+            }
             match instruction {
                 OpCode::JumpTo(offset) => {
                     ip = *offset as usize;
+                    jump_exhaust += 1;
                 }
                 OpCode::JumpToIfFalse(offset) => {
                     let condition = self.stack.last().unwrap().as_bool();
                     if !condition {
                         ip = *offset as usize;
                     }
+                    jump_exhaust += 1;
                 }
                 OpCode::Nop => {}
                 OpCode::Not => {
