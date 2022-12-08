@@ -14,6 +14,7 @@ impl AsExpr for WhileExpr {
         Expression::While(self)
     }
 }
+/// GUAGE YOUR EYES OUT
 impl CompileToBytecode for WhileExpr {
     fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
         let predicate_location = compiler.function.chunk.code.len();

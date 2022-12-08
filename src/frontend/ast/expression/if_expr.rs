@@ -15,6 +15,8 @@ impl AsExpr for IfExpr {
         super::Expression::If(self)
     }
 }
+
+/// GUAGE YOUR EYES OUT
 impl CompileToBytecode for IfExpr {
     fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
         self.predicate.to_bytecode(compiler);
