@@ -19,6 +19,7 @@ pub enum OpCode {
     SetTempSlot(SlotIndex),
     JumpToIfFalse(Offset),
     JumpTo(Offset),
+    Call,
     Greater,
     Less,
     GreaterEq,

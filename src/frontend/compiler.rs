@@ -2,7 +2,7 @@ use std::ptr::null;
 
 use crate::{
     cli_context::Context,
-    common::{function::Function, opcode::OpCode},
+    common::{debug::dissasemble_chunk, function::Function, opcode::OpCode},
 };
 
 use super::{
@@ -107,7 +107,10 @@ impl<'a> Compiler<'a> {
             }
             node.to_bytecode(&mut self)
         }
+
         self.function.chunk.emit_many(vec![OpCode::Return]);
+        dissasemble_chunk(&self.function.chunk);
+
         Ok(self.function)
     }
 }

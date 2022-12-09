@@ -1,0 +1,6 @@
+func function() {
+    print "this is a function";
+}
+
+
+function();

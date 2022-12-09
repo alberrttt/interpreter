@@ -1,3 +1,5 @@
 func hello() {
     print "hello";
 }
+
+hello();

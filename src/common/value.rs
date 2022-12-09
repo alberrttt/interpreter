@@ -13,7 +13,7 @@ pub enum Value {
     Void,
     None,
 }
-pub const NoneValue: Value = Value::None;
+pub const NONEVALUE: Value = Value::None;
 impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {

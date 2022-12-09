@@ -1,26 +1,56 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ptr::null, rc::Rc};
 
 use crate::common::{
     chunk::Chunk,
+    function::{self, Function},
     opcode::OpCode,
     value::{AsValue, Value},
 };
+
+use super::callframe::CallFrame;
 
 pub mod ops;
 
 pub struct VM {
     pub stack: Vec<Value>,
+    pub callframes: [CallFrame; 2048],
+    pub frame_count: usize,
     pub globals: HashMap<String, Value>,
 }
-
+pub const Function: Function = Function {
+    chunk: Chunk {
+        code: Vec::new(),
+        constants: Vec::new(),
+    },
+    arity: 0,
+    name: String::new(),
+};
+pub const CallFrame: CallFrame = CallFrame {
+    function: None,
+    ip: 0,
+    slots: 0,
+};
 impl VM {
     pub fn new() -> VM {
         VM {
+            callframes: [CallFrame; 2048],
             stack: vec![],
             globals: HashMap::new(),
+            frame_count: 0,
         }
     }
-    pub fn run(&mut self, chunk: Chunk) {
+    pub fn call(&mut self, function: Function, arg_count: usize) {
+        if arg_count != function.arity as usize {
+            panic!()
+        }
+
+        let frame = &mut self.callframes[self.frame_count];
+        frame.function = Some(Rc::new(function));
+        frame.slots = self.stack.len() - (arg_count + 1) as usize;
+
+        self.frame_count += 1;
+    }
+    pub fn run(mut self) {
         let mut ip: usize = 0;
         let mut misc_slots: [Value; 8] = [
             Value::None,
@@ -32,6 +62,9 @@ impl VM {
             Value::None,
             Value::None,
         ];
+        let mut current_frame = self.callframes[self.frame_count - 1].clone();
+        let mut function = current_frame.function.as_ref().unwrap().as_ref();
+        let mut chunk = &function.chunk;
         let mut jump_exhaust: usize = 0;
         loop {
             let instruction = &chunk.code[ip as usize];
@@ -192,7 +225,34 @@ impl VM {
                     assert_ne!(lhs, rhs);
                 }
                 OpCode::Return => {
+                    if self.frame_count - 1 == 0 {
+                        return;
+                    }
+                    self.frame_count -= 1;
+                    current_frame = self.callframes[self.frame_count].clone();
+                    function = &current_frame.function.as_ref().unwrap().as_ref();
+                    chunk = &function.chunk;
+
                     break;
+                }
+                OpCode::Call => {
+                    let callee = &self.stack[self.stack.len() - 1];
+                    self.call(
+                        match callee {
+                            Value::Function(ptr) => {
+                                let ptr = ptr.as_ref();
+                                let function = &*ptr.borrow();
+
+                                function.clone()
+                            }
+                            x => panic!("got {:?}", x),
+                        },
+                        0,
+                    );
+                    current_frame = self.callframes[self.frame_count - 1].clone();
+                    function = &current_frame.function.as_ref().unwrap().as_ref();
+                    chunk = &function.chunk;
+                    ip = 0;
                 }
                 OpCode::TakeTempSlot(slot) => {
                     let slot = std::mem::replace(&mut misc_slots[*slot as usize], Value::None);

@@ -3,6 +3,7 @@ use super::{chunk::Chunk, opcode::OpCode};
 use std::string::ToString;
 
 pub fn dissasemble_chunk(chunk: &Chunk) {
+    println!("----------------------");
     let mut instruction_ptr: usize = 0;
 
     loop {
@@ -34,4 +35,5 @@ pub fn dissasemble_chunk(chunk: &Chunk) {
         }
         instruction_ptr += 1;
     }
+    println!("----------------------");
 }

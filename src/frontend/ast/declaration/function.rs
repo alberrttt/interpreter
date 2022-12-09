@@ -1,5 +1,6 @@
 use crate::{
     common::{
+        debug::dissasemble_chunk,
         function,
         opcode::OpCode,
         value::{rcrf, AsValue, Value},
@@ -23,7 +24,10 @@ impl CompileToBytecode for FunctionDeclaration {
         let context = compiler.context.take().unwrap();
         let mut temp_compiler = Compiler::new(context, FunctionType::Function);
         self.block.to_bytecode(&mut temp_compiler);
+        temp_compiler.function.chunk.emit_op(OpCode::Return);
         let function = temp_compiler.function;
+        dissasemble_chunk(&function.chunk);
+
         compiler
             .function
             .chunk
