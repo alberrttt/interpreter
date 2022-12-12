@@ -12,6 +12,7 @@ use super::{
         },
         expression::{
             block::Block,
+            call_expr::CallExpr,
             comparison::{Comparison, ComparisonKind},
             if_expr::IfExpr,
             variable_assignment::VariableAssignment,
@@ -64,7 +65,7 @@ impl<'a> Parser<'a> {
                 prefix: Some(|parser: &mut Parser, can_assign: bool| {
                     Expression::Grouping(Box::new(parser.expression().unwrap().as_expr())).as_node()
                 }),
-                infix: None,
+                infix: Some(Self::call_expr),
             },
             TokenKind::While => Rule {
                 precedence: Precedence::None,
@@ -349,6 +350,15 @@ impl<'a> Parser<'a> {
     }
 }
 impl Parser<'_> {
+    pub fn call_expr(&mut self, lhs: Node) -> Node {
+        let identifier = lhs.as_identifier();
+        self.consume(TokenKind::RightParen, "expect");
+        CallExpr {
+            identifier: identifier,
+        }
+        .as_expr()
+        .as_node()
+    }
     pub fn while_expr(&mut self, _can_assign: bool) -> Node {
         let condition = self.expression().unwrap().as_expr();
         let block = self.expression().unwrap().as_expr().as_block();

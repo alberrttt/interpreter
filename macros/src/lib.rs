@@ -32,18 +32,22 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                 #[test]
                 fn #tmp_name() {
                     use rottenmangos::{
-                   backend::vm::VM,
-                    cli_context::Context,
-                    frontend::compiler::{{Compiler, FunctionType}},
-                };
-                use std::path::Path;
-                use std::fs::read_to_string;
+                        backend::vm::VM,
+                        cli_context::Context,
+                        frontend::compiler::{{Compiler, FunctionType}},
+                        common::value::Value,
+                    };
+                    use std::path::Path;
+                    use     std::fs::read_to_string;
                 let source = read_to_string(Path::new(#path_string)).unwrap();
                 let mut context = Context::new(Path::new(#path_string));
                 let compiler = Compiler::new(&mut context, FunctionType::Script);
                 let mut vm = VM::new();
+                vm.stack.push(Value::Void);
 
-                vm.run(compiler.compile(source).unwrap().chunk);
+                vm.call(compiler.compile(source).unwrap(),0);
+
+                vm.run();
                 }
             };
             stream.push(token.into())

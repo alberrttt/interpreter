@@ -1,8 +1,8 @@
 use crate::{common::opcode::OpCode, frontend::compiler::Compiler};
 
 use self::{
-    block::Block, comparison::Comparison, if_expr::IfExpr, variable_assignment::VariableAssignment,
-    while_expr::WhileExpr,
+    block::Block, call_expr::CallExpr, comparison::Comparison, if_expr::IfExpr,
+    variable_assignment::VariableAssignment, while_expr::WhileExpr,
 };
 
 use super::{
@@ -15,6 +15,7 @@ pub trait AsExpr {
     fn as_expr(self) -> Expression;
 }
 pub mod block;
+pub mod call_expr;
 pub mod comparison;
 pub mod if_expr;
 pub mod variable_assignment;
@@ -42,6 +43,7 @@ pub enum Expression {
     Identifier(Identifier),
     If(IfExpr),
     While(WhileExpr),
+    CallExpr(CallExpr),
     Comparison(Comparison),
 }
 impl AsNode for Expression {
@@ -68,6 +70,7 @@ impl Expression {
 impl CompileToBytecode for Expression {
     fn to_bytecode(self, compiler: &mut Compiler) -> () {
         match self {
+            Expression::CallExpr(call_expr) => call_expr.to_bytecode(compiler),
             Expression::While(while_expr) => while_expr.to_bytecode(compiler),
             Expression::Grouping(inner) => inner.to_bytecode(compiler),
             Expression::Literal(literal) => literal.to_bytecode(compiler),
