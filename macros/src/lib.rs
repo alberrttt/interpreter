@@ -1,4 +1,3 @@
-#![feature(proc_macro_quote)]
 use std::{
     env,
     fs::{self, read_to_string},
