@@ -25,7 +25,8 @@ impl CompileToBytecode for FunctionDeclaration {
         let mut temp_compiler = Compiler::new(context, FunctionType::Function);
         self.block.to_bytecode(&mut temp_compiler);
         temp_compiler.function.chunk.emit_op(OpCode::Return);
-        let function = temp_compiler.function;
+        let mut function = temp_compiler.function;
+        function.name = self.name.value.lexeme.clone();
         dissasemble_chunk(&function.chunk);
 
         compiler

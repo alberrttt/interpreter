@@ -2,6 +2,7 @@ use std::{collections::HashMap, ptr::null, rc::Rc};
 
 use crate::common::{
     chunk::Chunk,
+    debug::diassasemble_instruction,
     function::{self, Function},
     opcode::OpCode,
     value::{AsValue, Value},
@@ -51,7 +52,6 @@ impl VM {
         self.frame_count += 1;
     }
     pub fn run(mut self) {
-        let mut ip: usize = 0;
         let mut misc_slots: [Value; 8] = [
             Value::None,
             Value::None,
@@ -66,9 +66,10 @@ impl VM {
         let mut function = current_frame.function.as_ref().unwrap().as_ref();
         let mut chunk = &function.chunk;
         let mut jump_exhaust: usize = 0;
+        let mut ip: usize = current_frame.ip;
+
         loop {
             let instruction = &chunk.code[ip as usize];
-            ip += 1;
             #[cfg(debug_assertions)]
             {
                 if match instruction {
@@ -81,8 +82,11 @@ impl VM {
                 } else if jump_exhaust > 0 {
                     jump_exhaust -= 1;
                 }
-                println!("{ip} Executing {instruction} ")
+                print!("{ip} Executing ");
+                diassasemble_instruction(ip, instruction, &function.chunk);
             }
+            ip += 1;
+
             match instruction {
                 OpCode::JumpTo(offset) => {
                     ip = *offset as usize;
@@ -117,9 +121,14 @@ impl VM {
                 OpCode::Constant(location) => {
                     self.stack.push(chunk.constants[*location as usize].clone())
                 }
-                OpCode::GetLocal(index) => self.stack.push(self.stack[*index as usize].clone()),
+                OpCode::GetLocal(index) => {
+                    let value = self.stack[*index as usize + 1 + current_frame.slots].clone();
+                    dbg!(&value);
+                    self.stack.push(value)
+                }
                 OpCode::SetLocal(index) => {
-                    self.stack[*index as usize] = self.stack.last().unwrap().clone();
+                    self.stack[*index as usize + 1 + current_frame.slots] =
+                        self.stack.last().unwrap().clone();
                 }
                 OpCode::DefineLocal(location) => {
                     self.stack.push(chunk.constants[*location as usize].clone())
@@ -153,7 +162,7 @@ impl VM {
                         }
                         Value::String(lhs) => {
                             let Value::String(rhs) = rhs else {
-                                panic!()
+                                panic!("lhs {:?}\nrhs{:?}",lhs,rhs);
                             };
 
                             let mut lhs = lhs.borrow().to_owned();
@@ -225,15 +234,20 @@ impl VM {
                     assert_ne!(lhs, rhs);
                 }
                 OpCode::Return => {
-                    if self.frame_count - 1 == 0 {
+                    let mut returning = self.stack.pop();
+                    self.frame_count -= 1;
+
+                    if self.frame_count == 0 {
+                        self.stack.pop();
                         return;
                     }
-                    self.frame_count -= 1;
                     current_frame = self.callframes[self.frame_count].clone();
                     function = &current_frame.function.as_ref().unwrap().as_ref();
                     chunk = &function.chunk;
-
-                    break;
+                    println!("going to {}", current_frame.ip);
+                    ip = current_frame.ip;
+                    self.stack.truncate(self.callframes[self.frame_count].slots);
+                    self.stack.push(returning.take().unwrap());
                 }
                 OpCode::Call => {
                     let callee = &self.stack[self.stack.len() - 1];
@@ -249,6 +263,8 @@ impl VM {
                         },
                         0,
                     );
+                    println!("thee ip is {}", ip);
+                    self.callframes[self.frame_count - 2].ip = ip;
                     current_frame = self.callframes[self.frame_count - 1].clone();
                     function = &current_frame.function.as_ref().unwrap().as_ref();
                     chunk = &function.chunk;
