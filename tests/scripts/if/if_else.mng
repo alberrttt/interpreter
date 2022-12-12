@@ -1,8 +1,10 @@
 let x = 0;
-if false {
+
+assert_eq if false {
     x=123;
 } else {
-    x=345;
-};
-assert_eq x,345;
+    return 345;
+},345;
+
+assert_eq x, 0;
 
