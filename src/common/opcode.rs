@@ -3,6 +3,7 @@ use strum::Display;
 pub type ConstantLocation = u16;
 pub type SlotIndex = u8;
 pub type Offset = usize;
+#[repr(u8)]
 #[derive(Debug, Display, Clone)]
 pub enum OpCode {
     Constant(ConstantLocation),
@@ -39,4 +40,5 @@ pub enum OpCode {
     Mul,
     Return,
     Nop,
+    LoadRustFn(u16),
 }

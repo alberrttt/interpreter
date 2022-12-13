@@ -4,4 +4,4 @@ func hello() {
 
 hello();
 
-#expect stack[1, 234324]
+#expect stack []

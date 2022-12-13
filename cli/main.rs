@@ -4,7 +4,10 @@ use clap::Parser;
 use rottenmangos::{
     backend::vm::VM,
     cli_context,
-    common::{debug::dissasemble_chunk, value::Value},
+    common::{
+        debug::dissasemble_chunk,
+        value::{rcrf, Value},
+    },
     frontend::compiler::{Compiler, FunctionType},
 };
 
@@ -14,10 +17,9 @@ fn main() {
     let source = read_to_string(path).unwrap();
 
     let mut context = cli_context::Context::new(path);
-    let compiler = Compiler::new(&mut context, FunctionType::Script);
-
-    let mut compiled = compiler.compile(source).unwrap();
     let mut vm = VM::new();
+    let compiler = Compiler::new(&mut context, FunctionType::Script);
+    let compiled = compiler.compile(source).unwrap();
     vm.stack.push(Value::Void);
     vm.call(compiled, 0);
     vm.run();

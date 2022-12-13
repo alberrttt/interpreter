@@ -277,7 +277,9 @@ impl<'a> Parser<'a> {
                                     break;
                                 }
                             }
-                            dbg!("{:?}", stack);
+                            return Node::Emit(|compiler: &mut Compiler| {
+                                
+                            });
                         } else {
                             panic!("{}", self.current().lexeme)
                         }
@@ -285,7 +287,7 @@ impl<'a> Parser<'a> {
                         panic!()
                     }
                 }
-                Node::Empty
+                panic!()
             }
             _ => self.statement(),
         };

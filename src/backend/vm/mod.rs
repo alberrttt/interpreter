@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ptr::null, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, ptr::null, rc::Rc};
 
 use crate::common::{
     chunk::Chunk,
@@ -12,12 +12,6 @@ use super::callframe::CallFrame;
 
 pub mod ops;
 
-pub struct VM {
-    pub stack: Vec<Value>,
-    pub callframes: [CallFrame; 2048],
-    pub frame_count: usize,
-    pub globals: HashMap<String, Value>,
-}
 pub const Function: Function = Function {
     chunk: Chunk {
         code: Vec::new(),
@@ -31,6 +25,14 @@ pub const CallFrame: CallFrame = CallFrame {
     ip: 0,
     slots: 0,
 };
+#[derive(Debug)]
+pub struct VM {
+    pub stack: Vec<Value>,
+    pub callframes: [CallFrame; 2048],
+    pub frame_count: usize,
+    pub globals: HashMap<String, Value>,
+    pub rust_fn: Vec<fn(vm: RefCell<VM>) -> ()>,
+}
 impl VM {
     pub fn new() -> VM {
         VM {
@@ -38,6 +40,7 @@ impl VM {
             stack: vec![],
             globals: HashMap::new(),
             frame_count: 0,
+            rust_fn: Vec::new(),
         }
     }
     pub fn call(&mut self, function: Function, arg_count: usize) {
@@ -67,7 +70,7 @@ impl VM {
         let mut chunk = &function.chunk;
         let mut jump_exhaust: usize = 0;
         let mut ip: usize = current_frame.ip;
-
+        let mut rust_fn = None;
         loop {
             let instruction = &chunk.code[ip as usize];
             #[cfg(debug_assertions)]
@@ -88,6 +91,10 @@ impl VM {
             ip += 1;
 
             match instruction {
+                OpCode::LoadRustFn(location) => {
+                    rust_fn = self.rust_fn.get(*location as usize);
+                    return;
+                }
                 OpCode::JumpTo(offset) => {
                     ip = *offset as usize;
                     jump_exhaust += 1;
@@ -250,6 +257,11 @@ impl VM {
                     self.stack.push(returning.take().unwrap());
                 }
                 OpCode::Call => {
+                    if rust_fn.is_some() {
+                        let inner = rust_fn.take().unwrap();
+                        inner(RefCell::new(self));
+                        return;
+                    }
                     let callee = &self.stack[self.stack.len() - 1];
                     self.call(
                         match callee {

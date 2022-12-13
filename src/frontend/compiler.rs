@@ -1,8 +1,9 @@
 use std::ptr::null;
 
 use crate::{
+    backend::vm::VM,
     cli_context::Context,
-    common::{debug::dissasemble_chunk, function::Function, opcode::OpCode},
+    common::{debug::dissasemble_chunk, function::Function, opcode::OpCode, value::Ptr},
 };
 
 use super::{
@@ -33,6 +34,7 @@ pub struct Compiler<'a> {
     pub enclosing: Option<Enclosing<'a>>,
     pub emit_after_block: Vec<OpCode>,
     pub function_type: FunctionType,
+    
 }
 #[derive(Debug, PartialEq)]
 pub enum FunctionType {
