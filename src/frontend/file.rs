@@ -1,4 +1,4 @@
-use crate::common::function::Function;
+use crate::common::{function::Function, value::Value};
 
 use super::{
     ast::{node::Node, CompileToBytecode},
@@ -8,8 +8,13 @@ use super::{
 pub struct FileNode<'a> {
     pub nodes: Vec<Node>,
     pub compiler: Option<Compiler<'a>>,
+    pub file_attributes: FileAttributes,
 }
 
+#[derive(Debug, Default)]
+pub struct FileAttributes {
+    pub expect_stack: Option<Vec<Value>>,
+}
 impl<'a> FileNode<'a> {
     pub fn build_function(mut self) -> Function {
         let mut compiler = self.compiler.take().unwrap();

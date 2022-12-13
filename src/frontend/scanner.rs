@@ -78,7 +78,7 @@ pub enum TokenKind {
     Mut,
     Use,
     Return,
-
+    Hash,
     AssertEq,
     AssertNe,
     Print,
@@ -92,7 +92,8 @@ pub enum TokenKind {
     False,
     True,
     Func,
-
+    RightBracket,
+    LeftBracket,
     RightBrace,
     LeftBrace,
     RightParen,
@@ -190,6 +191,15 @@ impl Scanner {
         }
 
         let token = match char {
+            '[' => {
+                token!(self, LeftBracket)
+            }
+            ']' => {
+                token!(self, RightBracket)
+            }
+            '#' => {
+                token!(self, Hash)
+            }
             '"' => self.string(),
             '=' => {
                 if self.matches('=') {

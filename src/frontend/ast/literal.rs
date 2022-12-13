@@ -1,7 +1,7 @@
 use crate::{
     common::{
         opcode::OpCode,
-        value::{AsValue, Value},
+        value::{rcrf, AsValue, Value},
     },
     frontend::compiler::Compiler,
 };
@@ -23,6 +23,15 @@ impl Literal {
         match self {
             Literal::Number(number) => return number,
             _ => panic!(),
+        }
+    }
+}
+impl From<Literal> for Value {
+    fn from(literal: Literal) -> Self {
+        match literal {
+            Literal::Number(num) => Value::Number(num),
+            Literal::String(string) => Value::String(rcrf(string)),
+            Literal::Bool(bool) => Value::Boolean(bool),
         }
     }
 }

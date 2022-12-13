@@ -17,6 +17,8 @@ pub enum Node {
     Declaration(Declaration),
     Identifier(Identifier),
     None,
+    /// use this one if you don't want the node to be emitted
+    Empty,
 }
 
 impl Node {
@@ -44,6 +46,7 @@ impl AsExpr for Node {
             Node::Statement(_) => panic!(),
             Node::Identifier(identifier) => Expression::Identifier(identifier),
             Node::None => panic!(),
+            Node::Empty => panic!(),
         }
     }
 }

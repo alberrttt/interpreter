@@ -3,7 +3,7 @@ use std::{mem::transmute, ops::Range, rc::Rc};
 
 use colored::Colorize;
 
-use crate::cli_context::Context;
+use crate::{cli_context::Context, common::value::Value};
 
 use super::{
     ast::{
@@ -245,13 +245,50 @@ impl<'a> Parser<'a> {
             if self.at_end() {
                 break;
             }
-            file.nodes.push(self.node());
+            let node = self.node();
+
+            if node.eq(&Node::Empty) {
+            } else {
+                file.nodes.push(node);
+            }
         }
         file
     }
 
     pub fn node(&mut self) -> Node {
-        let node = self.statement();
+        let node = match self.current().kind {
+            TokenKind::Hash => {
+                self.advance();
+                if self.match_token(TokenKind::Identifier) {
+                    if self.previous().lexeme == "expect" {
+                        if self.current().lexeme == "stack" {
+                            let mut stack: Vec<Value> = Vec::new();
+                            self.advance();
+                            self.consume(TokenKind::LeftBracket, "expected '['");
+                            loop {
+                                if self.match_token(TokenKind::RightBracket) {
+                                    break;
+                                } else {
+                                    let value: Value =
+                                        self.expression().unwrap().as_literal().try_into().unwrap();
+                                    stack.push(value)
+                                }
+                                if !self.match_token(TokenKind::Comma) {
+                                    break;
+                                }
+                            }
+                            dbg!("{:?}", stack);
+                        } else {
+                            panic!("{}", self.current().lexeme)
+                        }
+                    } else {
+                        panic!()
+                    }
+                }
+                Node::Empty
+            }
+            _ => self.statement(),
+        };
         if self.panic_mode {
             self.synchronize();
         }
@@ -259,7 +296,10 @@ impl<'a> Parser<'a> {
     }
     pub fn expression_statement(&mut self) -> Node {
         let expr = self.expression().unwrap().as_expr();
-        self.consume(TokenKind::SemiColon, "Expected ';' after expression");
+        self.consume(
+            TokenKind::SemiColon,
+            format!("Expected ';' after expression {}:{}", file!(), line!()).as_str(),
+        );
         Statement::Expression(expr).as_node()
     }
     pub fn token_as_identifier(&mut self) -> Identifier {
@@ -338,7 +378,10 @@ impl<'a> Parser<'a> {
                 }
                 if let Ok(expr) = self.expression() {
                     let expr = expr.as_expr();
-                    self.consume(TokenKind::SemiColon, "Expected ';' after expression");
+                    self.consume(
+                        TokenKind::SemiColon,
+                        format!("Expected ';' after expression {}:{}", file!(), line!()).as_str(),
+                    );
                     return Statement::Return(ReturnStmt { expr: Some(expr) }).as_node();
                 } else {
                     self.consume(TokenKind::SemiColon, "Expected ';' after return statement");

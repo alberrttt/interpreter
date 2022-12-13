@@ -9,7 +9,6 @@ use quote::{format_ident, quote};
 #[proc_macro]
 pub fn make_tests(_item: TokenStream) -> TokenStream {
     let mut stream = Vec::new();
-    println!("{:?}", env::current_dir());
     let mut path = PathBuf::new();
     path.push("tests");
     path.push("scripts");
