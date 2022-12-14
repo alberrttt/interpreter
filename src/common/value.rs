@@ -1,10 +1,15 @@
 // runtime value
 
-use std::{cell::RefCell, fmt::Display, ptr::addr_of, rc::Rc};
+use std::{
+    cell::RefCell,
+    fmt::{Debug, Display},
+    ptr::addr_of,
+    rc::Rc,
+};
 
 use super::function::Function;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum Value {
     Number(f64),
     Boolean(bool),
@@ -12,6 +17,18 @@ pub enum Value {
     Function(Ptr<Function>),
     Void,
     None,
+}
+impl Debug for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Number(arg0) => f.debug_tuple("Number").field(arg0).finish(),
+            Self::Boolean(arg0) => f.debug_tuple("Boolean").field(arg0).finish(),
+            Self::String(arg0) => f.debug_tuple("String").field(arg0).finish(),
+            Self::Function(arg0) => f.debug_tuple("Function").finish(),
+            Self::Void => write!(f, "Void"),
+            Self::None => write!(f, "None"),
+        }
+    }
 }
 pub const NONEVALUE: Value = Value::None;
 impl PartialEq for Value {

@@ -3,6 +3,7 @@ use strum::Display;
 pub type ConstantLocation = u16;
 pub type SlotIndex = u8;
 pub type Offset = usize;
+
 #[repr(u8)]
 #[derive(Debug, Display, Clone)]
 pub enum OpCode {
@@ -20,7 +21,8 @@ pub enum OpCode {
     SetTempSlot(SlotIndex),
     JumpToIfFalse(Offset),
     JumpTo(Offset),
-    Call,
+    // Call(arguments)
+    Call(usize),
     Greater,
     Less,
     GreaterEq,
@@ -40,5 +42,5 @@ pub enum OpCode {
     Mul,
     Return,
     Nop,
-    LoadRustFn(u16),
+    CallNative(u16),
 }

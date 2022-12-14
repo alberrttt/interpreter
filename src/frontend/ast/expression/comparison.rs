@@ -1,6 +1,6 @@
 use crate::{
-    common::{chunk::Chunk, opcode::OpCode},
-    frontend::{ast::CompileToBytecode, compiler},
+    common::{opcode::OpCode},
+    frontend::{ast::CompileToBytecode},
 };
 
 use super::{AsExpr, Expression};

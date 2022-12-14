@@ -1,9 +1,10 @@
-use std::{cell::RefCell, collections::HashMap, ptr::null, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc, thread::sleep_ms, time::Duration};
 
 use crate::common::{
     chunk::Chunk,
     debug::diassasemble_instruction,
-    function::{self, Function},
+    function::Function,
+    natives::Native,
     opcode::OpCode,
     value::{AsValue, Value},
 };
@@ -12,7 +13,7 @@ use super::callframe::CallFrame;
 
 pub mod ops;
 
-pub const Function: Function = Function {
+pub const FUNCTION: Function = Function {
     chunk: Chunk {
         code: Vec::new(),
         constants: Vec::new(),
@@ -20,32 +21,35 @@ pub const Function: Function = Function {
     arity: 0,
     name: String::new(),
 };
-pub const CallFrame: CallFrame = CallFrame {
+pub const CALLFRAME: CallFrame = CallFrame {
     function: None,
     ip: 0,
     slots: 0,
 };
 #[derive(Debug)]
-pub struct VM {
+pub struct VirtualMachine {
     pub stack: Vec<Value>,
     pub callframes: [CallFrame; 2048],
     pub frame_count: usize,
     pub globals: HashMap<String, Value>,
-    pub rust_fn: Vec<fn(vm: RefCell<VM>) -> ()>,
+    pub natives: Vec<Native>,
 }
-impl VM {
-    pub fn new() -> VM {
-        VM {
-            callframes: [CallFrame; 2048],
+impl VirtualMachine {
+    pub fn new() -> VirtualMachine {
+        VirtualMachine {
+            callframes: [CALLFRAME; 2048],
             stack: vec![],
+            natives: Vec::new(),
             globals: HashMap::new(),
             frame_count: 0,
-            rust_fn: Vec::new(),
         }
     }
     pub fn call(&mut self, function: Function, arg_count: usize) {
         if arg_count != function.arity as usize {
-            panic!()
+            panic!(
+                "mismatched argument counts! expected {} got {arg_count}",
+                function.arity
+            )
         }
 
         let frame = &mut self.callframes[self.frame_count];
@@ -55,7 +59,7 @@ impl VM {
         self.frame_count += 1;
     }
     pub fn run(mut self) {
-        let mut misc_slots: [Value; 8] = [
+        let mut temp_regs: [Value; 8] = [
             Value::None,
             Value::None,
             Value::None,
@@ -68,43 +72,31 @@ impl VM {
         let mut current_frame = self.callframes[self.frame_count - 1].clone();
         let mut function = current_frame.function.as_ref().unwrap().as_ref();
         let mut chunk = &function.chunk;
-        let mut jump_exhaust: usize = 0;
         let mut ip: usize = current_frame.ip;
-        let mut rust_fn = None;
         loop {
             let instruction = &chunk.code[ip as usize];
             #[cfg(debug_assertions)]
             {
-                if match instruction {
-                    OpCode::JumpTo(_) | OpCode::JumpToIfFalse(_) => true,
-                    _ => false,
-                } {
-                    if jump_exhaust > 20 {
-                        panic!("Jump exhuasted!");
-                    }
-                } else if jump_exhaust > 0 {
-                    jump_exhaust -= 1;
-                }
                 print!("{ip} Executing ");
                 diassasemble_instruction(ip, instruction, &function.chunk);
             }
             ip += 1;
 
             match instruction {
-                OpCode::LoadRustFn(location) => {
-                    rust_fn = self.rust_fn.get(*location as usize);
+                OpCode::CallNative(location) => {
+                    let native = &self.natives[*location as usize];
+                    let args = [];
+                    (native.0)(&args, &mut self);
                     return;
                 }
                 OpCode::JumpTo(offset) => {
                     ip = *offset as usize;
-                    jump_exhaust += 1;
                 }
                 OpCode::JumpToIfFalse(offset) => {
                     let condition = self.stack.last().unwrap().as_bool();
                     if !condition {
                         ip = *offset as usize;
                     }
-                    jump_exhaust += 1;
                 }
                 OpCode::Nop => {}
                 OpCode::Not => {
@@ -130,7 +122,6 @@ impl VM {
                 }
                 OpCode::GetLocal(index) => {
                     let value = self.stack[*index as usize + 1 + current_frame.slots].clone();
-                    dbg!(&value);
                     self.stack.push(value)
                 }
                 OpCode::SetLocal(index) => {
@@ -191,7 +182,7 @@ impl VM {
                             };
                             self.stack.push(Value::Number(lhs - rhs))
                         }
-                        _ => unimplemented!(),
+                        x => unimplemented!("cannot subtract value {}", x),
                     }
                 }
                 OpCode::Mul => {
@@ -248,21 +239,16 @@ impl VM {
                         self.stack.pop();
                         return;
                     }
-                    current_frame = self.callframes[self.frame_count].clone();
+
+                    current_frame = self.callframes[self.frame_count - 1].clone();
                     function = &current_frame.function.as_ref().unwrap().as_ref();
                     chunk = &function.chunk;
-                    println!("going to {}", current_frame.ip);
                     ip = current_frame.ip;
                     self.stack.truncate(self.callframes[self.frame_count].slots);
                     self.stack.push(returning.take().unwrap());
                 }
-                OpCode::Call => {
-                    if rust_fn.is_some() {
-                        let inner = rust_fn.take().unwrap();
-                        inner(RefCell::new(self));
-                        return;
-                    }
-                    let callee = &self.stack[self.stack.len() - 1];
+                OpCode::Call(arg_count) => {
+                    let callee = &self.stack[self.stack.len() - (1 + arg_count)];
                     self.call(
                         match callee {
                             Value::Function(ptr) => {
@@ -273,21 +259,24 @@ impl VM {
                             }
                             x => panic!("got {:?}", x),
                         },
-                        0,
+                        *arg_count,
                     );
-                    println!("thee ip is {}", ip);
                     self.callframes[self.frame_count - 2].ip = ip;
-                    current_frame = self.callframes[self.frame_count - 1].clone();
-                    function = &current_frame.function.as_ref().unwrap().as_ref();
-                    chunk = &function.chunk;
-                    ip = 0;
+
+                    // prepares for the next callframe
+                    {
+                        current_frame = self.callframes[self.frame_count - 1].clone();
+                        function = &current_frame.function.as_ref().unwrap().as_ref();
+                        chunk = &function.chunk;
+                        ip = 0;
+                    }
                 }
                 OpCode::TakeTempSlot(slot) => {
-                    let slot = std::mem::replace(&mut misc_slots[*slot as usize], Value::None);
+                    let slot = std::mem::replace(&mut temp_regs[*slot as usize], Value::None);
                     self.stack.push(slot)
                 }
                 OpCode::SetTempSlot(slot) => {
-                    misc_slots[*slot as usize] = self.stack.pop().unwrap();
+                    temp_regs[*slot as usize] = self.stack.pop().unwrap();
                 }
                 OpCode::Less => {
                     let Some(Value::Number(rhs)) = self.stack.pop() else {

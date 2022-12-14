@@ -1,6 +1,6 @@
 use std::{char, fmt};
 
-use super::ast::expression::comparison::{Comparison, ComparisonKind};
+use super::ast::expression::comparison::{ComparisonKind};
 
 #[derive(Debug, Clone, Default)]
 pub struct Scanner {

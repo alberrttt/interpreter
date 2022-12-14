@@ -1,5 +1,3 @@
-use super::VM;
+use super::VirtualMachine;
 
-impl VM {
-    
-}
+impl VirtualMachine {}

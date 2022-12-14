@@ -1,4 +1,4 @@
-use std::ops::Sub;
+
 
 use crate::{common::opcode::OpCode, frontend::ast::CompileToBytecode};
 
@@ -26,7 +26,7 @@ impl CompileToBytecode for WhileExpr {
             .emit_op(OpCode::JumpToIfFalse(0xfff));
         compiler.function.chunk.emit_op(OpCode::Pop);
         self.block.to_bytecode(compiler);
-        let after_block = compiler.function.chunk.code.len();
+        let _after_block = compiler.function.chunk.code.len();
         compiler
             .function
             .chunk

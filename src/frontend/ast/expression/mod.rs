@@ -51,7 +51,12 @@ impl AsNode for Expression {
         Node::Expression(self)
     }
 }
-
+impl Expression {
+    pub fn as_literal(self) -> Literal {
+        let Expression::Literal(literal) = self else {panic!()};
+        literal
+    }
+}
 impl Expression {
     pub fn as_block(self) -> Block {
         let Expression::Block(block) = self else {

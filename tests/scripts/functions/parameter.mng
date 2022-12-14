@@ -1,0 +1,5 @@
+func param(n) {
+  print n + 2;
+}
+
+param(4);

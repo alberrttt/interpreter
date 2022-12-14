@@ -1,7 +1,6 @@
 use crate::{
     common::{
         debug::dissasemble_chunk,
-        function,
         opcode::OpCode,
         value::{rcrf, AsValue, Value},
     },
@@ -17,32 +16,53 @@ use super::AsDeclaration;
 pub struct FunctionDeclaration {
     pub name: Identifier,
     pub block: Block,
+    pub parameters: Vec<Identifier>,
 }
-
+impl<'a> Compiler<'a> {
+    fn in_scope(&self) -> bool {
+        self.scope_depth > 0
+    }
+}
 impl CompileToBytecode for FunctionDeclaration {
     fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
-        let context = compiler.context.take().unwrap();
-        let mut temp_compiler = Compiler::new(context, FunctionType::Function);
-        self.block.to_bytecode(&mut temp_compiler);
-        temp_compiler.function.chunk.emit_op(OpCode::Return);
-        let mut function = temp_compiler.function;
-        function.name = self.name.value.lexeme.clone();
-        dissasemble_chunk(&function.chunk);
+        // uses the current compiler's compilation context for the function
+        // which is returned later
+        let mut temp_compiler =
+            Compiler::new(compiler.context.take().unwrap(), FunctionType::Function);
+        let function = {
+            // sets the function name and arity
+            temp_compiler.function.arity = self.parameters.len() as u8;
+            temp_compiler.function.name = self.name.value.lexeme.clone();
 
+            // tells the compiler to recongize any parameters
+            for param in self.parameters {
+                temp_compiler.add_local(param.value)
+            }
+
+            // finally compiles the block
+            self.block.to_bytecode(&mut temp_compiler);
+
+            temp_compiler.function.chunk.emit_op(OpCode::Return);
+            temp_compiler.function
+        };
+        dissasemble_chunk(&function.chunk);
         compiler
             .function
             .chunk
             .emit_constant(Value::Function(rcrf(function)));
-        if compiler.scope_depth > 0 {
+
+        if compiler.in_scope() {
             compiler.add_local(self.name.value);
             return;
         } else {
+            // location of the name in the constant pool
             let name = compiler
                 .function
                 .chunk
                 .emit_value(self.name.value.lexeme.as_value().clone());
             compiler.function.chunk.emit_op(OpCode::DefineGlobal(name))
         };
+        // compilation context is returned
         compiler.context = temp_compiler.context.take();
     }
 }

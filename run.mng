@@ -1,7 +1,0 @@
-func hello() {
-    print "hello";
-}
-
-hello();
-
-#expect stack []

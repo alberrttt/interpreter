@@ -33,7 +33,7 @@ impl Debug for Node {
             Self::Identifier(arg0) => f.debug_tuple("Identifier").field(arg0).finish(),
             Self::None => write!(f, "None"),
             Self::Empty => write!(f, "Empty"),
-            Self::Emit(arg0) => f.debug_tuple("Emit").finish(),
+            Self::Emit(_arg0) => f.debug_tuple("Emit").finish(),
         }
     }
 }

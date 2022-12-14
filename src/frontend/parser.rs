@@ -11,13 +11,9 @@ use super::{
             function::FunctionDeclaration, variable_declaration::VariableDeclaration, AsDeclaration,
         },
         expression::{
-            block::Block,
-            call_expr::CallExpr,
-            comparison::{Comparison, ComparisonKind},
-            if_expr::IfExpr,
-            variable_assignment::VariableAssignment,
-            while_expr::WhileExpr,
-            AsExpr, BinaryExpr, Expression,
+            block::Block, call_expr::CallExpr, comparison::Comparison, if_expr::IfExpr,
+            variable_assignment::VariableAssignment, while_expr::WhileExpr, AsExpr, BinaryExpr,
+            Expression,
         },
         identifier::Identifier,
         literal::Literal,
@@ -41,11 +37,12 @@ impl<'a> CompilerRef<'a> {
 #[derive(Debug)]
 pub struct Parser<'a> {
     pub context: Option<&'a mut Context<'a>>,
-    pub had_error: bool,
     pub scanner: Box<Scanner>,
+    pub compiler: CompilerRef<'a>,
+
+    pub had_error: bool,
     pub panic_mode: bool,
     pub scope_depth: usize,
-    pub compiler: CompilerRef<'a>,
     pub previous: Rc<Token>,
     pub current: Token,
     pub tokens: Vec<Token>,
@@ -62,8 +59,10 @@ impl<'a> Parser<'a> {
         match kind {
             TokenKind::LeftParen => Rule {
                 precedence: Precedence::Grouping,
-                prefix: Some(|parser: &mut Parser, can_assign: bool| {
-                    Expression::Grouping(Box::new(parser.expression().unwrap().as_expr())).as_node()
+                prefix: Some(|parser: &mut Parser, _can_assign: bool| {
+                    let expr = Expression::Grouping(Box::new(parser.expression().unwrap().as_expr())).as_node();
+                    parser.consume(TokenKind::RightParen, "");
+                    expr
                 }),
                 infix: Some(Self::call_expr),
             },
@@ -152,7 +151,7 @@ impl<'a> Parser<'a> {
             },
             TokenKind::Bang => Rule {
                 precedence: Precedence::Unary,
-                prefix: Some(|parser, can_assign| {
+                prefix: Some(|parser, _can_assign| {
                     Expression::Not(Box::new(
                         parser.precedence(Precedence::Unary).unwrap().as_expr(),
                     ))
@@ -194,7 +193,8 @@ impl<'a> Parser<'a> {
             expression = rule.prefix.unwrap()(self, can_assign);
         } else {
             return Err(format!(
-                "no expr {}:{}:{}",
+                "{} no expr {}:{}:{}",
+                previous.kind,
                 self.context
                     .as_ref()
                     .unwrap()
@@ -277,9 +277,7 @@ impl<'a> Parser<'a> {
                                     break;
                                 }
                             }
-                            return Node::Emit(|compiler: &mut Compiler| {
-                                
-                            });
+                            return Node::Emit(|_compiler: &mut Compiler| {});
                         } else {
                             panic!("{}", self.current().lexeme)
                         }
@@ -357,10 +355,21 @@ impl<'a> Parser<'a> {
             TokenKind::Func => {
                 self.advance();
                 let identifier = self.token_as_identifier();
+                let mut parameters: Vec<Identifier> = Vec::new();
                 self.consume(TokenKind::LeftParen, "err");
-                self.consume(TokenKind::RightParen, "err");
+                loop {
+                    if self.match_token(TokenKind::RightParen) {
+                        break;
+                    }
+                    parameters.push(self.expression().unwrap().as_identifier());
+                    if !self.match_token(TokenKind::Comma) {
+                        self.advance();
+                        break;
+                    }
+                }
                 self.consume(TokenKind::LeftBrace, "Expected '{'");
                 FunctionDeclaration {
+                    parameters: parameters,
                     name: identifier,
                     block: self.block(false).as_expr().as_block(),
                 }
@@ -397,8 +406,21 @@ impl<'a> Parser<'a> {
 impl Parser<'_> {
     pub fn call_expr(&mut self, lhs: Node) -> Node {
         let identifier = lhs.as_identifier();
-        self.consume(TokenKind::RightParen, "expect");
+        let mut parameters: Vec<Expression> = Vec::new();
+        loop {
+            if self.match_token(TokenKind::RightParen) {
+                break;
+            }
+
+            let parameter = self.expression();
+            parameters.push(parameter.unwrap().as_expr());
+            if !self.match_token(TokenKind::Comma) {
+                self.advance();
+                break;
+            }
+        }
         CallExpr {
+            parameters: Box::new(parameters),
             identifier: identifier,
         }
         .as_expr()
@@ -567,6 +589,7 @@ impl<'a> Parser<'a> {
             index: 0,
         }
     }
+    /// if the current token matches the token kind, then advance, if not return false
     pub fn match_token(&mut self, tk: TokenKind) -> bool {
         if !self.check(tk) {
             return false;
@@ -574,6 +597,7 @@ impl<'a> Parser<'a> {
         self.advance();
         return true;
     }
+    /// checks the token kind of the current
     pub fn check(&mut self, tk: TokenKind) -> bool {
         self.current().kind == tk
     }

@@ -1,6 +1,5 @@
 use std::{
-    env,
-    fs::{self, read_to_string},
+    fs::{self},
     path::{Path, PathBuf},
 };
 
@@ -18,7 +17,7 @@ pub fn make_tests(_item: TokenStream) -> TokenStream {
     tmp
 }
 fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
-    for (i, file) in fs::read_dir(path).unwrap().enumerate() {
+    for (_i, file) in fs::read_dir(path).unwrap().enumerate() {
         let file = file.unwrap();
         if file.file_type().unwrap().is_file() {
             let path = file.path();
@@ -30,7 +29,7 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                 #[test]
                 fn #tmp_name() {
                     use rottenmangos::{
-                        backend::vm::VM,
+                        backend::vm::VirtualMachine,
                         cli_context::Context,
                         frontend::compiler::{{Compiler, FunctionType}},
                         common::value::Value,
@@ -40,7 +39,7 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                 let source = read_to_string(Path::new(#path_string)).unwrap();
                 let mut context = Context::new(Path::new(#path_string));
                 let compiler = Compiler::new(&mut context, FunctionType::Script);
-                let mut vm = VM::new();
+                let mut vm = VirtualMachine::new();
                 vm.stack.push(Value::Void);
 
                 vm.call(compiler.compile(source).unwrap(),0);

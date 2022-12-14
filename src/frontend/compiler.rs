@@ -1,9 +1,8 @@
 use std::ptr::null;
 
 use crate::{
-    backend::vm::VM,
     cli_context::Context,
-    common::{debug::dissasemble_chunk, function::Function, opcode::OpCode, value::Ptr},
+    common::{debug::dissasemble_chunk, function::Function, opcode::OpCode},
 };
 
 use super::{
@@ -24,18 +23,21 @@ impl<'a> Enclosing<'a> {
 }
 #[derive(Debug)]
 pub struct Compiler<'a> {
-    pub function: Function,
     pub scanner: Scanner,
     pub parser: Parser<'a>,
+    pub enclosing: Option<Enclosing<'a>>,
     pub context: Option<&'a mut Context<'a>>,
+
+    pub function: Function,
     pub scope_depth: u8,
     pub locals: [Local; 512],
     pub local_count: usize,
-    pub enclosing: Option<Enclosing<'a>>,
     pub emit_after_block: Vec<OpCode>,
     pub function_type: FunctionType,
-    
+
+    pub returned_from_block: bool,
 }
+
 #[derive(Debug, PartialEq)]
 pub enum FunctionType {
     Script, // file
@@ -85,6 +87,7 @@ impl<'a> Compiler<'a> {
             enclosing: None,
             emit_after_block: Vec::new(),
             function_type,
+            returned_from_block: false,
         };
         compiler
     }

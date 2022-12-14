@@ -1,5 +1,3 @@
-use crate::common::chunk;
-
 use super::{chunk::Chunk, opcode::OpCode};
 
 use std::string::ToString;
@@ -34,7 +32,7 @@ pub fn diassasemble_instruction(
 
             println!("{} <{}>", instruction.to_string(), constant)
         }
-        OpCode::JumpTo(offset) | OpCode::JumpToIfFalse(offset) => {
+        OpCode::JumpTo(offset) | OpCode::JumpToIfFalse(offset) | OpCode::Call(offset) => {
             println!("{} {}", instruction.to_string(), offset)
         }
         OpCode::GetLocal(pos) | OpCode::SetLocal(pos) => {

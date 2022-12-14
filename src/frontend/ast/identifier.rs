@@ -1,6 +1,9 @@
 use crate::{
     common::{opcode::OpCode, value::AsValue},
-    frontend::{compiler::Compiler, scanner::Token},
+    frontend::{
+        compiler::Compiler,
+        scanner::{Token, TokenKind},
+    },
 };
 
 use super::{
@@ -31,6 +34,7 @@ impl CompileToBytecode for Identifier {
 }
 impl<'a> Compiler<'a> {
     pub fn resolve_local(&mut self, name: &Token) -> Option<usize> {
+        assert_eq!(name.kind, TokenKind::Identifier);
         for (i, token) in self.locals[0..self.local_count].iter().enumerate().rev() {
             if name.lexeme.eq(&token.name.lexeme) {
                 return Some(i);

@@ -4,5 +4,4 @@ a language i made
 
 ## todo  
 
-currently, `to_bytecode()` has no access to the compiler  
-token positions aren't captured
+❗❗❗ WHEN THE COMPILER ERRORS, IT 'STAGGERS' THE REST OF THE PROGRAM MEANING, A FORGOTTEN SEMICOLON WILL PREVENT THE REST OF THE PROGRAM FROM COMPILING
