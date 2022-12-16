@@ -1,4 +1,4 @@
-use std::{ffi::OsString, fs::read_to_string, path::Path};
+use std::{ffi::OsString, fs::read_to_string, path::Path, time::Instant};
 
 use clap::Parser;
 use rottenmangos::{
@@ -16,7 +16,12 @@ fn main() {
     let mut context = cli_context::Context::new(path);
     let mut vm = VirtualMachine::new();
     let compiler = Compiler::new(&mut context, FunctionType::Script);
+    let start = Instant::now();
     let compiled = compiler.compile(source).unwrap();
+    println!(
+        "took {}ms to compile",
+        start.elapsed().as_secs_f64() * 1000.0
+    );
     vm.stack.push(Value::Void);
     vm.call(compiled, 0);
     vm.run();

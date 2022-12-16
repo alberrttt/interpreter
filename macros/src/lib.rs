@@ -39,10 +39,12 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                 let source = read_to_string(Path::new(#path_string)).unwrap();
                 let mut context = Context::new(Path::new(#path_string));
                 let compiler = Compiler::new(&mut context, FunctionType::Script);
+                let compiled = compiler.compile(source).unwrap();
+
                 let mut vm = VirtualMachine::new();
                 vm.stack.push(Value::Void);
 
-                vm.call(compiler.compile(source).unwrap(),0);
+                vm.call(compiled,0);
 
                 vm.run();
                 }

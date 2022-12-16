@@ -1,4 +1,10 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc, thread::sleep_ms, time::Duration};
+use std::{
+    cell::RefCell,
+    collections::HashMap,
+    rc::Rc,
+    thread::sleep_ms,
+    time::{Duration, Instant},
+};
 
 use crate::common::{
     chunk::Chunk,
@@ -69,6 +75,7 @@ impl VirtualMachine {
             Value::None,
             Value::None,
         ];
+        let start = Instant::now();
         let mut current_frame = self.callframes[self.frame_count - 1].clone();
         let mut function = current_frame.function.as_ref().unwrap().as_ref();
         let mut chunk = &function.chunk;
@@ -199,9 +206,9 @@ impl VirtualMachine {
                         _ => unimplemented!(),
                     }
                 }
-                OpCode::Pop => {
-                    self.stack.pop();
-                }
+                OpCode::Pop => unsafe {
+                    self.stack.set_len(self.stack.len() - 1);
+                },
                 OpCode::Div => {
                     let rhs = self.stack.pop().unwrap();
                     let lhs = self.stack.pop().unwrap();
@@ -237,6 +244,7 @@ impl VirtualMachine {
 
                     if self.frame_count == 0 {
                         self.stack.pop();
+                        println!("{}", start.elapsed().as_secs_f64());
                         return;
                     }
 
