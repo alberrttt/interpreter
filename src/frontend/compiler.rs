@@ -79,11 +79,7 @@ impl<'a> Compiler<'a> {
         let compiler = Compiler {
             function: Function::new(),
             scanner: Scanner::new(String::from("")),
-            parser: Parser::new(
-                unsafe { std::mem::MaybeUninit::uninit().assume_init() },
-                None,
-                function_type.clone(),
-            ),
+            parser: Parser::new(Scanner::new(String::new()), None, function_type.clone()),
             context: Some(context),
             locals: [LOCAL; 512],
             local_count: 0,

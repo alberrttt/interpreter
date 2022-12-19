@@ -7,4 +7,5 @@ func fib(n) {
     return fib(n-2)+fib(n-1);
 }
 
-print fib(30);
+let x = 30;
+print fib(x);
