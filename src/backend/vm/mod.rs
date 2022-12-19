@@ -1,6 +1,7 @@
 use std::{
     cell::RefCell,
     collections::HashMap,
+    mem::MaybeUninit,
     rc::Rc,
     thread::sleep_ms,
     time::{Duration, Instant},
@@ -28,7 +29,7 @@ pub const FUNCTION: Function = Function {
     name: String::new(),
 };
 pub const CALLFRAME: CallFrame = CallFrame {
-    function: None,
+    function: FUNCTION,
     ip: 0,
     slots: 0,
 };
@@ -59,50 +60,40 @@ impl VirtualMachine {
         }
 
         let frame = &mut self.callframes[self.frame_count];
-        frame.function = Some(Rc::new(function));
+        frame.function = function;
         frame.slots = self.stack.len() - (arg_count + 1) as usize;
 
         self.frame_count += 1;
     }
     pub fn run(mut self) {
-        let mut temp_regs: [Value; 8] = [
-            Value::None,
-            Value::None,
-            Value::None,
-            Value::None,
-            Value::None,
-            Value::None,
-            Value::None,
-            Value::None,
-        ];
         let start = Instant::now();
-        let mut current_frame = self.callframes[self.frame_count - 1].clone();
-        let mut function = current_frame.function.as_ref().unwrap().as_ref();
+        let mut current_frame = &self.callframes[self.frame_count - 1];
+        let mut function = &current_frame.function;
         let mut chunk = &function.chunk;
         let mut ip: usize = current_frame.ip;
         loop {
             let instruction = &chunk.code[ip as usize];
-            #[cfg(debug_assertions)]
-            {
-                print!("{ip} Executing ");
-                diassasemble_instruction(ip, instruction, &function.chunk);
-            }
+            // #[cfg(debug_assertions)]
+            // {
+            //     print!("{ip} Executing ");
+            //     diassasemble_instruction(ip, instruction, &function.chunk);
+            // }
             ip += 1;
 
-            match instruction {
+            match instruction.clone() {
                 OpCode::CallNative(location) => {
-                    let native = &self.natives[*location as usize];
+                    let native = &self.natives[location as usize];
                     let args = [];
                     (native.0)(&args, &mut self);
                     return;
                 }
                 OpCode::JumpTo(offset) => {
-                    ip = *offset as usize;
+                    ip = offset as usize;
                 }
                 OpCode::JumpToIfFalse(offset) => {
-                    let condition = self.stack.last().unwrap().as_bool();
+                    let condition = self.stack[self.stack.len() - 1].as_bool();
                     if !condition {
-                        ip = *offset as usize;
+                        ip = offset as usize;
                     }
                 }
                 OpCode::Nop => {}
@@ -122,34 +113,34 @@ impl VirtualMachine {
                         panic!("negate cannot be applied to {} ", pop)
                     }
                 }
-                OpCode::True => self.stack.push(true.as_value()),
-                OpCode::False => self.stack.push(false.as_value()),
+                OpCode::True => self.stack.push(Value::Boolean(true)),
+                OpCode::False => self.stack.push(Value::Boolean(false)),
                 OpCode::Constant(location) => {
-                    self.stack.push(chunk.constants[*location as usize].clone())
+                    self.stack.push(chunk.constants[location as usize].clone())
                 }
                 OpCode::GetLocal(index) => {
-                    let value = self.stack[*index as usize + 1 + current_frame.slots].clone();
+                    let value = self.stack[index as usize + 1 + current_frame.slots].clone();
                     self.stack.push(value)
                 }
                 OpCode::SetLocal(index) => {
-                    self.stack[*index as usize + 1 + current_frame.slots] =
+                    self.stack[index as usize + 1 + current_frame.slots] =
                         self.stack.last().unwrap().clone();
                 }
                 OpCode::DefineLocal(location) => {
-                    self.stack.push(chunk.constants[*location as usize].clone())
+                    self.stack.push(chunk.constants[location as usize].clone())
                 }
                 OpCode::GetGlobal(name) => {
-                    let name = chunk.constants[*name as usize].as_string();
+                    let name = chunk.constants[name as usize].as_string();
                     self.stack.push(self.globals.get(name).unwrap().clone())
                 }
                 OpCode::SetGlobal(name) => {
-                    let name = (chunk.constants[*name as usize].as_string()).to_owned();
+                    let name = (chunk.constants[name as usize].as_string()).to_owned();
                     assert!(self.globals.contains_key(&name));
                     let value = self.stack[self.stack.len() - 1].clone();
                     self.globals.insert(name, value);
                 }
                 OpCode::DefineGlobal(name) => {
-                    let name = (chunk.constants[*name as usize].as_string()).to_owned();
+                    let name = (chunk.constants[name as usize].as_string()).to_owned();
                     let value = self.stack.pop().unwrap();
                     self.globals.insert(name, value);
                 }
@@ -248,8 +239,8 @@ impl VirtualMachine {
                         return;
                     }
 
-                    current_frame = self.callframes[self.frame_count - 1].clone();
-                    function = &current_frame.function.as_ref().unwrap().as_ref();
+                    current_frame = &self.callframes[self.frame_count - 1];
+                    function = &current_frame.function;
                     chunk = &function.chunk;
                     ip = current_frame.ip;
                     self.stack.truncate(self.callframes[self.frame_count].slots);
@@ -267,25 +258,19 @@ impl VirtualMachine {
                             }
                             x => panic!("got {:?}", x),
                         },
-                        *arg_count,
+                        arg_count,
                     );
                     self.callframes[self.frame_count - 2].ip = ip;
 
                     // prepares for the next callframe
                     {
-                        current_frame = self.callframes[self.frame_count - 1].clone();
-                        function = &current_frame.function.as_ref().unwrap().as_ref();
+                        current_frame = &self.callframes[self.frame_count - 1];
+                        function = &current_frame.function;
                         chunk = &function.chunk;
                         ip = 0;
                     }
                 }
-                OpCode::TakeTempSlot(slot) => {
-                    let slot = std::mem::replace(&mut temp_regs[*slot as usize], Value::None);
-                    self.stack.push(slot)
-                }
-                OpCode::SetTempSlot(slot) => {
-                    temp_regs[*slot as usize] = self.stack.pop().unwrap();
-                }
+
                 OpCode::Less => {
                     let Some(Value::Number(rhs)) = self.stack.pop() else {
                         panic!()

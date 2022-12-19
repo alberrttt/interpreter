@@ -9,6 +9,7 @@ use std::{
 
 use super::function::Function;
 
+#[repr(u8)]
 #[derive(Clone)]
 pub enum Value {
     Number(f64),
@@ -60,7 +61,7 @@ impl Value {
         if let Value::String(string) = self {
             unsafe { &*string.as_ref().as_ptr() }
         } else {
-            panic!()
+            unreachable!()
         }
     }
 }

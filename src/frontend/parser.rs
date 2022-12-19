@@ -37,12 +37,18 @@ impl<'a> CompilerRef<'a> {
 #[derive(Debug)]
 pub struct Parser<'a> {
     pub context: Option<&'a mut Context<'a>>,
-    pub scanner: Box<Scanner>,
-    pub compiler: CompilerRef<'a>,
+    pub scanner: Scanner,
 
     pub had_error: bool,
     pub panic_mode: bool,
     pub scope_depth: usize,
+
+    pub function_type: FunctionType,
+
+    pub token_state: TokenState,
+}
+#[derive(Debug)]
+pub struct TokenState {
     pub previous: Rc<Token>,
     pub current: Token,
     pub tokens: Vec<Token>,
@@ -60,7 +66,9 @@ impl<'a> Parser<'a> {
             TokenKind::LeftParen => Rule {
                 precedence: Precedence::Grouping,
                 prefix: Some(|parser: &mut Parser, _can_assign: bool| {
-                    let expr = Expression::Grouping(Box::new(parser.expression().unwrap().as_expr())).as_node();
+                    let expr =
+                        Expression::Grouping(Box::new(parser.expression().unwrap().as_expr()))
+                            .as_node();
                     parser.consume(TokenKind::RightParen, "");
                     expr
                 }),
@@ -378,13 +386,7 @@ impl<'a> Parser<'a> {
             }
             TokenKind::Return => {
                 self.advance();
-                if self.scope_depth == 0
-                    && self
-                        .compiler
-                        .as_ref()
-                        .function_type
-                        .eq(&FunctionType::Script)
-                {
+                if self.scope_depth == 0 && self.function_type.eq(&FunctionType::Script) {
                     self.error("Cannot return from the top level of a script")
                 }
                 if let Ok(expr) = self.expression() {
@@ -572,21 +574,23 @@ impl<'a> Parser<'a> {
         println!("{}", msg.red());
     }
     pub fn new(
-        scanner: Box<Scanner>,
+        scanner: Scanner,
         context: Option<&'a mut Context<'a>>,
-        compiler: *const Compiler<'a>,
+        function_type: FunctionType,
     ) -> Parser<'a> {
         Parser {
-            compiler: CompilerRef(compiler),
             context,
             scanner: scanner,
             had_error: false,
             panic_mode: false,
             scope_depth: 0,
-            current: EOF.to_owned(),
-            previous: Rc::new(EOF.to_owned()),
-            tokens: Vec::new(),
-            index: 0,
+            function_type,
+            token_state: TokenState {
+                current: EOF.to_owned(),
+                previous: Rc::new(EOF.to_owned()),
+                tokens: Vec::new(),
+                index: 0,
+            },
         }
     }
     /// if the current token matches the token kind, then advance, if not return false
@@ -602,10 +606,10 @@ impl<'a> Parser<'a> {
         self.current().kind == tk
     }
     pub fn previous(&self) -> &Token {
-        &self.previous
+        &self.token_state.previous
     }
     pub fn current(&self) -> &Token {
-        &self.current
+        &self.token_state.current
     }
 
     pub fn consume(&mut self, kind: TokenKind, err: &str) {
@@ -625,10 +629,13 @@ impl<'a> Parser<'a> {
 impl<'a> Parser<'a> {
     pub fn advance(&mut self) -> &Token {
         let current = self.scanner.next();
-        self.tokens.insert(self.index, self.current.to_owned());
-        self.previous = Rc::new(self.tokens[self.index].to_owned());
-        self.current = current;
-        self.index += 1;
-        &self.current
+        self.token_state
+            .tokens
+            .insert(self.token_state.index, self.token_state.current.to_owned());
+        self.token_state.previous =
+            Rc::new(self.token_state.tokens[self.token_state.index].to_owned());
+        self.token_state.current = current;
+        self.token_state.index += 1;
+        &self.token_state.current
     }
 }

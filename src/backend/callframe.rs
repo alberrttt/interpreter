@@ -4,7 +4,7 @@ use crate::common::function::Function;
 
 #[derive(Debug, Clone)]
 pub struct CallFrame {
-    pub function: Option<Rc<Function>>,
+    pub function: Function,
     pub ip: usize,
     pub slots: usize,
 }
@@ -12,7 +12,7 @@ pub struct CallFrame {
 impl CallFrame {
     pub fn new(function: Function) -> CallFrame {
         let callframe = CallFrame {
-            function: Some(Rc::new(function)),
+            function: function,
             ip: 0,
             slots: 0,
         };

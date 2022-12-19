@@ -1,10 +1,13 @@
-use std::{ffi::OsString, fs::read_to_string, path::Path, time::Instant};
+use std::{
+    cell::RefCell, ffi::OsString, fs::read_to_string, mem::transmute, path::Path, ptr::addr_of,
+    rc::Rc, time::Instant,
+};
 
 use clap::Parser;
 use rottenmangos::{
     backend::vm::VirtualMachine,
     cli_context,
-    common::value::Value,
+    common::value::{AsValue, Value},
     frontend::compiler::{Compiler, FunctionType},
 };
 
@@ -19,8 +22,8 @@ fn main() {
     let start = Instant::now();
     let compiled = compiler.compile(source).unwrap();
     println!(
-        "took {}ms to compile",
-        start.elapsed().as_secs_f64() * 1000.0
+        "took {}s to compile to bytecode",
+        start.elapsed().as_secs_f64()
     );
     vm.stack.push(Value::Void);
     vm.call(compiled, 0);

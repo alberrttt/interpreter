@@ -1,4 +1,4 @@
-use std::ptr::null;
+use std::{mem::uninitialized, ptr::null};
 
 use crate::{
     cli_context::Context,
@@ -38,7 +38,7 @@ pub struct Compiler<'a> {
     pub returned_from_block: bool,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum FunctionType {
     Script, // file
     Function,
@@ -79,7 +79,11 @@ impl<'a> Compiler<'a> {
         let compiler = Compiler {
             function: Function::new(),
             scanner: Scanner::new(String::from("")),
-            parser: Parser::new(Box::new(Scanner::new("".to_string())), None, null()),
+            parser: Parser::new(
+                unsafe { std::mem::MaybeUninit::uninit().assume_init() },
+                None,
+                function_type.clone(),
+            ),
             context: Some(context),
             locals: [LOCAL; 512],
             local_count: 0,
@@ -93,9 +97,13 @@ impl<'a> Compiler<'a> {
     }
 
     pub fn compile(mut self, source: String) -> Result<Function, CompileResult> {
-        let scanner = Box::new(Scanner::new(source));
+        let scanner = Scanner::new(source);
 
-        let parser = Parser::new(scanner, Some(self.context.take().unwrap()), &self);
+        let parser = Parser::new(
+            scanner,
+            Some(self.context.take().unwrap()),
+            self.function_type.clone(),
+        );
         self.parser = parser;
 
         let parsed = self.parser.parse_file();
@@ -111,7 +119,7 @@ impl<'a> Compiler<'a> {
 
         self.function.chunk.emit_many(vec![OpCode::Return]);
         // dissasemble_chunk(&self.function.chunk);
-
+        dissasemble_chunk(&self.function.chunk);
         Ok(self.function)
     }
 }

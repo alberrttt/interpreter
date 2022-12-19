@@ -17,8 +17,7 @@ pub enum OpCode {
     DefineGlobal(ConstantLocation),
     GetGlobal(ConstantLocation),
     SetGlobal(ConstantLocation),
-    TakeTempSlot(SlotIndex),
-    SetTempSlot(SlotIndex),
+
     JumpToIfFalse(Offset),
     JumpTo(Offset),
     // Call(arguments)

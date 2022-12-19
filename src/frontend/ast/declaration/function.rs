@@ -1,5 +1,3 @@
-use std::hint::black_box;
-
 use crate::{
     common::{
         debug::dissasemble_chunk,
@@ -47,8 +45,8 @@ impl CompileToBytecode for FunctionDeclaration {
             temp_compiler.function.chunk.emit_op(OpCode::Return);
             temp_compiler.function
         };
-        let used = &function.chunk;
-        black_box(used);
+        dissasemble_chunk(&function.chunk);
+
         compiler
             .function
             .chunk

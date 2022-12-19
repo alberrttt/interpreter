@@ -38,9 +38,7 @@ pub fn diassasemble_instruction(
         OpCode::GetLocal(pos) | OpCode::SetLocal(pos) => {
             println!("{} {}", instruction.to_string(), pos)
         }
-        OpCode::SetTempSlot(pos) | OpCode::TakeTempSlot(pos) => {
-            println!("{} {}", instruction.to_string(), pos)
-        }
+
         _ => println!("{}", instruction.to_string()),
     }
     instruction_ptr + 1
