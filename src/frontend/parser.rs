@@ -3,7 +3,10 @@ use std::{mem::transmute, ops::Range, rc::Rc};
 
 use colored::Colorize;
 
-use crate::{cli_context::Context, common::value::Value};
+use crate::{
+    cli_context::Context,
+    common::{opcode::OpCode, value::Value},
+};
 
 use super::{
     ast::{
@@ -268,29 +271,18 @@ impl<'a> Parser<'a> {
             TokenKind::Hash => {
                 self.advance();
                 if self.match_token(TokenKind::Identifier) {
-                    if self.previous().lexeme == "expect" {
-                        if self.current().lexeme == "stack" {
-                            let mut stack: Vec<Value> = Vec::new();
-                            self.advance();
-                            self.consume(TokenKind::LeftBracket, "expected '['");
-                            loop {
-                                if self.match_token(TokenKind::RightBracket) {
-                                    break;
-                                } else {
-                                    let value: Value =
-                                        self.expression().unwrap().as_literal().try_into().unwrap();
-                                    stack.push(value)
-                                }
-                                if !self.match_token(TokenKind::Comma) {
-                                    break;
-                                }
-                            }
-                            return Node::Emit(|_compiler: &mut Compiler| {});
-                        } else {
-                            panic!("{}", self.current().lexeme)
+                    match self.previous().lexeme.as_str() {
+                        "void" => {
+                            return Node::Emit(|compiler| {
+                                compiler.function.chunk.emit_op(OpCode::Void);
+                            })
                         }
-                    } else {
-                        panic!()
+                        "debug_stack" => {
+                            return Node::Emit(|compiler| {
+                                compiler.function.chunk.emit_op(OpCode::CallNative(0))
+                            })
+                        }
+                        _ => panic!(),
                     }
                 }
                 panic!()

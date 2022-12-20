@@ -1,10 +1,15 @@
 let x = 0;
 
-assert_eq if false {
-    x=123;
+if false {
+    x = 123;
 } else {
-    return 345;
-},345;
+    x = 456;
+    // i messed up by making blocks an expression, i need a way prevent the compiler
+    // from assuming that this block will push anything onto the stack
+    #void // opcode 15
+    // ^^^ removing this line will cause the stack to be empty
+};
 
-assert_eq x, 0;
+assert_eq x, 456;
 
+#debug_stack

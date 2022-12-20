@@ -5,7 +5,8 @@ pub type SlotIndex = u8;
 pub type Offset = usize;
 
 #[repr(u8)]
-#[derive(Debug, Display, Clone)]
+#[derive(Debug, Display, Clone, PartialEq)]
+
 pub enum OpCode {
     Constant(ConstantLocation),
     // use string interning ? maybe
@@ -18,6 +19,7 @@ pub enum OpCode {
     GetGlobal(ConstantLocation),
     SetGlobal(ConstantLocation),
 
+    PopJumpToIfFalse(Offset),
     JumpToIfFalse(Offset),
     JumpTo(Offset),
     // Call(arguments)

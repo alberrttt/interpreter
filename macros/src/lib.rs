@@ -47,6 +47,7 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                 vm.call(compiled,0);
 
                 vm.run();
+                
                 }
             };
             stream.push(token.into())

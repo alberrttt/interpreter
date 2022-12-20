@@ -46,7 +46,7 @@ impl VirtualMachine {
         VirtualMachine {
             callframes: [CALLFRAME; 2048],
             stack: vec![],
-            natives: Vec::new(),
+            natives: vec![(Native(|_: &[Value], vm: _| println!("stack dump: {:?}", vm.stack)))],
             globals: HashMap::new(),
             frame_count: 0,
         }
@@ -84,12 +84,19 @@ impl VirtualMachine {
                 OpCode::CallNative(location) => {
                     let native = &self.natives[location as usize];
                     let args = [];
-                    (native.0)(&args, &mut self);
-                    return;
+                    (native.0)(&args, &self);
                 }
                 OpCode::JumpTo(offset) => {
                     ip = offset as usize;
                 }
+                OpCode::PopJumpToIfFalse(offset) => {
+                    let popped = self.stack.pop().unwrap();
+                    let condition = popped.as_bool();
+                    if !condition {
+                        ip = offset as usize;
+                    }
+                }
+
                 OpCode::JumpToIfFalse(offset) => {
                     let condition = self.stack[self.stack.len() - 1].as_bool();
                     if !condition {

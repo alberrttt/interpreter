@@ -4,7 +4,7 @@ use crate::backend::vm::VirtualMachine;
 
 use super::value::Value;
 
-pub struct Native(pub fn(args: &[Value], vm: &mut VirtualMachine));
+pub struct Native(pub fn(args: &[Value], vm: &VirtualMachine));
 impl Debug for Native {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "")

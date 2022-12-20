@@ -32,7 +32,11 @@ pub fn diassasemble_instruction(
 
             println!("{} <{}>", instruction.to_string(), constant)
         }
-        OpCode::JumpTo(offset) | OpCode::JumpToIfFalse(offset) | OpCode::Call(offset) => {
+
+        OpCode::JumpTo(offset)
+        | OpCode::JumpToIfFalse(offset)
+        | OpCode::PopJumpToIfFalse(offset)
+        | OpCode::Call(offset) => {
             println!("{} {}", instruction.to_string(), offset)
         }
         OpCode::GetLocal(pos) | OpCode::SetLocal(pos) => {
