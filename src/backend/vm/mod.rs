@@ -67,7 +67,7 @@ impl VirtualMachine {
     }
     pub fn run(mut self) {
         let start = Instant::now();
-        let mut current_frame = &self.callframes[self.frame_count - 1];
+        let mut current_frame = &self.callframes[self.frame_count - 1].clone();
         let mut function = &current_frame.function;
         let mut chunk = &function.chunk;
         let mut ip: usize = current_frame.ip;
@@ -81,6 +81,11 @@ impl VirtualMachine {
             ip += 1;
 
             match instruction.clone() {
+                OpCode::CallNativeArgPtr(location, ptr) => {
+                    let native = &self.natives[location as usize];
+                    let args = unsafe { &*ptr };
+                    native.0(&args, &self)
+                }
                 OpCode::CallNative(location) => {
                     let native = &self.natives[location as usize];
                     let args = [];

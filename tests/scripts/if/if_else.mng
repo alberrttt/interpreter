@@ -13,3 +13,4 @@ if false {
 assert_eq x, 456;
 
 #debug_stack
+#assert_stack []

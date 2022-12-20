@@ -1,5 +1,7 @@
 use strum::Display;
 
+use super::value::Value;
+
 pub type ConstantLocation = u16;
 pub type SlotIndex = u8;
 pub type Offset = usize;
@@ -44,4 +46,5 @@ pub enum OpCode {
     Return,
     Nop,
     CallNative(u16),
+    CallNativeArgPtr(u16, *const [Value]),
 }

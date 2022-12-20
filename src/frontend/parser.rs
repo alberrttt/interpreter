@@ -1,5 +1,5 @@
 /// the parser will make an ast
-use std::{mem::transmute, ops::Range, rc::Rc};
+use std::{mem::transmute, ops::Range, process::ExitCode, rc::Rc};
 
 use colored::Colorize;
 
@@ -282,7 +282,24 @@ impl<'a> Parser<'a> {
                                 compiler.function.chunk.emit_op(OpCode::CallNative(0))
                             })
                         }
-                        _ => panic!(),
+                        "assert_stack" => {
+                            println!("{}", self.current());
+                            self.consume(TokenKind::RightBracket, "");
+                            let mut exprs = Vec::new();
+                            loop {
+                                if self.match_token(TokenKind::LeftBracket) {
+                                    break;
+                                }
+                                exprs.push(self.expression().unwrap());
+                                if !self.match_token(TokenKind::Comma) {
+                                    self.advance();
+                                    break;
+                                }
+                            }
+                            println!("{:?}", exprs);
+                            return Node::Emit(|compiler| {});
+                        }
+                        _ => return self.node(),
                     }
                 }
                 panic!()
