@@ -1,6 +1,7 @@
 // runtime value
 
 use std::{
+    borrow::Borrow,
     cell::RefCell,
     fmt::{Debug, Display},
     ptr::addr_of,
@@ -16,12 +17,14 @@ pub enum Value {
     Boolean(bool),
     String(Ptr<String>),
     Function(Ptr<Function>),
+    Array(Ptr<Vec<Value>>),
     Void,
     None,
 }
 impl Debug for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::Array(arg0) => f.debug_tuple("Array").field(arg0).finish(),
             Self::Number(arg0) => f.debug_tuple("Number").field(arg0).finish(),
             Self::Boolean(arg0) => f.debug_tuple("Boolean").field(arg0).finish(),
             Self::String(arg0) => f.debug_tuple("String").field(arg0).finish(),
@@ -86,7 +89,8 @@ impl Display for Value {
         match self {
             Value::Number(number) => write!(f, "{}", number),
             Value::String(string) => {
-                write!(f, "{}", *string.borrow())
+                let tmp = string.as_ref().borrow();
+                write!(f, "{}", tmp)
             }
             Value::Boolean(bool) => {
                 write!(f, "{}", bool)
@@ -96,6 +100,10 @@ impl Display for Value {
             }
             Value::Function(function) => {
                 write!(f, "<func {:?}>", addr_of!(function))
+            }
+            Value::Array(array) => {
+                let tmp = array.as_ref().borrow();
+                write!(f, "{:?}", tmp)
             }
         }
     }
