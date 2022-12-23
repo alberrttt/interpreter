@@ -10,13 +10,14 @@ use std::{
 use super::function::Function;
 
 #[repr(u8)]
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub enum Value {
     Number(f64),
     Boolean(bool),
     String(Ptr<String>),
     Function(Ptr<Function>),
     Void,
+    #[default]
     None,
 }
 impl Debug for Value {

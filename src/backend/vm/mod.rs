@@ -67,10 +67,38 @@ impl VirtualMachine {
     }
     pub fn run(mut self) {
         let start = Instant::now();
-        let mut current_frame = &self.callframes[self.frame_count - 1].clone();
+        let mut current_frame = &self.callframes[self.frame_count - 1];
         let mut function = &current_frame.function;
         let mut chunk = &function.chunk;
         let mut ip: usize = current_frame.ip;
+        macro_rules! binary_op {
+            ($op:tt) => {{
+                let rhs = unsafe {
+                    let i = self.stack.len() - 1;
+                    let tmp = ::std::mem::take(&mut self.stack[i]);
+                    self.stack.set_len(i);
+
+                    tmp
+                };
+                let lhs = unsafe {
+                    let i = self.stack.len() - 1;
+                    let tmp = ::std::mem::take(&mut self.stack[i]);
+                    self.stack.set_len(i);
+
+                    tmp
+                };
+
+                match lhs {
+                    Value::Number(lhs) => {
+                        let Value::Number(rhs) = rhs else {
+                            panic!()
+                        };
+                        self.stack.push(Value::Number(lhs $op rhs))
+                    }
+                    x => unimplemented!("cannot apply binary operation to value {}", x),
+                }
+            }};
+        }
         loop {
             let instruction = &chunk.code[ip as usize];
             // #[cfg(debug_assertions)]
@@ -158,8 +186,20 @@ impl VirtualMachine {
                 }
                 OpCode::Void => self.stack.push(Value::Void),
                 OpCode::Add => {
-                    let rhs = self.stack.pop().unwrap();
-                    let lhs = self.stack.pop().unwrap();
+                    let rhs = unsafe {
+                        let i = self.stack.len() - 1;
+                        let tmp = ::std::mem::take(&mut self.stack[i]);
+                        self.stack.set_len(i);
+
+                        tmp
+                    };
+                    let lhs = unsafe {
+                        let i = self.stack.len() - 1;
+                        let tmp = ::std::mem::take(&mut self.stack[i]);
+                        self.stack.set_len(i);
+
+                        tmp
+                    };
 
                     match lhs {
                         Value::Number(lhs) => {
@@ -182,49 +222,16 @@ impl VirtualMachine {
                     }
                 }
                 OpCode::Sub => {
-                    let rhs = self.stack.pop().unwrap();
-                    let lhs = self.stack.pop().unwrap();
-
-                    match lhs {
-                        Value::Number(lhs) => {
-                            let Value::Number(rhs) = rhs else {
-                                panic!()
-                            };
-                            self.stack.push(Value::Number(lhs - rhs))
-                        }
-                        x => unimplemented!("cannot subtract value {}", x),
-                    }
+                    binary_op!(-)
                 }
                 OpCode::Mul => {
-                    let rhs = self.stack.pop().unwrap();
-                    let lhs = self.stack.pop().unwrap();
-
-                    match lhs {
-                        Value::Number(lhs) => {
-                            let Value::Number(rhs) = rhs else {
-                                panic!()
-                            };
-                            self.stack.push(Value::Number(lhs * rhs))
-                        }
-                        _ => unimplemented!(),
-                    }
+                    binary_op!(*)
                 }
                 OpCode::Pop => unsafe {
                     self.stack.set_len(self.stack.len() - 1);
                 },
                 OpCode::Div => {
-                    let rhs = self.stack.pop().unwrap();
-                    let lhs = self.stack.pop().unwrap();
-
-                    match lhs {
-                        Value::Number(lhs) => {
-                            let Value::Number(rhs) = rhs else {
-                                panic!()
-                            };
-                            self.stack.push(Value::Number(lhs / rhs))
-                        }
-                        _ => unimplemented!(),
-                    }
+                    binary_op!(/)
                 }
                 OpCode::Print => {
                     println!("{}", self.stack.pop().unwrap());
