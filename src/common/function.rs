@@ -1,5 +1,5 @@
 use super::chunk::Chunk;
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Function {
     pub chunk: Chunk,
     pub arity: u8,

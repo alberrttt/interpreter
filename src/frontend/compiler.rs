@@ -1,8 +1,14 @@
-use std::{mem::uninitialized, ptr::null};
+use std::{cell::RefCell, default, rc::Rc};
 
+/// its so messy omg..
 use crate::{
     cli_context::Context,
-    common::{debug::dissasemble_chunk, function::Function, opcode::OpCode},
+    common::{
+        debug::dissasemble_chunk,
+        function::Function,
+        interner::{self, StringInterner},
+        opcode::OpCode,
+    },
 };
 
 use super::{
@@ -17,9 +23,6 @@ impl<'a> Enclosing<'a> {
     pub fn get_compiler(&self) -> &Compiler<'a> {
         unsafe { self.0.as_ref().unwrap() }
     }
-    pub fn get_compiler_mut(self) -> &'a mut Compiler<'a> {
-        unsafe { self.0.as_mut().unwrap() }
-    }
 }
 #[derive(Debug)]
 pub struct Compiler<'a> {
@@ -27,6 +30,7 @@ pub struct Compiler<'a> {
     pub parser: Parser<'a>,
     pub enclosing: Option<Enclosing<'a>>,
     pub context: Option<&'a mut Context<'a>>,
+    pub interner: Rc<RefCell<StringInterner>>,
 
     pub function: Function,
     pub scope_depth: u8,
@@ -38,8 +42,9 @@ pub struct Compiler<'a> {
     pub returned_from_block: bool,
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Default)]
 pub enum FunctionType {
+    #[default]
     Script, // file
     Function,
 }
@@ -75,11 +80,12 @@ pub enum CompileResult {
     Error,
 }
 impl<'a> Compiler<'a> {
-    pub fn new(context: &'a mut Context<'a>, function_type: FunctionType) -> Compiler<'a> {
-        let compiler = Compiler {
-            function: Function::new(),
-            scanner: Scanner::new(String::from("")),
-            parser: Parser::new(Scanner::new(String::new()), None, function_type.clone()),
+    pub fn new(
+        interner: Rc<RefCell<StringInterner>>,
+        context: &'a mut Context<'a>,
+        function_type: FunctionType,
+    ) -> Compiler<'a> {
+        Compiler {
             context: Some(context),
             locals: [LOCAL; 512],
             local_count: 0,
@@ -88,8 +94,12 @@ impl<'a> Compiler<'a> {
             emit_after_block: Vec::new(),
             function_type,
             returned_from_block: false,
-        };
-        compiler
+
+            scanner: Scanner::default(),
+            function: Function::default(),
+            parser: Parser::default(),
+            interner,
+        }
     }
 
     pub fn compile(mut self, source: String) -> Result<Function, CompileResult> {
@@ -102,16 +112,14 @@ impl<'a> Compiler<'a> {
         );
         self.parser = parser;
 
-        let parsed = self.parser.parse_file();
+        let parsed_file = self.parser.parse_file();
         if self.parser.had_error {
             return Err(CompileResult::Error);
         }
-        self.context = self.parser.context.take();
         let function = Function::new();
         self.function = function;
-        for node in parsed.nodes {
-            node.to_bytecode(&mut self)
-        }
+        std::mem::swap(&mut self.context, &mut self.parser.context);
+        parsed_file.to_bytecode(&mut self);
 
         self.function.chunk.emit_many(vec![OpCode::Return]);
         // dissasemble_chunk(&self.function.chunk);

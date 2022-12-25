@@ -15,17 +15,11 @@ pub struct FileNode<'a> {
 pub struct FileAttributes {
     pub expect_stack: Option<Vec<Value>>,
 }
-impl<'a> FileNode<'a> {
-    pub fn build_function(mut self) -> Function {
-        let mut compiler = self.compiler.take().unwrap();
-        let function = Function::new();
-        compiler.function = function;
+
+impl<'a> CompileToBytecode for FileNode<'a> {
+    fn to_bytecode(self, compiler: &mut Compiler) -> () {
         for node in self.nodes {
-            node.to_bytecode(&mut compiler)
+            node.to_bytecode(compiler)
         }
-        let function = compiler.function;
-        compiler.function = Function::new();
-        self.compiler = Some(compiler);
-        function
     }
 }

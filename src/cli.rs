@@ -7,7 +7,10 @@ use clap::Parser;
 use rottenmangos::{
     backend::vm::VirtualMachine,
     cli_context,
-    common::value::{AsValue, Value},
+    common::{
+        interner::StringInterner,
+        value::{AsValue, Value},
+    },
     frontend::compiler::{Compiler, FunctionType},
 };
 
@@ -18,7 +21,12 @@ fn main() {
 
     let mut context = cli_context::Context::new(path);
     let mut vm = VirtualMachine::new();
-    let compiler = Compiler::new(&mut context, FunctionType::Script);
+    let mut interner = StringInterner::new();
+    let compiler = Compiler::new(
+        Rc::new(RefCell::new(interner)),
+        &mut context,
+        FunctionType::Script,
+    );
     let start = Instant::now();
     let compiled = compiler.compile(source).unwrap();
     println!(

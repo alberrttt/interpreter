@@ -32,22 +32,26 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                         backend::vm::VirtualMachine,
                         cli_context::Context,
                         frontend::compiler::{{Compiler, FunctionType}},
-                        common::value::Value,
+                        common::{value::Value, interner::StringInterner},
                     };
+                    use std::rc::Rc;
+                    use std::cell::RefCell;
+
                     use std::path::Path;
-                    use     std::fs::read_to_string;
-                let source = read_to_string(Path::new(#path_string)).unwrap();
-                let mut context = Context::new(Path::new(#path_string));
-                let compiler = Compiler::new(&mut context, FunctionType::Script);
-                let compiled = compiler.compile(source).unwrap();
+                    use std::fs::read_to_string;
 
-                let mut vm = VirtualMachine::new();
-                vm.stack.push(Value::Void);
+                    let interner = StringInterner::new();
+                    let source = read_to_string(Path::new(#path_string)).unwrap();
+                    let mut context = Context::new(Path::new(#path_string));
+                    let compiler = Compiler::new(Rc::new(RefCell::new(interner)), &mut context, FunctionType::Script);
+                    let compiled = compiler.compile(source).unwrap();
 
-                vm.call(compiled,0);
+                    let mut vm = VirtualMachine::new();
+                    vm.stack.push(Value::Void);
 
-                vm.run();
-                
+                    vm.call(compiled,0);
+
+                    vm.run();
                 }
             };
             stream.push(token.into())

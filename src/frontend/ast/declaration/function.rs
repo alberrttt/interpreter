@@ -27,8 +27,11 @@ impl CompileToBytecode for FunctionDeclaration {
     fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
         // uses the current compiler's compilation context for the function
         // which is returned later
-        let mut temp_compiler =
-            Compiler::new(compiler.context.take().unwrap(), FunctionType::Function);
+        let mut temp_compiler = Compiler::new(
+            compiler.interner.clone(),
+            compiler.context.take().unwrap(),
+            FunctionType::Function,
+        );
         let function = {
             // sets the function name and arity
             temp_compiler.function.arity = self.parameters.len() as u8;

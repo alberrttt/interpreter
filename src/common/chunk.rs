@@ -1,5 +1,5 @@
 use super::{opcode::OpCode, value::Value};
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Chunk {
     pub code: Vec<OpCode>,
     pub constants: Vec<Value>,
@@ -13,7 +13,6 @@ impl Chunk {
         }
     }
     pub fn emit_op(&mut self, op: OpCode) {
-      
         self.code.push(op)
     }
     pub fn emit_many(&mut self, mut ops: Vec<OpCode>) {

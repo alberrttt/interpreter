@@ -37,7 +37,7 @@ impl<'a> CompilerRef<'a> {
         unsafe { &*self.0 }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Parser<'a> {
     pub context: Option<&'a mut Context<'a>>,
     pub scanner: Scanner,
@@ -50,7 +50,7 @@ pub struct Parser<'a> {
 
     pub token_state: TokenState,
 }
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct TokenState {
     pub previous: Rc<Token>,
     pub current: Token,
@@ -284,10 +284,10 @@ impl<'a> Parser<'a> {
                         }
                         "assert_stack" => {
                             println!("{}", self.current());
-                            self.consume(TokenKind::RightBracket, "");
+                            self.consume(TokenKind::LeftBracket, "");
                             let mut exprs = Vec::new();
                             loop {
-                                if self.match_token(TokenKind::LeftBracket) {
+                                if self.match_token(TokenKind::RightBracket) {
                                     break;
                                 }
                                 exprs.push(self.expression().unwrap());
@@ -296,7 +296,7 @@ impl<'a> Parser<'a> {
                                     break;
                                 }
                             }
-                            println!("{:?}", exprs);    
+                            println!("{:?}", exprs);
                             return Node::Emit(|compiler| {});
                         }
                         _ => return self.node(),
