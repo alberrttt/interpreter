@@ -48,7 +48,7 @@ impl CompileToBytecode for FunctionDeclaration {
             temp_compiler.function.chunk.emit_op(OpCode::Return);
             temp_compiler.function
         };
-        dissasemble_chunk(&function.chunk);
+        // dissasemble_chunk(&function.chunk);
 
         compiler
             .function

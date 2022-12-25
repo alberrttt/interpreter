@@ -123,7 +123,6 @@ impl<'a> Compiler<'a> {
 
         self.function.chunk.emit_many(vec![OpCode::Return]);
         // dissasemble_chunk(&self.function.chunk);
-        dissasemble_chunk(&self.function.chunk);
         Ok(self.function)
     }
 }

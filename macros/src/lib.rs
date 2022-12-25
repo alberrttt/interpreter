@@ -49,7 +49,7 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                     let mut vm = VirtualMachine::new();
                     vm.stack.push(Value::Void);
 
-                    vm.call(compiled,0);
+                    vm.call(&compiled,0);
 
                     vm.run();
                 }

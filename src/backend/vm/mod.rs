@@ -2,6 +2,7 @@ use std::{
     cell::RefCell,
     collections::HashMap,
     mem::MaybeUninit,
+    ptr::addr_of,
     rc::Rc,
     thread::sleep_ms,
     time::{Duration, Instant},
@@ -28,11 +29,7 @@ pub const FUNCTION: Function = Function {
     arity: 0,
     name: String::new(),
 };
-pub const CALLFRAME: CallFrame = CallFrame {
-    function: FUNCTION,
-    ip: 0,
-    slots: 0,
-};
+
 #[derive(Debug)]
 pub struct VirtualMachine {
     pub stack: Vec<Value>,
@@ -43,6 +40,11 @@ pub struct VirtualMachine {
 }
 impl VirtualMachine {
     pub fn new() -> VirtualMachine {
+        pub const CALLFRAME: CallFrame = CallFrame {
+            function: std::ptr::null(),
+            ip: 0,
+            slots: 0,
+        };
         VirtualMachine {
             callframes: [CALLFRAME; 2048],
             stack: vec![],
@@ -51,7 +53,7 @@ impl VirtualMachine {
             frame_count: 0,
         }
     }
-    pub fn call(&mut self, function: Function, arg_count: usize) {
+    pub fn call(&mut self, function: &Function, arg_count: usize) {
         if arg_count != function.arity as usize {
             panic!(
                 "mismatched argument counts! expected {} got {arg_count}",
@@ -68,25 +70,24 @@ impl VirtualMachine {
     pub fn run(mut self) {
         let start = Instant::now();
         let mut current_frame = &self.callframes[self.frame_count - 1];
-        let mut function = &current_frame.function;
+        let mut function = unsafe { &*current_frame.function };
         let mut chunk = &function.chunk;
         let mut ip: usize = current_frame.ip;
+        macro_rules! pop {
+            () => {{
+                unsafe {
+                    let i = self.stack.len() - 1;
+                    let tmp = ::std::mem::take(&mut self.stack[i]);
+                    self.stack.set_len(i);
+
+                    tmp
+                }
+            }};
+        }
         macro_rules! binary_op {
             ($op:tt) => {{
-                let rhs = unsafe {
-                    let i = self.stack.len() - 1;
-                    let tmp = ::std::mem::take(&mut self.stack[i]);
-                    self.stack.set_len(i);
-
-                    tmp
-                };
-                let lhs = unsafe {
-                    let i = self.stack.len() - 1;
-                    let tmp = ::std::mem::take(&mut self.stack[i]);
-                    self.stack.set_len(i);
-
-                    tmp
-                };
+                let rhs = pop!();
+                let lhs = pop!();
 
                 match lhs {
                     Value::Number(lhs) => {
@@ -123,7 +124,7 @@ impl VirtualMachine {
                     ip = offset as usize;
                 }
                 OpCode::PopJumpToIfFalse(offset) => {
-                    let popped = self.stack.pop().unwrap();
+                    let popped = pop!();
                     let condition = popped.as_bool();
                     if !condition {
                         ip = offset as usize;
@@ -138,7 +139,7 @@ impl VirtualMachine {
                 }
                 OpCode::Nop => {}
                 OpCode::Not => {
-                    let pop = self.stack.pop().unwrap();
+                    let pop = pop!();
                     if let Value::Boolean(bool) = pop {
                         self.stack.push((!bool).as_value());
                     } else {
@@ -146,7 +147,7 @@ impl VirtualMachine {
                     }
                 }
                 OpCode::Negate => {
-                    let pop = self.stack.pop().unwrap();
+                    let pop = pop!();
                     if let Value::Number(num) = pop {
                         self.stack.push((-num).as_value());
                     } else {
@@ -181,7 +182,7 @@ impl VirtualMachine {
                 }
                 OpCode::DefineGlobal(name) => {
                     let name = (chunk.constants[name as usize].as_string()).to_owned();
-                    let value = self.stack.pop().unwrap();
+                    let value = pop!();
                     self.globals.insert(name, value);
                 }
                 OpCode::Void => self.stack.push(Value::Void),
@@ -234,22 +235,22 @@ impl VirtualMachine {
                     binary_op!(/)
                 }
                 OpCode::Print => {
-                    println!("{}", self.stack.pop().unwrap());
+                    println!("{}", pop!());
                 }
                 OpCode::AssertEq => {
-                    let rhs = self.stack.pop().unwrap();
-                    let lhs = self.stack.pop().unwrap();
+                    let rhs = pop!();
+                    let lhs = pop!();
 
                     assert_eq!(lhs, rhs);
                 }
                 OpCode::AssertNe => {
-                    let rhs = self.stack.pop().unwrap();
-                    let lhs = self.stack.pop().unwrap();
+                    let rhs = pop!();
+                    let lhs = pop!();
 
                     assert_ne!(lhs, rhs);
                 }
                 OpCode::Return => {
-                    let mut returning = self.stack.pop();
+                    let mut returning = pop!();
                     self.frame_count -= 1;
 
                     if self.frame_count == 0 {
@@ -259,32 +260,26 @@ impl VirtualMachine {
                     }
 
                     current_frame = &self.callframes[self.frame_count - 1];
-                    function = &current_frame.function;
+                    function = unsafe { &*current_frame.function };
                     chunk = &function.chunk;
                     ip = current_frame.ip;
                     self.stack.truncate(self.callframes[self.frame_count].slots);
-                    self.stack.push(returning.take().unwrap());
+                    self.stack.push(returning);
                 }
                 OpCode::Call(arg_count) => {
                     let callee = &self.stack[self.stack.len() - (1 + arg_count)];
-                    self.call(
-                        match callee {
-                            Value::Function(ptr) => {
-                                let ptr = ptr.as_ref();
-                                let function = &*ptr.borrow();
+                    let Value::Function(callee) = callee else {
+                        panic!()
+                    };
+                    let callee = unsafe { &*callee.as_ptr() };
 
-                                function.clone()
-                            }
-                            x => panic!("got {:?}", x),
-                        },
-                        arg_count,
-                    );
+                    self.call(callee, arg_count);
                     self.callframes[self.frame_count - 2].ip = ip;
 
                     // prepares for the next callframe
                     {
                         current_frame = &self.callframes[self.frame_count - 1];
-                        function = &current_frame.function;
+                        function = unsafe { &*current_frame.function };
                         chunk = &function.chunk;
                         ip = 0;
                     }

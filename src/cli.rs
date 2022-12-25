@@ -29,12 +29,9 @@ fn main() {
     );
     let start = Instant::now();
     let compiled = compiler.compile(source).unwrap();
-    println!(
-        "took {}s to compile to bytecode",
-        start.elapsed().as_secs_f64()
-    );
+
     vm.stack.push(Value::Void);
-    vm.call(compiled, 0);
+    vm.call(&compiled, 0);
     vm.run();
 }
 
