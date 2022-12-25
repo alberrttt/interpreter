@@ -48,8 +48,10 @@ impl CompileToBytecode for FunctionDeclaration {
             temp_compiler.function.chunk.emit_op(OpCode::Return);
             temp_compiler.function
         };
-        // dissasemble_chunk(&function.chunk);
-
+        compiler.context = temp_compiler.context.take();
+        if compiler.context.as_ref().unwrap().flags.display_bytecode {
+            dissasemble_chunk(&function.chunk);
+        }
         compiler
             .function
             .chunk
@@ -67,7 +69,6 @@ impl CompileToBytecode for FunctionDeclaration {
             compiler.function.chunk.emit_op(OpCode::DefineGlobal(name))
         };
         // compilation context is returned
-        compiler.context = temp_compiler.context.take();
     }
 }
 impl AsDeclaration for FunctionDeclaration {

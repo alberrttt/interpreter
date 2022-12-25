@@ -122,7 +122,9 @@ impl<'a> Compiler<'a> {
         parsed_file.to_bytecode(&mut self);
 
         self.function.chunk.emit_many(vec![OpCode::Return]);
-        // dissasemble_chunk(&self.function.chunk);
+        if self.context.as_ref().unwrap().flags.display_bytecode {
+            dissasemble_chunk(&self.function.chunk);
+        }
         Ok(self.function)
     }
 }

@@ -6,7 +6,7 @@ use std::{
 use clap::Parser;
 use rottenmangos::{
     backend::vm::VirtualMachine,
-    cli_context,
+    cli_context::{self, Flags},
     common::{
         interner::StringInterner,
         value::{AsValue, Value},
@@ -19,7 +19,9 @@ fn main() {
     let path = Path::new(&cli.path);
     let source = read_to_string(path).unwrap();
 
-    let mut context = cli_context::Context::new(path);
+    let mut flags = Flags::default();
+    flags.display_bytecode = cli.display_bytecode;
+    let mut context = cli_context::Context::new(path, flags);
     let mut vm = VirtualMachine::new();
     let mut interner = StringInterner::new();
     let compiler = Compiler::new(
@@ -29,7 +31,10 @@ fn main() {
     );
     let start = Instant::now();
     let compiled = compiler.compile(source).unwrap();
-
+    println!(
+        "took {}s to compile to bytecode",
+        start.elapsed().as_secs_f64()
+    );
     vm.stack.push(Value::Void);
     vm.call(&compiled, 0);
     vm.run();
@@ -40,4 +45,7 @@ fn main() {
 struct Cli {
     #[clap(value_parser)]
     path: OsString,
+
+    #[arg(long = "dbc", help = "Displays the compiled bytecode")]
+    display_bytecode: bool,
 }

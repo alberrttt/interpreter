@@ -30,7 +30,7 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                 fn #tmp_name() {
                     use rottenmangos::{
                         backend::vm::VirtualMachine,
-                        cli_context::Context,
+                        cli_context::{Context, Flags},
                         frontend::compiler::{{Compiler, FunctionType}},
                         common::{value::Value, interner::StringInterner},
                     };
@@ -42,7 +42,7 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
 
                     let interner = StringInterner::new();
                     let source = read_to_string(Path::new(#path_string)).unwrap();
-                    let mut context = Context::new(Path::new(#path_string));
+                    let mut context = Context::new(Path::new(#path_string), Flags::default());
                     let compiler = Compiler::new(Rc::new(RefCell::new(interner)), &mut context, FunctionType::Script);
                     let compiled = compiler.compile(source).unwrap();
 

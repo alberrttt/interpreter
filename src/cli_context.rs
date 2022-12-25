@@ -44,12 +44,17 @@ impl<'a> Diaganostics<'a> {
 pub struct Context<'a> {
     pub file_path: &'a Path,
     pub diagnostics: Box<Diaganostics<'a>>,
+    pub flags: Flags,
 }
-
+#[derive(Debug, Clone, Default)]
+pub struct Flags {
+    pub display_bytecode: bool,
+}
 impl<'a> Context<'a> {
-    pub fn new(file_path: &'a Path) -> Context {
+    pub fn new(file_path: &'a Path, flags: Flags) -> Context {
         let mut context = Context {
             file_path,
+            flags,
             diagnostics: Box::new(Diaganostics { context: null() }),
         };
         context.diagnostics.context = &mut context;
