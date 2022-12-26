@@ -12,7 +12,7 @@ use super::{
     BinaryOperation, CompileToBytecode,
 };
 pub trait AsExpr {
-    fn as_expr(self) -> Expression;
+    fn to_expr(self) -> Expression;
 }
 pub mod block;
 pub mod call_expr;
@@ -27,7 +27,7 @@ pub struct BinaryExpr {
     pub op: BinaryOperation,
 }
 impl AsExpr for BinaryExpr {
-    fn as_expr(self) -> Expression {
+    fn to_expr(self) -> Expression {
         Expression::Binary(self)
     }
 }
@@ -47,7 +47,7 @@ pub enum Expression {
     Comparison(Comparison),
 }
 impl AsNode for Expression {
-    fn as_node(self) -> Node {
+    fn to_node(self) -> Node {
         Node::Expression(self)
     }
 }
@@ -69,11 +69,11 @@ impl Expression {
         let Expression::Binary(expr) = self else {
             panic!()
         };
-        return expr;
+        expr
     }
 }
 impl CompileToBytecode for Expression {
-    fn to_bytecode(self, compiler: &mut Compiler) -> () {
+    fn to_bytecode(self, compiler: &mut Compiler) {
         match self {
             Expression::CallExpr(call_expr) => call_expr.to_bytecode(compiler),
             Expression::While(while_expr) => while_expr.to_bytecode(compiler),

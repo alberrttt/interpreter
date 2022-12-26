@@ -1,7 +1,7 @@
 use crate::{
-    common::{function, opcode::OpCode},
+    common::opcode::OpCode,
     frontend::ast::{
-        expression::{AsExpr, Expression},
+        expression::{Expression},
         literal::Literal,
         CompileToBytecode,
     },
@@ -13,10 +13,13 @@ pub struct ReturnStmt {
 }
 
 impl CompileToBytecode for ReturnStmt {
-    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
+    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) {
         let _diagnostics = &mut compiler.context.as_mut().unwrap().diagnostics;
         self.expr
-            .unwrap_or(Literal::Void.as_expr())
+            .unwrap_or({
+                let this = Literal::Void;
+                Expression::Literal(this)
+            })
             .to_bytecode(compiler);
         compiler.function.chunk.emit_op(OpCode::Return);
     }

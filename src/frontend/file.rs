@@ -1,4 +1,4 @@
-use crate::common::{function::Function, value::Value};
+use crate::common::{value::Value};
 
 use super::{
     ast::{node::Node, CompileToBytecode},
@@ -17,7 +17,7 @@ pub struct FileAttributes {
 }
 
 impl<'a> CompileToBytecode for FileNode<'a> {
-    fn to_bytecode(self, compiler: &mut Compiler) -> () {
+    fn to_bytecode(self, compiler: &mut Compiler) {
         for node in self.nodes {
             node.to_bytecode(compiler)
         }

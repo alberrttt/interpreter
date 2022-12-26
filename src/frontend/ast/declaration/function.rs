@@ -24,7 +24,7 @@ impl<'a> Compiler<'a> {
     }
 }
 impl CompileToBytecode for FunctionDeclaration {
-    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
+    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) {
         // uses the current compiler's compilation context for the function
         // which is returned later
         let mut temp_compiler = Compiler::new(
@@ -59,20 +59,19 @@ impl CompileToBytecode for FunctionDeclaration {
 
         if compiler.in_scope() {
             compiler.add_local(self.name.value);
-            return;
         } else {
             // location of the name in the constant pool
             let name = compiler
                 .function
                 .chunk
-                .emit_value(self.name.value.lexeme.as_value().clone());
+                .emit_value(self.name.value.lexeme.to_value());
             compiler.function.chunk.emit_op(OpCode::DefineGlobal(name))
         };
         // compilation context is returned
     }
 }
 impl AsDeclaration for FunctionDeclaration {
-    fn as_declaration(self) -> super::Declaration {
+    fn to_declaration(self) -> super::Declaration {
         super::Declaration::FunctionDeclaration(self)
     }
 }

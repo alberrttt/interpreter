@@ -1,4 +1,4 @@
-use std::{cell::RefCell, default, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 /// its so messy omg..
 use crate::{
@@ -6,7 +6,7 @@ use crate::{
     common::{
         debug::dissasemble_chunk,
         function::Function,
-        interner::{self, StringInterner},
+        interner::{StringInterner},
         opcode::OpCode,
     },
 };

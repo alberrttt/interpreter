@@ -2,20 +2,13 @@ use std::collections::HashMap;
 
 pub struct InternerIndex(usize);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct StringInterner {
     strings: HashMap<String, usize>,
     vec: Vec<String>,
 }
 
 impl StringInterner {
-    pub fn new() -> Self {
-        StringInterner {
-            strings: (HashMap::new()),
-            vec: (Vec::new()),
-        }
-    }
-
     pub fn get_or_intern(&mut self, s: &str) -> InternerIndex {
         let strings = &mut self.strings;
         let vec = &mut self.vec;

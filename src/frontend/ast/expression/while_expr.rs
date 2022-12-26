@@ -8,13 +8,13 @@ pub struct WhileExpr {
     pub block: Block,
 }
 impl AsExpr for WhileExpr {
-    fn as_expr(self) -> Expression {
+    fn to_expr(self) -> Expression {
         Expression::While(self)
     }
 }
 /// GUAGE YOUR EYES OUT
 impl CompileToBytecode for WhileExpr {
-    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
+    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) {
         let predicate = compiler.function.chunk.code.len();
 
         self.predicate.to_bytecode(compiler);

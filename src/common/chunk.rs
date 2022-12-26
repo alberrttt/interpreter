@@ -26,6 +26,6 @@ impl Chunk {
     pub fn emit_value(&mut self, value: Value) -> u16 {
         let pos = self.constants.len();
         self.constants.push(value);
-        return pos as u16;
+        pos as u16
     }
 }

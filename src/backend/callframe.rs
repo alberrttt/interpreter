@@ -1,5 +1,3 @@
-use std::rc::Rc;
-
 use crate::common::function::Function;
 
 #[derive(Debug, Clone)]
@@ -11,11 +9,10 @@ pub struct CallFrame {
 
 impl CallFrame {
     pub fn new(function: &Function) -> CallFrame {
-        let callframe = CallFrame {
-            function: function,
+        CallFrame {
+            function,
             ip: 0,
             slots: 0,
-        };
-        callframe
+        }
     }
 }

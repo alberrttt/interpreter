@@ -1,12 +1,9 @@
 /// the parser will make an ast
-use std::{mem::transmute, ops::Range, process::ExitCode, rc::Rc};
+use std::{mem::transmute, ops::Range, rc::Rc};
 
 use colored::Colorize;
 
-use crate::{
-    cli_context::Context,
-    common::{opcode::OpCode, value::Value},
-};
+use crate::{cli_context::Context, common::opcode::OpCode};
 
 use super::{
     ast::{
@@ -33,7 +30,7 @@ use super::{
 #[derive(Debug)]
 pub struct CompilerRef<'a>(pub *const Compiler<'a>);
 impl<'a> CompilerRef<'a> {
-    pub fn as_ref(&self) -> &Compiler<'a> {
+    pub fn into(&self) -> &Compiler<'a> {
         unsafe { &*self.0 }
     }
 }
@@ -70,8 +67,8 @@ impl<'a> Parser<'a> {
                 precedence: Precedence::Grouping,
                 prefix: Some(|parser: &mut Parser, _can_assign: bool| {
                     let expr =
-                        Expression::Grouping(Box::new(parser.expression().unwrap().as_expr()))
-                            .as_node();
+                        Expression::Grouping(Box::new(parser.expression().unwrap().to_expr()))
+                            .to_node();
                     parser.consume(TokenKind::RightParen, "");
                     expr
                 }),
@@ -91,12 +88,12 @@ impl<'a> Parser<'a> {
                 infix: Some(|parser: &mut Parser, lhs: Node| {
                     let comparison_token = parser.previous().kind;
                     Comparison {
-                        lhs: Box::new(lhs.as_expr()),
-                        rhs: Box::new(parser.expression().unwrap().as_expr()),
+                        lhs: Box::new(lhs.to_expr()),
+                        rhs: Box::new(parser.expression().unwrap().to_expr()),
                         kind: comparison_token.try_into().unwrap(),
                     }
-                    .as_expr()
-                    .as_node()
+                    .to_expr()
+                    .to_node()
                 }),
             },
             TokenKind::If => Rule {
@@ -123,15 +120,15 @@ impl<'a> Parser<'a> {
                 precedence: Precedence::None,
                 prefix: Some(|parser, can_assign| {
                     let token = parser.previous().clone();
-                    let _global = if parser.scope_depth > 0 { false } else { true };
+                    let _global = parser.scope_depth == 0;
                     if can_assign && parser.match_token(TokenKind::Equal) {
                         return Expression::VariableAssignment(VariableAssignment {
                             name: Identifier { value: token },
-                            initializer: Box::new(parser.expression().unwrap().as_expr()),
+                            initializer: Box::new(parser.expression().unwrap().to_expr()),
                         })
-                        .as_node();
+                        .to_node();
                     }
-                    Identifier { value: token }.as_node()
+                    Identifier { value: token }.to_node()
                 }),
                 infix: None,
             },
@@ -154,9 +151,9 @@ impl<'a> Parser<'a> {
                 infix: Some(Self::binary),
                 prefix: Some(|parser, _can_assign| {
                     Expression::Negate(Box::new(
-                        parser.precedence(Precedence::Unary).unwrap().as_expr(),
+                        parser.precedence(Precedence::Unary).unwrap().to_expr(),
                     ))
-                    .as_node()
+                    .to_node()
                 }),
                 precedence: Precedence::Term,
             },
@@ -164,9 +161,9 @@ impl<'a> Parser<'a> {
                 precedence: Precedence::Unary,
                 prefix: Some(|parser, _can_assign| {
                     Expression::Not(Box::new(
-                        parser.precedence(Precedence::Unary).unwrap().as_expr(),
+                        parser.precedence(Precedence::Unary).unwrap().to_expr(),
                     ))
-                    .as_node()
+                    .to_node()
                 }),
                 infix: None,
             },
@@ -297,7 +294,7 @@ impl<'a> Parser<'a> {
                                 }
                             }
                             println!("{:?}", exprs);
-                            return Node::Emit(|compiler| {});
+                            return Node::Emit(|_compiler| {});
                         }
                         _ => return self.node(),
                     }
@@ -312,12 +309,12 @@ impl<'a> Parser<'a> {
         node
     }
     pub fn expression_statement(&mut self) -> Node {
-        let expr = self.expression().unwrap().as_expr();
+        let expr = self.expression().unwrap().to_expr();
         self.consume(
             TokenKind::SemiColon,
             format!("Expected ';' after expression {}:{}", file!(), line!()).as_str(),
         );
-        Statement::Expression(expr).as_node()
+        Statement::Expression(expr).to_node()
     }
     pub fn token_as_identifier(&mut self) -> Identifier {
         self.advance();
@@ -329,35 +326,35 @@ impl<'a> Parser<'a> {
         match self.current().kind {
             TokenKind::Print => {
                 self.advance();
-                let node = Statement::Print(Box::new(self.expression().unwrap())).as_node();
+                let node = Statement::Print(Box::new(self.expression().unwrap())).to_node();
                 self.consume(TokenKind::SemiColon, "Expected ';' ");
                 node
             }
             TokenKind::AssertEq => {
                 self.advance();
-                let lhs = self.expression().unwrap().as_expr();
+                let lhs = self.expression().unwrap().to_expr();
                 self.consume(TokenKind::Comma, "Expected ','' to seperate lhs and rhs");
-                let rhs = self.expression().unwrap().as_expr();
+                let rhs = self.expression().unwrap().to_expr();
                 self.consume(TokenKind::SemiColon, "Expected ';'");
 
                 let node = Statement::AssertEq(lhs, rhs);
-                node.as_node()
+                node.to_node()
             }
             TokenKind::AssertNe => {
                 self.advance();
-                let lhs = self.expression().unwrap().as_expr();
+                let lhs = self.expression().unwrap().to_expr();
                 self.consume(TokenKind::Comma, "Expected ','' to seperate lhs and rhs");
-                let rhs = self.expression().unwrap().as_expr();
+                let rhs = self.expression().unwrap().to_expr();
                 self.consume(TokenKind::SemiColon, "Expected ';'");
 
                 let node = Statement::AssertNe(lhs, rhs);
-                node.as_node()
+                node.to_node()
             }
             TokenKind::Let => {
                 self.advance();
                 let identifier = self.token_as_identifier();
                 self.consume(TokenKind::Equal, "Expected '=' after variable name");
-                let initializer = self.expression().unwrap().as_expr();
+                let initializer = self.expression().unwrap().to_expr();
                 self.consume(
                     TokenKind::SemiColon,
                     "Expected ';' after variable declaration",
@@ -367,7 +364,7 @@ impl<'a> Parser<'a> {
                     intializer: initializer,
                     identifier,
                 }
-                .as_node()
+                .to_node()
             }
             TokenKind::Func => {
                 self.advance();
@@ -386,12 +383,12 @@ impl<'a> Parser<'a> {
                 }
                 self.consume(TokenKind::LeftBrace, "Expected '{'");
                 FunctionDeclaration {
-                    parameters: parameters,
+                    parameters,
                     name: identifier,
-                    block: self.block(false).as_expr().as_block(),
+                    block: self.block(false).to_expr().as_block(),
                 }
-                .as_declaration()
-                .as_node()
+                .to_declaration()
+                .to_node()
             }
             TokenKind::Return => {
                 self.advance();
@@ -399,15 +396,15 @@ impl<'a> Parser<'a> {
                     self.error("Cannot return from the top level of a script")
                 }
                 if let Ok(expr) = self.expression() {
-                    let expr = expr.as_expr();
+                    let expr = expr.to_expr();
                     self.consume(
                         TokenKind::SemiColon,
                         format!("Expected ';' after expression {}:{}", file!(), line!()).as_str(),
                     );
-                    return Statement::Return(ReturnStmt { expr: Some(expr) }).as_node();
+                    Statement::Return(ReturnStmt { expr: Some(expr) }).to_node()
                 } else {
                     self.consume(TokenKind::SemiColon, "Expected ';' after return statement");
-                    return Statement::Return(ReturnStmt { expr: None }).as_node();
+                    Statement::Return(ReturnStmt { expr: None }).to_node()
                 }
             }
             _ => self.expression_statement(),
@@ -424,7 +421,7 @@ impl Parser<'_> {
             }
 
             let parameter = self.expression();
-            parameters.push(parameter.unwrap().as_expr());
+            parameters.push(parameter.unwrap().to_expr());
             if !self.match_token(TokenKind::Comma) {
                 self.advance();
                 break;
@@ -432,29 +429,29 @@ impl Parser<'_> {
         }
         CallExpr {
             parameters: Box::new(parameters),
-            identifier: identifier,
+            identifier,
         }
-        .as_expr()
-        .as_node()
+        .to_expr()
+        .to_node()
     }
     pub fn while_expr(&mut self, _can_assign: bool) -> Node {
-        let condition = self.expression().unwrap().as_expr();
-        let block = self.expression().unwrap().as_expr().as_block();
+        let condition = self.expression().unwrap().to_expr();
+        let block = self.expression().unwrap().to_expr().as_block();
 
         WhileExpr {
             predicate: Box::new(condition),
             block,
         }
-        .as_expr()
-        .as_node()
+        .to_expr()
+        .to_node()
     }
     pub fn if_expr(&mut self, _can_assign: bool) -> Node {
-        let condition = self.expression().unwrap().as_expr();
-        let then = self.expression().unwrap().as_expr().as_block();
+        let condition = self.expression().unwrap().to_expr();
+        let then = self.expression().unwrap().to_expr().as_block();
         #[allow(unused_mut)]
         let mut else_block = None;
         if self.match_token(TokenKind::Else) {
-            let block = self.expression().unwrap().as_expr().as_block();
+            let block = self.expression().unwrap().to_expr().as_block();
             else_block = Some(block)
         }
         IfExpr {
@@ -462,8 +459,8 @@ impl Parser<'_> {
             then,
             else_block,
         }
-        .as_expr()
-        .as_node()
+        .to_expr()
+        .to_node()
     }
     pub fn block(&mut self, _can_assign: bool) -> Node {
         self.begin_scope();
@@ -479,7 +476,7 @@ impl Parser<'_> {
         }
         self.consume(TokenKind::RightBrace, "Expected '}' after block to close");
         self.end_scope();
-        return block.as_node();
+        block.to_node()
     }
     pub fn string(&mut self, _can_assign: bool) -> Node {
         Literal::String(self.previous().lexeme.clone()).as_node()
@@ -502,7 +499,7 @@ impl Parser<'_> {
             rhs: Box::new(rhs),
             op,
         })
-        .as_node()
+        .to_node()
     }
     pub fn number(&mut self, _can_assign: bool) -> Node {
         Literal::Number(self.previous().lexeme.parse::<f64>().unwrap()).as_node()
@@ -566,17 +563,17 @@ impl<'a> Parser<'a> {
                 diagnostics.log(
                     Some(&token.position),
                     "Compiler",
-                    format!("Error at EOF: ",),
+                    "Error at EOF: ".to_string(),
                 );
             }
 
             _ => {
                 let range: Range<usize> = (token.position.start_in_source as usize)
-                    ..(token.position.start_in_source as usize + token.length as usize);
+                    ..(token.position.start_in_source as usize + token.length);
                 diagnostics.log(
                     Some(&token.position),
                     "Compiler",
-                    format!("Error at `{}`: ", self.scanner.source[range].to_string()),
+                    format!("Error at `{}`: ", &self.scanner.source[range]),
                 );
             }
         }
@@ -589,7 +586,7 @@ impl<'a> Parser<'a> {
     ) -> Parser<'a> {
         Parser {
             context,
-            scanner: scanner,
+            scanner,
             had_error: false,
             panic_mode: false,
             scope_depth: 0,
@@ -608,7 +605,7 @@ impl<'a> Parser<'a> {
             return false;
         };
         self.advance();
-        return true;
+        true
     }
     /// checks the token kind of the current
     pub fn check(&mut self, tk: TokenKind) -> bool {
@@ -637,7 +634,7 @@ impl<'a> Parser<'a> {
 
 impl<'a> Parser<'a> {
     pub fn advance(&mut self) -> &Token {
-        let current = self.scanner.next();
+        let current = self.scanner.next_token();
         self.token_state
             .tokens
             .insert(self.token_state.index, self.token_state.current.to_owned());

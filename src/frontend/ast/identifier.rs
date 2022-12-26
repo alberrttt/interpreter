@@ -17,7 +17,7 @@ pub struct Identifier {
 }
 
 impl CompileToBytecode for Identifier {
-    fn to_bytecode(self, compiler: &mut Compiler) -> () {
+    fn to_bytecode(self, compiler: &mut Compiler) {
         let local = compiler.resolve_local(&self.value);
         let function = &mut compiler.function;
         #[allow(unused_assignments)]
@@ -25,7 +25,7 @@ impl CompileToBytecode for Identifier {
         if let Some(index) = local {
             op = OpCode::GetLocal(index as u16);
         } else {
-            let name = function.chunk.emit_value(self.value.lexeme.as_value());
+            let name = function.chunk.emit_value(self.value.lexeme.to_value());
             op = OpCode::GetGlobal(name)
         }
 
@@ -45,7 +45,7 @@ impl<'a> Compiler<'a> {
     }
 }
 impl AsNode for Identifier {
-    fn as_node(self) -> super::node::Node {
+    fn to_node(self) -> super::node::Node {
         Node::Identifier(self)
     }
 }

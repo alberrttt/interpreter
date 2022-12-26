@@ -1,6 +1,6 @@
 use std::{char, fmt};
 
-use super::ast::expression::comparison::{ComparisonKind};
+use super::ast::expression::comparison::ComparisonKind;
 
 #[derive(Debug, Clone, Default)]
 pub struct Scanner {
@@ -27,7 +27,7 @@ macro_rules! token {
     }};
     ($self:ident, Identifier) => {{
         Token {
-            kind: $self.to_identifier(),
+            kind: $self.identifier_from_lexeme(),
             lexeme: $self.source[$self.start..$self.current].to_string(),
             line: $self.line,
             length: $self.current - $self.start,
@@ -145,7 +145,7 @@ impl Scanner {
             if self.at_end() {
                 break;
             }
-            self.next();
+            self.next_token();
         }
     }
     pub fn new(source: String) -> Scanner {
@@ -170,7 +170,7 @@ impl Scanner {
         self.line_info.start = 0;
         self.tokens.clear()
     }
-    pub fn next(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Token {
         self.ignore_whitespace();
 
         if self.at_end() {
@@ -353,7 +353,7 @@ impl Scanner {
         }
         token!(self, Number)
     }
-    fn to_identifier(&mut self) -> TokenKind {
+    fn identifier_from_lexeme(&mut self) -> TokenKind {
         match self.lexeme() {
             "let" => TokenKind::Let,
             "mut" => TokenKind::Mut,
@@ -382,8 +382,7 @@ impl Scanner {
         } {
             self.advance();
         }
-        let tkn = token!(self, Identifier);
-        tkn
+        token!(self, Identifier)
     }
 }
 

@@ -67,7 +67,7 @@ impl Node {
     }
 }
 impl AsExpr for Node {
-    fn as_expr(self) -> Expression {
+    fn to_expr(self) -> Expression {
         match self {
             Node::Expression(expr) => expr,
             Node::Literal(literal) => Expression::Literal(literal),
@@ -81,11 +81,11 @@ impl AsExpr for Node {
     }
 }
 pub trait AsNode {
-    fn as_node(self) -> Node;
+    fn to_node(self) -> Node;
 }
 impl CompileToBytecode for Node {
     // we need it to emit constants
-    fn to_bytecode(self, compiler: &mut Compiler) -> () {
+    fn to_bytecode(self, compiler: &mut Compiler) {
         let _function = &mut compiler.function;
         match self {
             Node::Expression(expr) => expr.to_bytecode(compiler),

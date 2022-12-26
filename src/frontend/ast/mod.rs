@@ -16,5 +16,5 @@ pub enum BinaryOperation {
 }
 
 pub trait CompileToBytecode {
-    fn to_bytecode(self, compiler: &mut Compiler) -> ();
+    fn to_bytecode(self, compiler: &mut Compiler);
 }

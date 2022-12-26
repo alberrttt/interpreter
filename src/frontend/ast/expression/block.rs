@@ -17,7 +17,7 @@ pub struct Block {
 }
 
 impl CompileToBytecode for Block {
-    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
+    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) {
         compiler.begin_scope();
         for dec in self.declarations {
             dec.to_bytecode(compiler)
@@ -37,16 +37,16 @@ impl<'a> Compiler<'a> {
         }
         self.function
             .chunk
-            .emit_many(std::mem::replace(&mut self.emit_after_block, Vec::new()))
+            .emit_many(std::mem::take(&mut self.emit_after_block))
     }
 }
 impl AsExpr for Block {
-    fn as_expr(self) -> super::Expression {
+    fn to_expr(self) -> super::Expression {
         super::Expression::Block(self)
     }
 }
 impl AsNode for Block {
-    fn as_node(self) -> crate::frontend::ast::node::Node {
-        self.as_expr().as_node()
+    fn to_node(self) -> crate::frontend::ast::node::Node {
+        self.to_expr().to_node()
     }
 }

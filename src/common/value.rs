@@ -1,7 +1,6 @@
 // runtime value
 
 use std::{
-    borrow::Borrow,
     cell::RefCell,
     fmt::{Debug, Display},
     ptr::addr_of,
@@ -29,7 +28,7 @@ impl Debug for Value {
             Self::Number(arg0) => f.debug_tuple("Number").field(arg0).finish(),
             Self::Boolean(arg0) => f.debug_tuple("Boolean").field(arg0).finish(),
             Self::String(arg0) => f.debug_tuple("String").field(arg0).finish(),
-            Self::Function(arg0) => f.debug_tuple("Function").finish(),
+            Self::Function(_arg0) => f.debug_tuple("Function").finish(),
             Self::Void => write!(f, "Void"),
             Self::None => write!(f, "None"),
         }
@@ -47,10 +46,10 @@ impl PartialEq for Value {
     }
 }
 pub trait AsValue {
-    fn as_value(self) -> Value;
+    fn to_value(self) -> Value;
 }
 impl AsValue for bool {
-    fn as_value(self) -> Value {
+    fn to_value(self) -> Value {
         Value::Boolean(self)
     }
 }
@@ -70,12 +69,12 @@ impl Value {
     }
 }
 impl AsValue for String {
-    fn as_value(self) -> Value {
+    fn to_value(self) -> Value {
         Value::String(rcrf(self))
     }
 }
 impl AsValue for f64 {
-    fn as_value(self) -> Value {
+    fn to_value(self) -> Value {
         Value::Number(self)
     }
 }

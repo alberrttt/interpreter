@@ -1,7 +1,4 @@
-use crate::{
-    common::{opcode::OpCode},
-    frontend::{ast::CompileToBytecode},
-};
+use crate::{common::opcode::OpCode, frontend::ast::CompileToBytecode};
 
 use super::{AsExpr, Expression};
 
@@ -19,12 +16,12 @@ pub struct Comparison {
     pub rhs: Box<Expression>,
 }
 impl AsExpr for Comparison {
-    fn as_expr(self) -> Expression {
+    fn to_expr(self) -> Expression {
         Expression::Comparison(self)
     }
 }
 impl CompileToBytecode for Comparison {
-    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
+    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) {
         self.lhs.to_bytecode(compiler);
         self.rhs.to_bytecode(compiler);
         let mut emit_op = |op: OpCode| compiler.function.chunk.emit_op(op);

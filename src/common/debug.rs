@@ -1,6 +1,6 @@
 use super::{chunk::Chunk, opcode::OpCode};
 
-use std::string::ToString;
+
 
 pub fn dissasemble_chunk(chunk: &Chunk) {
     println!("----------------------");
@@ -30,20 +30,20 @@ pub fn diassasemble_instruction(
         | OpCode::DefineLocal(pos) => {
             let constant = &chunk.constants[*pos as usize];
 
-            println!("{} <{}>", instruction.to_string(), constant)
+            println!("{} <{}>", instruction, constant)
         }
 
         OpCode::JumpTo(offset)
         | OpCode::JumpToIfFalse(offset)
         | OpCode::PopJumpToIfFalse(offset)
         | OpCode::Call(offset) => {
-            println!("{} {}", instruction.to_string(), offset)
+            println!("{} {}", instruction, offset)
         }
         OpCode::GetLocal(pos) | OpCode::SetLocal(pos) => {
-            println!("{} {}", instruction.to_string(), pos)
+            println!("{} {}", instruction, pos)
         }
 
-        _ => println!("{}", instruction.to_string()),
+        _ => println!("{}", instruction),
     }
     instruction_ptr + 1
 }

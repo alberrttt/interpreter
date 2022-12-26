@@ -1,16 +1,7 @@
-use std::{
-    cell::RefCell,
-    collections::HashMap,
-    mem::MaybeUninit,
-    ptr::addr_of,
-    rc::Rc,
-    thread::sleep_ms,
-    time::{Duration, Instant},
-};
+use std::{collections::HashMap, time::Instant};
 
 use crate::common::{
     chunk::Chunk,
-    debug::diassasemble_instruction,
     function::Function,
     interner::StringInterner,
     natives::Native,
@@ -66,7 +57,7 @@ impl VirtualMachine {
 
         let frame = &mut self.callframes[self.frame_count];
         frame.function = function;
-        frame.slots = self.stack.len() - (arg_count + 1) as usize;
+        frame.slots = self.stack.len() - (arg_count + 1);
 
         self.frame_count += 1;
     }
@@ -76,7 +67,7 @@ impl VirtualMachine {
         let mut function = unsafe { &*current_frame.function };
         let mut chunk = &function.chunk;
         let mut ip: usize = current_frame.ip;
-        let interner = &self.interner;
+        let _interner = &self.interner;
 
         macro_rules! pop {
             () => {{
@@ -126,7 +117,7 @@ impl VirtualMachine {
             }};
         }
         loop {
-            let instruction = &chunk.code[ip as usize];
+            let instruction = &chunk.code[ip];
             // #[cfg(debug_assertions)]
             // {
             //     print!("{ip} Executing ");
@@ -138,7 +129,7 @@ impl VirtualMachine {
                 OpCode::CallNativeArgPtr(location, ptr) => {
                     let native = &self.natives[location as usize];
                     let args = unsafe { &*ptr };
-                    native.0(&args, &self)
+                    native.0(args, &self)
                 }
                 OpCode::CallNative(location) => {
                     let native = &self.natives[location as usize];
@@ -146,27 +137,27 @@ impl VirtualMachine {
                     (native.0)(&args, &self);
                 }
                 OpCode::JumpTo(offset) => {
-                    ip = offset as usize;
+                    ip = offset;
                 }
                 OpCode::PopJumpToIfFalse(offset) => {
                     let popped = pop!();
                     let condition = popped.as_bool();
                     if !condition {
-                        ip = offset as usize;
+                        ip = offset;
                     }
                 }
 
                 OpCode::JumpToIfFalse(offset) => {
                     let condition = self.stack[self.stack.len() - 1].as_bool();
                     if !condition {
-                        ip = offset as usize;
+                        ip = offset;
                     }
                 }
                 OpCode::Nop => {}
                 OpCode::Not => {
                     let pop = pop!();
                     if let Value::Boolean(bool) = pop {
-                        self.stack.push((!bool).as_value());
+                        self.stack.push((!bool).to_value());
                     } else {
                         panic!("not cannot be applied to {} ", pop)
                     }
@@ -174,7 +165,7 @@ impl VirtualMachine {
                 OpCode::Negate => {
                     let pop = pop!();
                     if let Value::Number(num) = pop {
-                        self.stack.push((-num).as_value());
+                        self.stack.push((-num).to_value());
                     } else {
                         panic!("negate cannot be applied to {} ", pop)
                     }
@@ -242,7 +233,7 @@ impl VirtualMachine {
                             let mut lhs = lhs.borrow().to_owned();
                             let rhs = rhs.borrow();
                             lhs.push_str(rhs.as_str());
-                            self.stack.push(lhs.as_value());
+                            self.stack.push(lhs.to_value());
                         }
                         _ => unimplemented!(),
                     }
@@ -276,7 +267,7 @@ impl VirtualMachine {
                 }
                 OpCode::Exit => break,
                 OpCode::Return => {
-                    let mut returning = pop!();
+                    let returning = pop!();
                     self.frame_count -= 1;
 
                     if self.frame_count == 0 {

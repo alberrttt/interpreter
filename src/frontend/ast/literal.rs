@@ -22,11 +22,11 @@ pub enum Literal {
 
 impl Literal {
     pub fn as_node(self) -> Node {
-        return Node::Literal(self);
+        Node::Literal(self)
     }
     pub fn as_number(self) -> f64 {
         match self {
-            Literal::Number(number) => return number,
+            Literal::Number(number) => number,
             _ => panic!(),
         }
     }
@@ -43,12 +43,12 @@ impl From<Literal> for Value {
 }
 
 impl CompileToBytecode for Literal {
-    fn to_bytecode(self, compiler: &mut Compiler) -> () {
+    fn to_bytecode(self, compiler: &mut Compiler) {
         let function = &mut compiler.function;
         let pos = match self {
             Literal::Void => function.chunk.emit_value(Value::Void),
             Literal::Number(number) => function.chunk.emit_value(Value::Number(number)),
-            Literal::String(string) => function.chunk.emit_value(string.to_string().as_value()),
+            Literal::String(string) => function.chunk.emit_value(string.to_value()),
             Literal::Bool(bool) => {
                 if bool {
                     function.chunk.emit_op(OpCode::True)
@@ -62,7 +62,7 @@ impl CompileToBytecode for Literal {
     }
 }
 impl AsExpr for Literal {
-    fn as_expr(self) -> super::expression::Expression {
+    fn to_expr(self) -> super::expression::Expression {
         Expression::Literal(self)
     }
 }

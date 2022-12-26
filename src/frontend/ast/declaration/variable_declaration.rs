@@ -21,7 +21,7 @@ pub struct VariableDeclaration {
     // pub mutable: bool,
 }
 impl CompileToBytecode for VariableDeclaration {
-    fn to_bytecode(self, compiler: &mut Compiler) -> () {
+    fn to_bytecode(self, compiler: &mut Compiler) {
         self.intializer.to_bytecode(compiler);
         if compiler.scope_depth > 0 {
             compiler.add_local(self.identifier.value);
@@ -30,7 +30,7 @@ impl CompileToBytecode for VariableDeclaration {
         let function = &mut compiler.function;
         let name = function
             .chunk
-            .emit_value(self.identifier.value.lexeme.as_value().clone());
+            .emit_value(self.identifier.value.lexeme.to_value());
         function.chunk.emit_op(OpCode::DefineGlobal(name))
     }
 }
@@ -44,12 +44,12 @@ impl<'a> Compiler<'a> {
     }
 }
 impl AsDeclaration for VariableDeclaration {
-    fn as_declaration(self) -> super::Declaration {
+    fn to_declaration(self) -> super::Declaration {
         super::Declaration::VariableDeclaration(self)
     }
 }
 impl AsNode for VariableDeclaration {
-    fn as_node(self) -> crate::frontend::ast::node::Node {
-        Node::Declaration(self.as_declaration())
+    fn to_node(self) -> crate::frontend::ast::node::Node {
+        Node::Declaration(self.to_declaration())
     }
 }

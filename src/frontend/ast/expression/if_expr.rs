@@ -12,14 +12,14 @@ pub struct IfExpr {
     pub else_block: Option<Block>,
 }
 impl AsExpr for IfExpr {
-    fn as_expr(self) -> super::Expression {
+    fn to_expr(self) -> super::Expression {
         super::Expression::If(self)
     }
 }
 
 /// GUAGE YOUR EYES OUT
 impl CompileToBytecode for IfExpr {
-    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
+    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) {
         self.predicate.to_bytecode(compiler);
         let predicate_jump = compiler.emit_pop_jump_if_false();
 

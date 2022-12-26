@@ -40,7 +40,7 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                     use std::path::Path;
                     use std::fs::read_to_string;
 
-                    let interner = StringInterner::new();
+                    let interner = StringInterner::default();
                     let source = read_to_string(Path::new(#path_string)).unwrap();
                     let mut context = Context::new(Path::new(#path_string), Flags::default());
                     let interner_ref = Rc::new(RefCell::new(interner));

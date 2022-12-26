@@ -17,12 +17,12 @@ pub enum Statement {
 }
 
 impl AsNode for Statement {
-    fn as_node(self) -> super::node::Node {
+    fn to_node(self) -> super::node::Node {
         super::node::Node::Statement(self)
     }
 }
 impl AsExpr for Statement {
-    fn as_expr(self) -> Expression {
+    fn to_expr(self) -> Expression {
         match self {
             Statement::Expression(expr) => expr,
             _ => panic!(),
@@ -59,6 +59,6 @@ impl CompileToBytecode for Statement {
     }
 }
 
-pub trait AsStatement {
-    fn as_statement(self) -> Statement;
+pub trait ToStatement {
+    fn to_statement(self) -> Statement;
 }

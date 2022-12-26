@@ -1,9 +1,6 @@
 use crate::{
     common::opcode::OpCode,
-    frontend::{
-        ast::{identifier::Identifier, CompileToBytecode},
-        parser,
-    },
+    frontend::ast::{identifier::Identifier, CompileToBytecode},
 };
 
 use super::{AsExpr, Expression};
@@ -13,7 +10,7 @@ pub struct CallExpr {
     pub parameters: Box<Vec<Expression>>,
 }
 impl CompileToBytecode for CallExpr {
-    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
+    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) {
         self.identifier.to_bytecode(compiler);
         self.parameters
             .iter()
@@ -25,7 +22,7 @@ impl CompileToBytecode for CallExpr {
     }
 }
 impl AsExpr for CallExpr {
-    fn as_expr(self) -> super::Expression {
+    fn to_expr(self) -> super::Expression {
         super::Expression::CallExpr(self)
     }
 }
