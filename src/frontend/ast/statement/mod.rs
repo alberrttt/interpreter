@@ -30,7 +30,8 @@ impl AsExpr for Statement {
     }
 }
 impl CompileToBytecode for Statement {
-    fn to_bytecode(self, compiler: &mut Compiler) -> () {
+    fn to_bytecode(self, compiler: &mut Compiler) {
+        compiler.compiling_statement = true;
         match self {
             Statement::Return(return_stmt) => return_stmt.to_bytecode(compiler),
             Statement::Expression(expr) => {
@@ -54,6 +55,7 @@ impl CompileToBytecode for Statement {
                 compiler.function.chunk.emit_op(OpCode::AssertNe)
             }
         }
+        compiler.compiling_statement = false;
     }
 }
 

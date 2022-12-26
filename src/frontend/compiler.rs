@@ -39,6 +39,8 @@ pub struct Compiler<'a> {
     pub emit_after_block: Vec<OpCode>,
     pub function_type: FunctionType,
 
+    pub compiling_statement: bool,
+
     pub returned_from_block: bool,
 }
 
@@ -94,6 +96,8 @@ impl<'a> Compiler<'a> {
             emit_after_block: Vec::new(),
             function_type,
             returned_from_block: false,
+
+            compiling_statement: false,
 
             scanner: Scanner::default(),
             function: Function::default(),

@@ -22,19 +22,18 @@ fn main() {
     let mut flags = Flags::default();
     flags.display_bytecode = cli.display_bytecode;
     let mut context = cli_context::Context::new(path, flags);
-    let mut vm = VirtualMachine::new();
     let mut interner = StringInterner::new();
-    let compiler = Compiler::new(
-        Rc::new(RefCell::new(interner)),
-        &mut context,
-        FunctionType::Script,
-    );
+    let interner_ref = Rc::new(RefCell::new(interner));
+    let compiler = Compiler::new(interner_ref.clone(), &mut context, FunctionType::Script);
     let start = Instant::now();
     let compiled = compiler.compile(source).unwrap();
     println!(
         "took {}s to compile to bytecode",
         start.elapsed().as_secs_f64()
     );
+    let interner = Rc::try_unwrap(interner_ref).unwrap().into_inner();
+    let mut vm = VirtualMachine::new(interner);
+
     vm.stack.push(Value::Void);
     vm.call(&compiled, 0);
     vm.run();

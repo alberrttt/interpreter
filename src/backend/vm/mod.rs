@@ -12,6 +12,7 @@ use crate::common::{
     chunk::Chunk,
     debug::diassasemble_instruction,
     function::Function,
+    interner::StringInterner,
     natives::Native,
     opcode::OpCode,
     value::{AsValue, Value},
@@ -37,9 +38,10 @@ pub struct VirtualMachine {
     pub frame_count: usize,
     pub globals: HashMap<String, Value>,
     pub natives: Vec<Native>,
+    pub interner: StringInterner,
 }
 impl VirtualMachine {
-    pub fn new() -> VirtualMachine {
+    pub fn new(interner: StringInterner) -> VirtualMachine {
         pub const CALLFRAME: CallFrame = CallFrame {
             function: std::ptr::null(),
             ip: 0,
@@ -51,6 +53,7 @@ impl VirtualMachine {
             natives: vec![(Native(|_: &[Value], vm: _| println!("stack dump: {:?}", vm.stack)))],
             globals: HashMap::new(),
             frame_count: 0,
+            interner,
         }
     }
     pub fn call(&mut self, function: &Function, arg_count: usize) {
@@ -73,13 +76,19 @@ impl VirtualMachine {
         let mut function = unsafe { &*current_frame.function };
         let mut chunk = &function.chunk;
         let mut ip: usize = current_frame.ip;
+        let interner = &self.interner;
+
         macro_rules! pop {
             () => {{
                 unsafe {
+                    assert!(self.stack.len() > 0);
+
                     let i = self.stack.len() - 1;
                     let tmp = ::std::mem::take(&mut self.stack[i]);
                     self.stack.set_len(i);
-
+                    if tmp.eq(&Value::Void) {
+                        panic!()
+                    }
                     tmp
                 }
             }};
@@ -95,6 +104,22 @@ impl VirtualMachine {
                             panic!()
                         };
                         self.stack.push(Value::Number(lhs $op rhs))
+                    }
+                    x => unimplemented!("cannot apply binary operation to value {}", x),
+                }
+            }};
+        }
+        macro_rules! binary_op_bool {
+            ($op:tt) => {{
+                let rhs = pop!();
+                let lhs = pop!();
+
+                match lhs {
+                    Value::Number(lhs) => {
+                        let Value::Number(rhs) = rhs else {
+                            panic!()
+                        };
+                        self.stack.push(Value::Boolean(lhs $op rhs))
                     }
                     x => unimplemented!("cannot apply binary operation to value {}", x),
                 }
@@ -249,6 +274,7 @@ impl VirtualMachine {
 
                     assert_ne!(lhs, rhs);
                 }
+                OpCode::Exit => break,
                 OpCode::Return => {
                     let mut returning = pop!();
                     self.frame_count -= 1;
@@ -286,41 +312,16 @@ impl VirtualMachine {
                 }
 
                 OpCode::Less => {
-                    let Some(Value::Number(rhs)) = self.stack.pop() else {
-                        panic!()
-                    };
-                    let tmp = self.stack.pop();
-                    let Some(Value::Number(lhs)) = tmp else {
-                        panic!("{:?}", tmp)
-                    };
-                    self.stack.push((lhs < rhs).as_value())
+                    binary_op_bool!(<)
                 }
                 OpCode::LessEq => {
-                    let Some(Value::Number(rhs)) = self.stack.pop() else {
-                        panic!()
-                    };
-                    let Some(Value::Number(lhs)) = self.stack.pop() else {
-                        panic!()
-                    };
-                    self.stack.push((lhs <= rhs).as_value())
+                    binary_op_bool!(<=)
                 }
                 OpCode::Greater => {
-                    let Some(Value::Number(rhs)) = self.stack.pop() else {
-                        panic!()
-                    };
-                    let Some(Value::Number(lhs)) = self.stack.pop() else {
-                        panic!()
-                    };
-                    self.stack.push((lhs > rhs).as_value())
+                    binary_op_bool!(>)
                 }
                 OpCode::GreaterEq => {
-                    let Some(Value::Number(rhs)) = self.stack.pop() else {
-                        panic!()
-                    };
-                    let Some(Value::Number(lhs)) = self.stack.pop() else {
-                        panic!()
-                    };
-                    self.stack.push((lhs >= rhs).as_value())
+                    binary_op_bool!(>=)
                 }
             }
         }

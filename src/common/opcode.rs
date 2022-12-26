@@ -16,11 +16,10 @@ pub enum OpCode {
     GetLocal(u16),
     DefineLocal(ConstantLocation),
     SetLocal(u16),
-
     DefineGlobal(ConstantLocation),
     GetGlobal(ConstantLocation),
     SetGlobal(ConstantLocation),
-
+    Exit,
     PopJumpToIfFalse(Offset),
     JumpToIfFalse(Offset),
     JumpTo(Offset),

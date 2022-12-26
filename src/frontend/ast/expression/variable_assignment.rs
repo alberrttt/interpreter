@@ -10,8 +10,8 @@ pub struct VariableAssignment {
     pub initializer: Box<Expression>,
     pub name: Identifier,
 }
-impl CompileToBytecode for VariableAssignment {
-    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
+impl VariableAssignment {
+    pub fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
         self.initializer.to_bytecode(compiler);
         let local = compiler.resolve_local(&self.name.value);
         if let Some(local) = local {

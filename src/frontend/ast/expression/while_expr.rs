@@ -1,5 +1,3 @@
-
-
 use crate::{common::opcode::OpCode, frontend::ast::CompileToBytecode};
 
 use super::{block::Block, AsExpr, Expression};
@@ -17,22 +15,16 @@ impl AsExpr for WhileExpr {
 /// GUAGE YOUR EYES OUT
 impl CompileToBytecode for WhileExpr {
     fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) -> () {
-        let predicate_location = compiler.function.chunk.code.len();
+        let predicate = compiler.function.chunk.code.len();
+
         self.predicate.to_bytecode(compiler);
-        let jump_op = compiler.function.chunk.code.len();
-        compiler
-            .function
-            .chunk
-            .emit_op(OpCode::JumpToIfFalse(0xfff));
-        compiler.function.chunk.emit_op(OpCode::Pop);
+        let predicate_jump = compiler.emit_pop_jump_if_false();
+
         self.block.to_bytecode(compiler);
-        let _after_block = compiler.function.chunk.code.len();
-        compiler
-            .function
-            .chunk
-            .emit_op(OpCode::JumpTo(predicate_location));
-        let pop_location = compiler.function.chunk.code.len();
-        compiler.function.chunk.emit_op(OpCode::Pop);
-        compiler.function.chunk.code[jump_op] = OpCode::JumpToIfFalse(pop_location);
+        let loop_jump = {
+            compiler.function.chunk.emit_op(OpCode::JumpTo(predicate));
+            compiler.function.chunk.code.len() - 1
+        };
+        compiler.function.chunk.code[predicate_jump] = OpCode::PopJumpToIfFalse(loop_jump + 1);
     }
 }
