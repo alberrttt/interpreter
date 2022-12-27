@@ -120,12 +120,18 @@ impl VirtualMachine {
             let instruction = &chunk.code[ip];
             // #[cfg(debug_assertions)]
             // {
-            //     print!("{ip} Executing ");
-            //     diassasemble_instruction(ip, instruction, &function.chunk);
+            // print!("{ip} Executing ");
+            // diassasemble_instruction(ip, instruction, &function.chunk);
             // }
             ip += 1;
 
             match instruction.clone() {
+                OpCode::Equal => {
+                    binary_op_bool!(==)
+                }
+                OpCode::NotEqual => {
+                    binary_op_bool!(!=)
+                }
                 OpCode::CallNativeArgPtr(location, ptr) => {
                     let native = &self.natives[location as usize];
                     let args = unsafe { &*ptr };

@@ -4,10 +4,7 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{
     cli_context::Context,
     common::{
-        debug::dissasemble_chunk,
-        function::Function,
-        interner::{StringInterner},
-        opcode::OpCode,
+        debug::dissasemble_chunk, function::Function, interner::StringInterner, opcode::OpCode,
     },
 };
 

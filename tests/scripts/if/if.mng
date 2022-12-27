@@ -1,6 +1,6 @@
 let x = 0;
 
-
-assert_eq if true {
-    return 456;
-}, 456;
+if true {
+    x = 456;
+}
+assert_eq x, 456;

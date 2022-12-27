@@ -6,6 +6,8 @@ use super::{AsExpr, Expression};
 pub enum ComparisonKind {
     GreaterEq,
     LessEq,
+    Equal,
+    NotEqual,
     Greater,
     Less,
 }
@@ -29,6 +31,8 @@ impl CompileToBytecode for Comparison {
             ComparisonKind::GreaterEq => emit_op(OpCode::GreaterEq),
             ComparisonKind::LessEq => emit_op(OpCode::LessEq),
             ComparisonKind::Greater => emit_op(OpCode::Greater),
+            ComparisonKind::Equal => emit_op(OpCode::Equal),
+            ComparisonKind::NotEqual => emit_op(OpCode::NotEqual),
             ComparisonKind::Less => emit_op(OpCode::Less),
         }
     }

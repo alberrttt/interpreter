@@ -27,7 +27,10 @@ impl CompileToBytecode for IfExpr {
 
         // where the then block ends
         let then_end = compiler.function.chunk.code.len();
-        compiler.function.chunk.emit_op(OpCode::JumpTo(0));
+        compiler
+            .function
+            .chunk
+            .emit_op(OpCode::JumpTo(then_end + 1));
 
         if let Some(else_block) = self.else_block {
             else_block.to_bytecode(compiler);

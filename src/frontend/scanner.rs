@@ -395,6 +395,8 @@ impl TryFrom<TokenKind> for ComparisonKind {
             TokenKind::GreaterEqual => Ok(ComparisonKind::GreaterEq),
             TokenKind::Less => Ok(ComparisonKind::Less),
             TokenKind::LessEqual => Ok(ComparisonKind::LessEq),
+            TokenKind::EqualEqual => Ok(ComparisonKind::Equal),
+            TokenKind::BangEqual => Ok(ComparisonKind::NotEqual),
             x => Err(format!("cannot convert {} to comparison kind", x)),
         }
     }

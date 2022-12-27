@@ -10,6 +10,8 @@ pub type Offset = usize;
 #[derive(Debug, Display, Clone, PartialEq)]
 
 pub enum OpCode {
+    Equal,
+    NotEqual,
     Constant(ConstantLocation),
     // use string interning ? maybe
     // u16 is the location in the constant pool

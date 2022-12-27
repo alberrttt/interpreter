@@ -8,7 +8,7 @@ if false {
     // from assuming that this block will push anything onto the stack
     #void // opcode 15
     // ^^^ removing this line will cause the stack to be empty
-};
+}
 
 assert_eq x, 456;
 

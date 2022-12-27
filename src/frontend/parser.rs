@@ -69,7 +69,7 @@ impl<'a> Parser<'a> {
                     let expr =
                         Expression::Grouping(Box::new(parser.expression().unwrap().to_expr()))
                             .to_node();
-                    parser.consume(TokenKind::RightParen, "");
+                    parser.consume(TokenKind::RightParen, "expected right parenthesis to close");
                     expr
                 }),
                 infix: Some(Self::call_expr),
@@ -82,7 +82,9 @@ impl<'a> Parser<'a> {
             TokenKind::Greater
             | TokenKind::Less
             | TokenKind::LessEqual
-            | TokenKind::GreaterEqual => Rule {
+            | TokenKind::GreaterEqual
+            | TokenKind::EqualEqual
+            | TokenKind::BangEqual => Rule {
                 precedence: Precedence::Comparison,
                 prefix: None,
                 infix: Some(|parser: &mut Parser, lhs: Node| {
@@ -280,8 +282,7 @@ impl<'a> Parser<'a> {
                             })
                         }
                         "assert_stack" => {
-                            println!("{}", self.current());
-                            self.consume(TokenKind::LeftBracket, "");
+                            self.consume(TokenKind::LeftBracket, "expected left bracket to close");
                             let mut exprs = Vec::new();
                             loop {
                                 if self.match_token(TokenKind::RightBracket) {
@@ -293,8 +294,7 @@ impl<'a> Parser<'a> {
                                     break;
                                 }
                             }
-                            println!("{:?}", exprs);
-                            return Node::Emit(|_compiler| {});
+                            return Node::Emit(|_compiler| todo!());
                         }
                         _ => return self.node(),
                     }
@@ -324,6 +324,18 @@ impl<'a> Parser<'a> {
     }
     pub fn statement(&mut self) -> Node {
         match self.current().kind {
+            TokenKind::If => {
+                self.advance();
+                self.if_expr(false)
+            }
+            TokenKind::While => {
+                self.advance();
+                self.while_expr(false)
+            }
+            TokenKind::LeftBrace => {
+                self.advance();
+                self.block(false)
+            }
             TokenKind::Print => {
                 self.advance();
                 let node = Statement::Print(Box::new(self.expression().unwrap())).to_node();
@@ -516,6 +528,40 @@ const EOF: &Token = &Token {
         start_in_line: 0,
     },
 };
+macro_rules! error_at_current {
+    ($parser:expr, $msg:expr) => {{
+        $parser.had_error = true;
+        let current = $parser.current().to_owned();
+        error_at!($parser, &current, $msg);
+    }};
+}
+macro_rules! error_at {
+    ($parser:expr, $token:expr, $msg:expr) => {{
+        $parser.panic_mode = true;
+        let diagnostics = &mut $parser.context.as_mut().unwrap().diagnostics;
+
+        match $token.kind {
+            TokenKind::EOF => {
+                diagnostics.log(
+                    Some(&$token.position),
+                    "Compiler",
+                    "Error at EOF: ".to_string(),
+                );
+            }
+
+            _ => {
+                let range: Range<usize> = ($token.position.start_in_source as usize)
+                    ..($token.position.start_in_source as usize + $token.length);
+                diagnostics.log(
+                    Some(&$token.position),
+                    "Compiler",
+                    format!("Error at `{}`: ", &$parser.scanner.source[range]),
+                );
+            }
+        }
+        println!("{} {}:{}", $msg.red(), file!(), line!());
+    }};
+}
 impl<'a> Parser<'a> {
     pub fn begin_scope(&mut self) {
         self.scope_depth += 1;
@@ -527,13 +573,9 @@ impl<'a> Parser<'a> {
         self.had_error = true;
 
         let previous = self.previous().to_owned();
-        self.error_at(&previous, msg);
+        error_at!(self, &previous, msg);
     }
-    pub fn error_at_current(&mut self, msg: &str) {
-        self.had_error = true;
-        let current = self.current().to_owned();
-        self.error_at(&current, msg)
-    }
+
     pub fn synchronize(&mut self) {
         self.panic_mode = false;
         loop {
@@ -554,31 +596,7 @@ impl<'a> Parser<'a> {
             self.advance();
         }
     }
-    pub fn error_at(&mut self, token: &Token, msg: &str) {
-        self.panic_mode = true;
-        let diagnostics = &mut self.context.as_mut().unwrap().diagnostics;
 
-        match token.kind {
-            TokenKind::EOF => {
-                diagnostics.log(
-                    Some(&token.position),
-                    "Compiler",
-                    "Error at EOF: ".to_string(),
-                );
-            }
-
-            _ => {
-                let range: Range<usize> = (token.position.start_in_source as usize)
-                    ..(token.position.start_in_source as usize + token.length);
-                diagnostics.log(
-                    Some(&token.position),
-                    "Compiler",
-                    format!("Error at `{}`: ", &self.scanner.source[range]),
-                );
-            }
-        }
-        println!("{}", msg.red());
-    }
     pub fn new(
         scanner: Scanner,
         context: Option<&'a mut Context<'a>>,
@@ -621,7 +639,7 @@ impl<'a> Parser<'a> {
     pub fn consume(&mut self, kind: TokenKind, err: &str) {
         let current = self.current().kind;
         if current.ne(&kind) {
-            self.error_at_current(err);
+            error_at_current!(self, err);
         }
 
         self.advance();

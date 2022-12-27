@@ -1,0 +1,9 @@
+assert_eq if true {
+    return 2834;
+}, 2834;
+
+assert_eq if false {
+    return 2834;
+} else {
+    return 123;
+}, 123;

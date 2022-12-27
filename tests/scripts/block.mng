@@ -1,0 +1,6 @@
+{
+    print "hello";
+}
+
+#debug_stack
+#assert_stack []

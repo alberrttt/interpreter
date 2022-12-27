@@ -2,7 +2,7 @@ func fib(n) {
     let pred = n < 2;
     if pred {
         return n;
-    };
+    }
 
     return fib(n-2)+fib(n-1);
 }
