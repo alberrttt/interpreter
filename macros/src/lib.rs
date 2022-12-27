@@ -1,10 +1,42 @@
 use std::{
+    fmt::Debug,
     fs::{self},
     path::{Path, PathBuf},
 };
 
 use proc_macro::{self, TokenStream};
 use quote::{format_ident, quote};
+use syn::{parse::Parse, parse_macro_input, Arm, Pat};
+#[proc_macro]
+pub fn key_value_array(input: TokenStream) -> TokenStream {
+    let mut arms = parse_macro_input!(input as Arms);
+    arms.arms.iter().for_each(|f| {
+        println!(
+            "{:?}",
+            if let Pat::Lit(literal) = &f.pat {
+                literal
+            } else {
+                panic!()
+            }
+        );
+    });
+    quote! {}.into()
+}
+struct Arms {
+    arms: Vec<Arm>,
+}
+impl Parse for Arms {
+    fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
+        let mut arms = Vec::new();
+        while !input.is_empty() {
+            arms.push(match input.call(Arm::parse) {
+                Ok(it) => it,
+                Err(err) => return Err(err),
+            })
+        }
+        Ok(Arms { arms })
+    }
+}
 #[proc_macro]
 pub fn make_tests(_item: TokenStream) -> TokenStream {
     let mut stream = Vec::new();

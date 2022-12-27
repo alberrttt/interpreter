@@ -1,6 +1,7 @@
 use std::{cell::RefCell, ffi::OsString, fs::read_to_string, path::Path, rc::Rc, time::Instant};
 
 use clap::Parser;
+use macros::key_value_array;
 use rottenmangos::{
     backend::vm::VirtualMachine,
     cli_context::{self, Flags},

@@ -11,8 +11,8 @@ use crate::common::{
 
 use super::callframe::CallFrame;
 
+pub mod natives;
 pub mod ops;
-
 pub const FUNCTION: Function = Function {
     chunk: Chunk {
         code: Vec::new(),
@@ -31,6 +31,7 @@ pub struct VirtualMachine {
     pub natives: Vec<Native>,
     pub interner: StringInterner,
 }
+
 impl VirtualMachine {
     pub fn new(interner: StringInterner) -> VirtualMachine {
         pub const CALLFRAME: CallFrame = CallFrame {
