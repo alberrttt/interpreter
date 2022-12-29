@@ -48,11 +48,13 @@ impl VirtualMachine {
             interner,
         }
     }
-    pub fn call(&mut self, function: &Function, arg_count: usize) {
-        if arg_count != function.arity as usize {
+    #[allow(clippy::not_unsafe_ptr_arg_deref, unsafe_code)]
+    pub fn call(&mut self, function: *const Function, arg_count: usize) {
+        let arity = unsafe { (*function).arity };
+        if arg_count != arity as usize {
             panic!(
                 "mismatched argument counts! expected {} got {arg_count}",
-                function.arity
+                arity
             )
         }
 
@@ -205,7 +207,7 @@ impl VirtualMachine {
                 }
                 OpCode::GetGlobal(name) => {
                     let name = chunk.constants[name as usize].as_string();
-                    self.stack.push(self.globals.get(name).unwrap().clone())
+                    self.stack.push(self.globals.get(&*name).unwrap().clone())
                 }
                 OpCode::SetGlobal(name) => {
                     let name = (chunk.constants[name as usize].as_string()).to_owned();
@@ -249,9 +251,12 @@ impl VirtualMachine {
                 OpCode::Mul => {
                     binary_op!(*)
                 }
-                OpCode::Pop => unsafe {
-                    self.stack.set_len(self.stack.len() - 1);
-                },
+                OpCode::Pop => {
+                    #[allow(unsafe_code)]
+                    unsafe {
+                        self.stack.set_len(self.stack.len() - 1);
+                    }
+                }
                 OpCode::Div => {
                     binary_op!(/)
                 }
@@ -293,7 +298,7 @@ impl VirtualMachine {
                     let Value::Function(callee) = callee else {
                         panic!()
                     };
-                    let callee = unsafe { &*callee.as_ptr() };
+                    let callee: *const Function = callee.as_ptr() as *const _;
 
                     self.call(callee, arg_count);
                     self.callframes[self.frame_count - 2].ip = ip;

@@ -16,7 +16,10 @@ use super::{
 pub struct Enclosing<'a>(*mut Compiler<'a>);
 impl<'a> Enclosing<'a> {
     pub fn get_compiler(&self) -> &Compiler<'a> {
-        unsafe { self.0.as_ref().unwrap() }
+        #[allow(unsafe_code)]
+        unsafe {
+            self.0.as_ref().unwrap()
+        }
     }
 }
 #[derive(Debug)]

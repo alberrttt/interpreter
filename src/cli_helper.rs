@@ -1,8 +1,6 @@
 use std::{
     cell::{Ref, RefCell},
-    clone,
     path::Path,
-    ptr::null,
     rc::Rc,
 };
 
@@ -55,7 +53,7 @@ pub struct Context<'a> {
 impl<'a> Context<'a> {
     pub fn new(file_path: &'a Path) -> Rc<RefCell<Context>> {
         let diagnostics = Diaganostics { context: None };
-        let mut context = Rc::new(RefCell::new(Context {
+        let context = Rc::new(RefCell::new(Context {
             file_path,
             diagnostics: Box::new(diagnostics),
         }));

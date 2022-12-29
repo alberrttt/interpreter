@@ -13,7 +13,7 @@ fn main() {
     let path = Path::new(&cli.path);
     let source = read_to_string(path).unwrap();
 
-    let mut context = cli_helper::Context::new(path);
+    let context = cli_helper::Context::new(path);
     let interner = StringInterner::default();
     let interner_ref = Rc::new(RefCell::new(interner));
     let compiler = Compiler::new(interner_ref.clone(), context, FunctionType::Script);

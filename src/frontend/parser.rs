@@ -1,5 +1,5 @@
 /// the parser will make an ast
-use std::{borrow::Borrow, cell::RefCell, mem::transmute, ops::Range, rc::Rc};
+use std::{cell::RefCell, mem::transmute, ops::Range, rc::Rc};
 
 use colored::Colorize;
 
@@ -31,10 +31,13 @@ use super::{
 pub struct CompilerRef<'a>(pub *const Compiler<'a>);
 impl<'a> CompilerRef<'a> {
     pub fn into(&self) -> &Compiler<'a> {
-        unsafe { &*self.0 }
+        #[allow(unsafe_code)]
+        unsafe {
+            &*self.0
+        }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Parser<'a> {
     pub context: Option<Rc<RefCell<Context<'a>>>>,
     pub scanner: Scanner,
@@ -47,19 +50,7 @@ pub struct Parser<'a> {
 
     pub token_state: TokenState,
 }
-impl Default for Parser<'_> {
-    fn default() -> Self {
-        Self {
-            context: None,
-            scanner: Default::default(),
-            had_error: Default::default(),
-            panic_mode: Default::default(),
-            scope_depth: Default::default(),
-            function_type: Default::default(),
-            token_state: Default::default(),
-        }
-    }
-}
+
 #[derive(Debug, Default)]
 pub struct TokenState {
     pub previous: Rc<Token>,
@@ -518,6 +509,7 @@ impl Parser<'_> {
             _ => panic!(),
         };
         // the precedence is +1 so it'll compile it as the rhs
+        #[allow(unsafe_code)]
         let prec: Precedence = unsafe { transmute((rule.precedence as u8) + 1) };
         let rhs = self.precedence(prec).unwrap();
 

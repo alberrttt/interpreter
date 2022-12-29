@@ -1,7 +1,7 @@
 // runtime value
 
 use std::{
-    cell::RefCell,
+    cell::{Ref, RefCell},
     fmt::{Debug, Display},
     ptr::addr_of,
     rc::Rc,
@@ -60,9 +60,9 @@ impl Value {
         };
         bool
     }
-    pub fn as_string(&self) -> &String {
+    pub fn as_string(&self) -> Ref<String> {
         if let Value::String(string) = self {
-            unsafe { &*string.as_ref().as_ptr() }
+            string.borrow()
         } else {
             unreachable!()
         }
