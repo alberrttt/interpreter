@@ -1,9 +1,9 @@
 /// the parser will make an ast
-use std::{mem::transmute, ops::Range, rc::Rc};
+use std::{borrow::Borrow, cell::RefCell, mem::transmute, ops::Range, rc::Rc};
 
 use colored::Colorize;
 
-use crate::{cli_context::Context, common::opcode::OpCode};
+use crate::{cli_helper::Context, common::opcode::OpCode};
 
 use super::{
     ast::{
@@ -34,9 +34,9 @@ impl<'a> CompilerRef<'a> {
         unsafe { &*self.0 }
     }
 }
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Parser<'a> {
-    pub context: Option<&'a mut Context<'a>>,
+    pub context: Option<Rc<RefCell<Context<'a>>>>,
     pub scanner: Scanner,
 
     pub had_error: bool,
@@ -46,6 +46,19 @@ pub struct Parser<'a> {
     pub function_type: FunctionType,
 
     pub token_state: TokenState,
+}
+impl Default for Parser<'_> {
+    fn default() -> Self {
+        Self {
+            context: None,
+            scanner: Default::default(),
+            had_error: Default::default(),
+            panic_mode: Default::default(),
+            scope_depth: Default::default(),
+            function_type: Default::default(),
+            token_state: Default::default(),
+        }
+    }
 }
 #[derive(Debug, Default)]
 pub struct TokenState {
@@ -193,7 +206,15 @@ impl<'a> Parser<'a> {
     }
     pub fn precedence(&mut self, prec: Precedence) -> Result<Node, String> {
         self.advance();
-        let _path = self.context.as_ref().unwrap().file_path.to_str().unwrap();
+        let _path = self
+            .context
+            .as_ref()
+            .unwrap()
+            .as_ref()
+            .borrow()
+            .file_path
+            .to_str()
+            .unwrap();
         let previous = self.previous();
         let rule = Self::get_rule(previous.kind);
         let can_assign: bool = prec <= Precedence::Assignment;
@@ -205,13 +226,7 @@ impl<'a> Parser<'a> {
             return Err(format!(
                 "{} no expr {}:{}:{}",
                 previous.kind,
-                self.context
-                    .as_ref()
-                    .unwrap()
-                    .file_path
-                    .as_os_str()
-                    .to_str()
-                    .unwrap(),
+                _path,
                 previous.position.line + 1,
                 previous.position.start_in_line + 1,
             ));
@@ -538,7 +553,7 @@ macro_rules! error_at_current {
 macro_rules! error_at {
     ($parser:expr, $token:expr, $msg:expr) => {{
         $parser.panic_mode = true;
-        let diagnostics = &mut $parser.context.as_mut().unwrap().diagnostics;
+        let diagnostics = &mut $parser.context.as_ref().unwrap().borrow_mut().diagnostics;
 
         match $token.kind {
             TokenKind::EOF => {
@@ -599,11 +614,11 @@ impl<'a> Parser<'a> {
 
     pub fn new(
         scanner: Scanner,
-        context: Option<&'a mut Context<'a>>,
+        context: Rc<RefCell<Context<'a>>>,
         function_type: FunctionType,
     ) -> Parser<'a> {
         Parser {
-            context,
+            context: Some(context),
             scanner,
             had_error: false,
             panic_mode: false,

@@ -2,10 +2,8 @@ use std::{cell::RefCell, rc::Rc};
 
 /// its so messy omg..
 use crate::{
-    cli_context::Context,
-    common::{
-        debug::dissasemble_chunk, function::Function, interner::StringInterner, opcode::OpCode,
-    },
+    cli_helper::Context,
+    common::{function::Function, interner::StringInterner, opcode::OpCode},
 };
 
 use super::{
@@ -26,7 +24,7 @@ pub struct Compiler<'a> {
     pub scanner: Scanner,
     pub parser: Parser<'a>,
     pub enclosing: Option<Enclosing<'a>>,
-    pub context: Option<&'a mut Context<'a>>,
+    pub context: Rc<RefCell<Context<'a>>>,
     pub interner: Rc<RefCell<StringInterner>>,
 
     pub function: Function,
@@ -81,11 +79,11 @@ pub enum CompileResult {
 impl<'a> Compiler<'a> {
     pub fn new(
         interner: Rc<RefCell<StringInterner>>,
-        context: &'a mut Context<'a>,
+        context: Rc<RefCell<Context<'a>>>,
         function_type: FunctionType,
     ) -> Compiler<'a> {
         Compiler {
-            context: Some(context),
+            context,
             locals: [LOCAL; 512],
             local_count: 0,
             scope_depth: 0,
@@ -106,11 +104,7 @@ impl<'a> Compiler<'a> {
     pub fn compile(mut self, source: String) -> Result<Function, CompileResult> {
         let scanner = Scanner::new(source);
 
-        let parser = Parser::new(
-            scanner,
-            Some(self.context.take().unwrap()),
-            self.function_type.clone(),
-        );
+        let parser = Parser::new(scanner, self.context.clone(), self.function_type.clone());
         self.parser = parser;
 
         let parsed_file = self.parser.parse_file();
@@ -119,13 +113,10 @@ impl<'a> Compiler<'a> {
         }
         let function = Function::new();
         self.function = function;
-        std::mem::swap(&mut self.context, &mut self.parser.context);
         parsed_file.to_bytecode(&mut self);
 
         self.function.chunk.emit_many(vec![OpCode::Return]);
-        if self.context.as_ref().unwrap().flags.display_bytecode {
-            dissasemble_chunk(&self.function.chunk);
-        }
+
         Ok(self.function)
     }
 }

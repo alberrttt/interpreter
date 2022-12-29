@@ -1,5 +1,4 @@
 use std::{
-    fmt::Debug,
     fs::{self},
     path::{Path, PathBuf},
 };
@@ -9,7 +8,7 @@ use quote::{format_ident, quote};
 use syn::{parse::Parse, parse_macro_input, Arm, Pat};
 #[proc_macro]
 pub fn key_value_array(input: TokenStream) -> TokenStream {
-    let mut arms = parse_macro_input!(input as Arms);
+    let arms = parse_macro_input!(input as Arms);
     arms.arms.iter().for_each(|f| {
         println!(
             "{:?}",
@@ -62,7 +61,7 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                 fn #tmp_name() {
                     use rottenmangos::{
                         backend::vm::VirtualMachine,
-                        cli_context::{Context, Flags},
+                        cli_helper::{Context},
                         frontend::compiler::{{Compiler, FunctionType}},
                         common::{value::Value, interner::StringInterner},
                     };
@@ -74,9 +73,9 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
 
                     let interner = StringInterner::default();
                     let source = read_to_string(Path::new(#path_string)).unwrap();
-                    let mut context = Context::new(Path::new(#path_string), Flags::default());
+                    let mut context = Context::new(Path::new(#path_string));
                     let interner_ref = Rc::new(RefCell::new(interner));
-                    let compiler = Compiler::new(interner_ref.clone(), &mut context, FunctionType::Script);
+                    let compiler = Compiler::new(interner_ref.clone(), context, FunctionType::Script);
                     let compiled = compiler.compile(source).unwrap();
 
                     let interner = Rc::try_unwrap(interner_ref).unwrap().into_inner();

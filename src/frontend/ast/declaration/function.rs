@@ -1,6 +1,5 @@
 use crate::{
     common::{
-        debug::dissasemble_chunk,
         opcode::OpCode,
         value::{rcrf, AsValue, Value},
     },
@@ -29,7 +28,7 @@ impl CompileToBytecode for FunctionDeclaration {
         // which is returned later
         let mut temp_compiler = Compiler::new(
             compiler.interner.clone(),
-            compiler.context.take().unwrap(),
+            compiler.context.clone(),
             FunctionType::Function,
         );
         let function = {
@@ -48,10 +47,7 @@ impl CompileToBytecode for FunctionDeclaration {
             temp_compiler.function.chunk.emit_op(OpCode::Return);
             temp_compiler.function
         };
-        compiler.context = temp_compiler.context.take();
-        if compiler.context.as_ref().unwrap().flags.display_bytecode {
-            dissasemble_chunk(&function.chunk);
-        }
+
         compiler
             .function
             .chunk

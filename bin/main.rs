@@ -1,10 +1,9 @@
 use std::{cell::RefCell, ffi::OsString, fs::read_to_string, path::Path, rc::Rc, time::Instant};
 
 use clap::Parser;
-use macros::key_value_array;
 use rottenmangos::{
     backend::vm::VirtualMachine,
-    cli_context::{self, Flags},
+    cli_helper::{self},
     common::{interner::StringInterner, value::Value},
     frontend::compiler::{Compiler, FunctionType},
 };
@@ -14,13 +13,10 @@ fn main() {
     let path = Path::new(&cli.path);
     let source = read_to_string(path).unwrap();
 
-    let flags = Flags {
-        display_bytecode: cli.display_bytecode,
-    };
-    let mut context = cli_context::Context::new(path, flags);
+    let mut context = cli_helper::Context::new(path);
     let interner = StringInterner::default();
     let interner_ref = Rc::new(RefCell::new(interner));
-    let compiler = Compiler::new(interner_ref.clone(), &mut context, FunctionType::Script);
+    let compiler = Compiler::new(interner_ref.clone(), context, FunctionType::Script);
     let start = Instant::now();
     let compiled = compiler.compile(source).unwrap();
     println!(

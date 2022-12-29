@@ -65,24 +65,33 @@ impl VirtualMachine {
     pub fn run(mut self) {
         let start = Instant::now();
         let mut current_frame = &self.callframes[self.frame_count - 1];
-        let mut function = unsafe { &*current_frame.function };
+        macro_rules! read_current_frame_fn {
+            () => {{
+                #[allow(unsafe_code)]
+                unsafe {
+                    &(*current_frame.function)
+                }
+            }};
+        }
+        let mut function = read_current_frame_fn!();
         let mut chunk = &function.chunk;
         let mut ip: usize = current_frame.ip;
         let _interner = &self.interner;
 
         macro_rules! pop {
             () => {{
-                unsafe {
-                    assert!(self.stack.len() > 0);
+                assert!(self.stack.len() > 0);
 
-                    let i = self.stack.len() - 1;
-                    let tmp = ::std::mem::take(&mut self.stack[i]);
+                let i = self.stack.len() - 1;
+                let tmp = ::std::mem::take(&mut self.stack[i]);
+                #[allow(unsafe_code)]
+                unsafe {
                     self.stack.set_len(i);
-                    if tmp.eq(&Value::Void) {
-                        panic!()
-                    }
-                    tmp
                 }
+                if tmp.eq(&Value::Void) {
+                    panic!()
+                }
+                tmp
             }};
         }
         macro_rules! binary_op {
@@ -133,10 +142,11 @@ impl VirtualMachine {
                 OpCode::NotEqual => {
                     binary_op_bool!(!=)
                 }
-                OpCode::CallNativeArgPtr(location, ptr) => {
-                    let native = &self.natives[location as usize];
-                    let args = unsafe { &*ptr };
-                    native.0(args, &self)
+                OpCode::CallNativeArgPtr(_, _) => {
+                    todo!();
+                    // let native = &self.natives[location as usize];
+                    // let args = unsafe { &*ptr };
+                    // native.0(args, &self)
                 }
                 OpCode::CallNative(location) => {
                     let native = &self.natives[location as usize];
@@ -210,20 +220,8 @@ impl VirtualMachine {
                 }
                 OpCode::Void => self.stack.push(Value::Void),
                 OpCode::Add => {
-                    let rhs = unsafe {
-                        let i = self.stack.len() - 1;
-                        let tmp = ::std::mem::take(&mut self.stack[i]);
-                        self.stack.set_len(i);
-
-                        tmp
-                    };
-                    let lhs = unsafe {
-                        let i = self.stack.len() - 1;
-                        let tmp = ::std::mem::take(&mut self.stack[i]);
-                        self.stack.set_len(i);
-
-                        tmp
-                    };
+                    let rhs = pop!();
+                    let lhs = pop!();
 
                     match lhs {
                         Value::Number(lhs) => {
@@ -279,12 +277,12 @@ impl VirtualMachine {
 
                     if self.frame_count == 0 {
                         self.stack.pop();
-                        println!("{}", start.elapsed().as_secs_f64());
+                        println!("vm took {}", start.elapsed().as_secs_f64());
                         return;
                     }
 
                     current_frame = &self.callframes[self.frame_count - 1];
-                    function = unsafe { &*current_frame.function };
+                    function = read_current_frame_fn!();
                     chunk = &function.chunk;
                     ip = current_frame.ip;
                     self.stack.truncate(self.callframes[self.frame_count].slots);
@@ -303,7 +301,7 @@ impl VirtualMachine {
                     // prepares for the next callframe
                     {
                         current_frame = &self.callframes[self.frame_count - 1];
-                        function = unsafe { &*current_frame.function };
+                        function = read_current_frame_fn!();
                         chunk = &function.chunk;
                         ip = 0;
                     }

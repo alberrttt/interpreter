@@ -1,4 +1,10 @@
-use std::{path::Path, ptr::null};
+use std::{
+    cell::{Ref, RefCell},
+    clone,
+    path::Path,
+    ptr::null,
+    rc::Rc,
+};
 
 use colored::Colorize;
 
@@ -6,12 +12,12 @@ use crate::frontend::scanner::Position;
 
 #[derive(Debug, Clone)]
 pub struct Diaganostics<'a> {
-    pub context: *const Context<'a>,
+    pub context: Option<Rc<RefCell<Context<'a>>>>,
 }
 
 impl<'a> Diaganostics<'a> {
-    pub fn context(&mut self) -> &Context<'a> {
-        unsafe { &*self.context }
+    pub fn context(&mut self) -> Ref<'_, Context<'a>> {
+        self.context.as_ref().unwrap().borrow()
     }
     pub fn file_path(&mut self) -> &str {
         self.context().file_path.to_str().unwrap()
@@ -44,20 +50,17 @@ impl<'a> Diaganostics<'a> {
 pub struct Context<'a> {
     pub file_path: &'a Path,
     pub diagnostics: Box<Diaganostics<'a>>,
-    pub flags: Flags,
 }
-#[derive(Debug, Clone, Default)]
-pub struct Flags {
-    pub display_bytecode: bool,
-}
+
 impl<'a> Context<'a> {
-    pub fn new(file_path: &'a Path, flags: Flags) -> Context {
-        let mut context = Context {
+    pub fn new(file_path: &'a Path) -> Rc<RefCell<Context>> {
+        let diagnostics = Diaganostics { context: None };
+        let mut context = Rc::new(RefCell::new(Context {
             file_path,
-            flags,
-            diagnostics: Box::new(Diaganostics { context: null() }),
-        };
-        context.diagnostics.context = &mut context;
+            diagnostics: Box::new(diagnostics),
+        }));
+        context.borrow_mut().diagnostics.context = Some(context.clone());
+
         context
     }
 }
