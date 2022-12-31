@@ -28,7 +28,7 @@ impl CompileToBytecode for FunctionDeclaration {
         // which is returned later
         let mut temp_compiler = Compiler::new(
             compiler.interner.clone(),
-            compiler.context.clone(),
+            compiler.diagnostics.clone(),
             FunctionType::Function,
         );
         let function = {

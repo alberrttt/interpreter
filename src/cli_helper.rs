@@ -1,5 +1,6 @@
 use std::{
     cell::{Ref, RefCell},
+    collections::hash_map::DefaultHasher,
     path::Path,
     rc::Rc,
 };
@@ -9,16 +10,23 @@ use colored::Colorize;
 use crate::frontend::scanner::Position;
 
 #[derive(Debug, Clone)]
-pub struct Diaganostics<'a> {
-    pub context: Option<Rc<RefCell<Context<'a>>>>,
+pub struct Diagnostics<'a> {
+    pub file_path: &'a Path,
 }
-
-impl<'a> Diaganostics<'a> {
-    pub fn context(&mut self) -> Ref<'_, Context<'a>> {
-        self.context.as_ref().unwrap().borrow()
+impl Default for Diagnostics<'_> {
+    fn default() -> Self {
+        Self {
+            file_path: Path::new(""),
+        }
     }
-    pub fn file_path(&mut self) -> &str {
-        self.context().file_path.to_str().unwrap()
+}
+impl<'a> Diagnostics<'a> {
+    pub fn new(path: &'a Path) -> Self {
+        Diagnostics { file_path: path }
+    }
+
+    pub fn file_path(&self) -> &str {
+        self.file_path.to_str().unwrap()
     }
     pub fn log(&mut self, position: Option<&Position>, title: &str, msg: String) {
         let mut location: String = String::new();
@@ -41,24 +49,5 @@ impl<'a> Diaganostics<'a> {
         msg.iter().for_each(|line| {
             println!("\t\t{}", line);
         });
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Context<'a> {
-    pub file_path: &'a Path,
-    pub diagnostics: Box<Diaganostics<'a>>,
-}
-
-impl<'a> Context<'a> {
-    pub fn new(file_path: &'a Path) -> Rc<RefCell<Context>> {
-        let diagnostics = Diaganostics { context: None };
-        let context = Rc::new(RefCell::new(Context {
-            file_path,
-            diagnostics: Box::new(diagnostics),
-        }));
-        context.borrow_mut().diagnostics.context = Some(context.clone());
-
-        context
     }
 }

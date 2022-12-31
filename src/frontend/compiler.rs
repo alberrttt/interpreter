@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 /// its so messy omg..
 use crate::{
-    cli_helper::Context,
+    cli_helper::Diagnostics,
     common::{function::Function, interner::StringInterner, opcode::OpCode},
 };
 
@@ -27,7 +27,7 @@ pub struct Compiler<'a> {
     pub scanner: Scanner,
     pub parser: Parser<'a>,
     pub enclosing: Option<Enclosing<'a>>,
-    pub context: Rc<RefCell<Context<'a>>>,
+    pub diagnostics: Rc<RefCell<Diagnostics<'a>>>,
     pub interner: Rc<RefCell<StringInterner>>,
 
     pub function: Function,
@@ -82,11 +82,11 @@ pub enum CompileResult {
 impl<'a> Compiler<'a> {
     pub fn new(
         interner: Rc<RefCell<StringInterner>>,
-        context: Rc<RefCell<Context<'a>>>,
+        diagnostics: Rc<RefCell<Diagnostics<'a>>>,
         function_type: FunctionType,
     ) -> Compiler<'a> {
         Compiler {
-            context,
+            diagnostics,
             locals: [LOCAL; 512],
             local_count: 0,
             scope_depth: 0,
@@ -107,7 +107,11 @@ impl<'a> Compiler<'a> {
     pub fn compile(mut self, source: String) -> Result<Function, CompileResult> {
         let scanner = Scanner::new(source);
 
-        let parser = Parser::new(scanner, self.context.clone(), self.function_type.clone());
+        let parser = Parser::new(
+            scanner,
+            self.diagnostics.clone(),
+            self.function_type.clone(),
+        );
         self.parser = parser;
 
         let parsed_file = self.parser.parse_file();

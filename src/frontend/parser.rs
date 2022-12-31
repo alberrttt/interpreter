@@ -3,7 +3,7 @@ use std::{cell::RefCell, mem::transmute, ops::Range, rc::Rc};
 
 use colored::Colorize;
 
-use crate::{cli_helper::Context, common::opcode::OpCode};
+use crate::{cli_helper::Diagnostics, common::opcode::OpCode};
 
 use super::{
     ast::{
@@ -39,7 +39,7 @@ impl<'a> CompilerRef<'a> {
 }
 #[derive(Debug, Default)]
 pub struct Parser<'a> {
-    pub context: Option<Rc<RefCell<Context<'a>>>>,
+    pub diagnostics: Rc<RefCell<Diagnostics<'a>>>,
     pub scanner: Scanner,
 
     pub had_error: bool,
@@ -197,15 +197,10 @@ impl<'a> Parser<'a> {
     }
     pub fn precedence(&mut self, prec: Precedence) -> Result<Node, String> {
         self.advance();
-        let _path = self
-            .context
-            .as_ref()
-            .unwrap()
-            .as_ref()
-            .borrow()
-            .file_path
-            .to_str()
-            .unwrap();
+        let _path = {
+            let binding = self.diagnostics.borrow();
+            binding.file_path.to_str().unwrap()
+        };
         let previous = self.previous();
         let rule = Self::get_rule(previous.kind);
         let can_assign: bool = prec <= Precedence::Assignment;
@@ -545,7 +540,7 @@ macro_rules! error_at_current {
 macro_rules! error_at {
     ($parser:expr, $token:expr, $msg:expr) => {{
         $parser.panic_mode = true;
-        let diagnostics = &mut $parser.context.as_ref().unwrap().borrow_mut().diagnostics;
+        let mut diagnostics = $parser.diagnostics.borrow_mut();
 
         match $token.kind {
             TokenKind::EOF => {
@@ -606,11 +601,11 @@ impl<'a> Parser<'a> {
 
     pub fn new(
         scanner: Scanner,
-        context: Rc<RefCell<Context<'a>>>,
+        diagnostics: Rc<RefCell<Diagnostics<'a>>>,
         function_type: FunctionType,
     ) -> Parser<'a> {
         Parser {
-            context: Some(context),
+            diagnostics,
             scanner,
             had_error: false,
             panic_mode: false,

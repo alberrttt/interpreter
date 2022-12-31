@@ -61,7 +61,7 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                 fn #tmp_name() {
                     use rottenmangos::{
                         backend::vm::VirtualMachine,
-                        cli_helper::{Context},
+                        cli_helper::{Diagnostics},
                         frontend::compiler::{{Compiler, FunctionType}},
                         common::{value::Value, interner::StringInterner},
                     };
@@ -73,9 +73,9 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
 
                     let interner = StringInterner::default();
                     let source = read_to_string(Path::new(#path_string)).unwrap();
-                    let mut context = Context::new(Path::new(#path_string));
+                    let mut diagnostics = Rc::new(RefCell::new(Diagnostics::new(Path::new(#path_string))));
                     let interner_ref = Rc::new(RefCell::new(interner));
-                    let compiler = Compiler::new(interner_ref.clone(), context, FunctionType::Script);
+                    let compiler = Compiler::new(interner_ref.clone(), diagnostics, FunctionType::Script);
                     let compiled = compiler.compile(source).unwrap();
 
                     let interner = Rc::try_unwrap(interner_ref).unwrap().into_inner();
