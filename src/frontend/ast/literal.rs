@@ -1,5 +1,6 @@
 use crate::{
     common::{
+        interner::STRING_INTERNER,
         opcode::OpCode,
         value::{rcrf, AsValue, Value},
     },
@@ -36,7 +37,10 @@ impl From<Literal> for Value {
         match literal {
             Literal::Void => Value::Void,
             Literal::Number(num) => Value::Number(num),
-            Literal::String(string) => Value::String(rcrf(string)),
+            Literal::String(string) => {
+                let mut interner = STRING_INTERNER.lock().expect("already?");
+                Value::String(interner.get_or_intern(&string))
+            }
             Literal::Bool(bool) => Value::Boolean(bool),
         }
     }

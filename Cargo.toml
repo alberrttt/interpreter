@@ -14,3 +14,4 @@ colored = "2.0.0"
 strum = { version = "0.24.1", features = ["derive"] }
 strum_macros = "0.24.3"
 macros = { path = "./macros" }
+lazy_static = "1.4.0"
