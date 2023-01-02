@@ -7,14 +7,17 @@ use std::{
     rc::Rc,
 };
 
-use super::function::Function;
+use super::{
+    function::Function,
+    interner::{InternedString, STRING_INTERNER},
+};
 
 #[repr(u8)]
 #[derive(Clone, Default)]
 pub enum Value {
     Number(f64),
     Boolean(bool),
-    String(Ptr<String>),
+    String(InternedString),
     Function(Ptr<Function>),
     Array(Ptr<Vec<Value>>),
     Void,
@@ -40,7 +43,7 @@ impl PartialEq for Value {
         match (self, other) {
             (Self::Number(l0), Self::Number(r0)) => l0 == r0,
             (Self::Boolean(l0), Self::Boolean(r0)) => l0 == r0,
-            (Self::String(l0), Self::String(r0)) => l0.borrow_mut().eq(&*r0.as_ref().borrow()),
+            (Self::String(l0), Self::String(r0)) => l0.eq(r0),
             _ => false,
         }
     }
@@ -60,17 +63,18 @@ impl Value {
         };
         bool
     }
-    pub fn as_string(&self) -> Ref<String> {
+    pub fn as_string(&self) -> &InternedString {
         if let Value::String(string) = self {
-            string.borrow()
+            string
         } else {
             unreachable!()
         }
     }
 }
-impl AsValue for String {
+impl AsValue for &str {
     fn to_value(self) -> Value {
-        Value::String(rcrf(self))
+        let mut interner = STRING_INTERNER.lock().expect("already?");
+        Value::String(interner.get_or_intern(self))
     }
 }
 impl AsValue for f64 {
@@ -89,7 +93,7 @@ impl Display for Value {
         match self {
             Value::Number(number) => write!(f, "{}", number),
             Value::String(string) => {
-                let tmp = string.as_ref().borrow();
+                let tmp: String = (*string).into();
                 write!(f, "{}", tmp)
             }
             Value::Boolean(bool) => {

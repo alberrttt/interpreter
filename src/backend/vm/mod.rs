@@ -27,7 +27,7 @@ pub struct VirtualMachine {
     pub stack: Vec<Value>,
     pub callframes: [CallFrame; 2048],
     pub frame_count: usize,
-    pub globals: HashMap<String, Value>,
+    pub globals: HashMap<usize, Value>,
     pub natives: Vec<Native>,
     pub interner: StringInterner,
 }
@@ -207,18 +207,18 @@ impl VirtualMachine {
                 }
                 OpCode::GetGlobal(name) => {
                     let name = chunk.constants[name as usize].as_string();
-                    self.stack.push(self.globals.get(&*name).unwrap().clone())
+                    self.stack.push(self.globals.get(&name.0).unwrap().clone())
                 }
                 OpCode::SetGlobal(name) => {
-                    let name = (chunk.constants[name as usize].as_string()).to_owned();
-                    assert!(self.globals.contains_key(&name));
+                    let name = chunk.constants[name as usize].as_string();
+                    assert!(self.globals.contains_key(&name.0));
                     let value = self.stack[self.stack.len() - 1].clone();
-                    self.globals.insert(name, value);
+                    self.globals.insert(name.0, value);
                 }
                 OpCode::DefineGlobal(name) => {
-                    let name = (chunk.constants[name as usize].as_string()).to_owned();
+                    let name = chunk.constants[name as usize].as_string();
                     let value = pop!();
-                    self.globals.insert(name, value);
+                    self.globals.insert(name.0, value);
                 }
                 OpCode::Void => self.stack.push(Value::Void),
                 OpCode::Add => {
@@ -237,8 +237,8 @@ impl VirtualMachine {
                                 panic!("lhs {:?}\nrhs{:?}",lhs,rhs);
                             };
 
-                            let mut lhs = lhs.borrow().to_owned();
-                            let rhs = rhs.borrow();
+                            let mut lhs: String = lhs.into();
+                            let rhs: String = rhs.into();
                             lhs.push_str(rhs.as_str());
                             self.stack.push(lhs.to_value());
                         }

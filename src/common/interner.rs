@@ -1,28 +1,48 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Mutex};
 
-pub struct InternerIndex(usize);
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub struct InternedString(pub usize);
+impl From<InternedString> for String {
+    fn from(value: InternedString) -> Self {
+        let interner = STRING_INTERNER.lock().expect("already?");
+        interner.get(value).to_owned()
+    }
+}
 
+impl From<&str> for InternedString {
+    fn from(value: &str) -> Self {
+        let mut interner = STRING_INTERNER.lock().expect("already?");
+        interner.get_or_intern(value)
+    }
+}
 #[derive(Debug, Clone, Default)]
 pub struct StringInterner {
     strings: HashMap<String, usize>,
     vec: Vec<String>,
 }
-
+use lazy_static::lazy_static;
+lazy_static! {
+    pub static ref STRING_INTERNER: Mutex<StringInterner> = Mutex::new(StringInterner::default());
+}
 impl StringInterner {
-    pub fn get_or_intern(&mut self, s: &str) -> InternerIndex {
+    pub fn get_or_intern(&mut self, s: &str) -> InternedString {
         let strings = &mut self.strings;
         let vec = &mut self.vec;
         if let Some(idx) = strings.get(s) {
-            InternerIndex(*idx)
+            InternedString(*idx)
         } else {
             let idx = vec.len();
             vec.push(s.to_owned());
             strings.insert(s.to_owned(), idx);
-            InternerIndex(idx)
+            InternedString(idx)
         }
     }
 
-    pub fn get(&self, idx: InternerIndex) -> &str {
+    pub fn get(&self, idx: InternedString) -> &str {
         &self.vec[idx.0]
+    }
+
+    pub fn get_ref(&self, idx: InternedString) -> Option<&String> {
+        self.vec.get(idx.0)
     }
 }

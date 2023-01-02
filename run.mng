@@ -1,14 +1,10 @@
 func fib(n) {
-    let a = 0;
-    let i = 1;
-    let b = 1;
-
-    while i <= n {
-        i=i+1;
-        let c = a + b;
-        a = b;
-        b = c;
+    let pred = n < 2;
+    if pred {
+        return n;
     }
-    return a;
+
+    return fib(n-2)+fib(n-1);
 }
-print(fib(100000000));
+
+print fib(30);
