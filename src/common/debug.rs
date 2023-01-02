@@ -1,9 +1,25 @@
+use std::borrow::Borrow;
+
+use crate::common::value::Value;
+
 use super::{chunk::Chunk, opcode::OpCode};
 
-
-
-pub fn dissasemble_chunk(chunk: &Chunk) {
-    println!("----------------------");
+pub fn dissasemble_chunk(chunk: &Chunk, name: &str) {
+    chunk
+        .constants
+        .iter()
+        .filter_map(|v| {
+            if let Value::Function(v) = v {
+                Some(v)
+            } else {
+                None
+            }
+        })
+        .for_each(|f| {
+            let function = &f.as_ref().borrow();
+            dissasemble_chunk(&function.chunk, &function.name)
+        });
+    println!("{name} ----------------------");
     let mut instruction_ptr: usize = 0;
 
     loop {
@@ -30,9 +46,9 @@ pub fn diassasemble_instruction(
         | OpCode::DefineLocal(pos) => {
             let constant = &chunk.constants[*pos as usize];
 
-            println!("{} <{}>", instruction, constant)
+            println!("{} <{:?}>", instruction, constant)
         }
-        
+
         OpCode::JumpTo(offset)
         | OpCode::JumpToIfFalse(offset)
         | OpCode::PopJumpToIfFalse(offset)

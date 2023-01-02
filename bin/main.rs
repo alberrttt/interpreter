@@ -4,7 +4,7 @@ use clap::Parser;
 use rottenmangos::{
     backend::vm::VirtualMachine,
     cli_helper::{self, Diagnostics},
-    common::{interner::StringInterner, value::Value},
+    common::{debug::dissasemble_chunk, interner::StringInterner, value::Value},
     frontend::compiler::{Compiler, FunctionType},
 };
 
@@ -26,6 +26,9 @@ fn main() {
         "took {}s to compile to bytecode",
         start.elapsed().as_secs_f64()
     );
+    if cli.display_bytecode {
+        dissasemble_chunk(&compiled.chunk, "main");
+    }
     let interner = Rc::try_unwrap(interner).unwrap().into_inner();
     let mut vm = VirtualMachine::new(interner);
 

@@ -30,7 +30,13 @@ impl Debug for Value {
             Self::Array(arg0) => f.debug_tuple("Array").field(arg0).finish(),
             Self::Number(arg0) => f.debug_tuple("Number").field(arg0).finish(),
             Self::Boolean(arg0) => f.debug_tuple("Boolean").field(arg0).finish(),
-            Self::String(arg0) => f.debug_tuple("String").field(arg0).finish(),
+            Self::String(arg0) => {
+                let mut tuple = f.debug_tuple("String");
+                tuple.field(arg0);
+                let string: String = (*arg0).into();
+                tuple.field(&string);
+                tuple.finish()
+            }
             Self::Function(_arg0) => f.debug_tuple("Function").finish(),
             Self::Void => write!(f, "Void"),
             Self::None => write!(f, "None"),
