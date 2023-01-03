@@ -162,6 +162,7 @@ checksum = "f051f77a7c8e6957c0696eac88f26b0117e54f52d3fc682ab19397a8812846a4"
 name = "macros"
 version = "0.1.0"
 dependencies = [
+ "proc-macro2",
  "quote",
  "syn",
 ]
@@ -228,6 +229,7 @@ dependencies = [
  "colored",
  "lazy_static",
  "macros",
+ "proc-macro2",
  "strum",
  "strum_macros",
 ]

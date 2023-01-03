@@ -1,20 +1,18 @@
-use strum::Display;
-
 use super::value::Value;
+use macros::ExpandOpCode;
+use strum::Display;
 
 pub type ConstantLocation = u16;
 pub type SlotIndex = u8;
 pub type Offset = usize;
 
 #[repr(u8)]
-#[derive(Debug, Display, Clone, PartialEq)]
+#[derive(Debug, Display, Clone, PartialEq, ExpandOpCode)]
 
 pub enum OpCode {
     Equal,
     NotEqual,
     Constant(ConstantLocation),
-    // use string interning ? maybe
-    // u16 is the location in the constant pool
     GetLocal(u16),
     DefineLocal(ConstantLocation),
     SetLocal(u16),
@@ -25,7 +23,6 @@ pub enum OpCode {
     PopJumpToIfFalse(Offset),
     JumpToIfFalse(Offset),
     JumpTo(Offset),
-    // Call(arguments)
     Call(usize),
     Greater,
     Less,

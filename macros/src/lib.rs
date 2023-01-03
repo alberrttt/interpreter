@@ -3,9 +3,24 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use proc_macro::{self, TokenStream};
+use proc_macro::{self, TokenStream, TokenTree};
 use quote::{format_ident, quote};
-use syn::{parse::Parse, parse_macro_input, Arm, Pat};
+use syn::{
+    parse::Parse, parse_macro_input, punctuated::Punctuated, spanned::Spanned, Arm, DeriveInput,
+    Fields, Ident, Pat,
+};
+
+struct Arms {
+    arms: Vec<Arm>,
+}
+// the ground work for adding a better "api" for manipulating opcodes
+mod opcode;
+use opcode::expand_opcode;
+#[proc_macro_derive(ExpandOpCode)]
+pub fn ExpandOpCode(input: TokenStream) -> TokenStream {
+    expand_opcode(input)
+}
+
 #[proc_macro]
 pub fn key_value_array(input: TokenStream) -> TokenStream {
     let arms = parse_macro_input!(input as Arms);
@@ -20,9 +35,6 @@ pub fn key_value_array(input: TokenStream) -> TokenStream {
         );
     });
     quote! {}.into()
-}
-struct Arms {
-    arms: Vec<Arm>,
 }
 impl Parse for Arms {
     fn parse(input: syn::parse::ParseStream) -> syn::Result<Self> {
