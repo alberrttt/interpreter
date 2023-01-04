@@ -2,7 +2,7 @@ use crate::{
     common::{
         interner::STRING_INTERNER,
         opcode::OpCode,
-        value::{rcrf, AsValue, Value},
+        value::{AsValue, Value},
     },
     frontend::compiler::Compiler,
 };

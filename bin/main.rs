@@ -1,9 +1,9 @@
 use std::{cell::RefCell, ffi::OsString, fs::read_to_string, path::Path, rc::Rc, time::Instant};
 
 use clap::Parser;
-use rottenmangos::{
+use limesherbet::{
     backend::vm::VirtualMachine,
-    cli_helper::{self, Diagnostics},
+    cli_helper::Diagnostics,
     common::{debug::dissasemble_chunk, interner::StringInterner, value::Value},
     frontend::compiler::{Compiler, FunctionType},
 };

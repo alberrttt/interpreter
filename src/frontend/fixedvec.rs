@@ -1,7 +1,4 @@
-use std::{
-    mem::MaybeUninit,
-    ops::{Index, IndexMut},
-};
+use std::ops::{Index, IndexMut};
 
 pub struct FixedVec<T, const S: usize> {
     array: [T; S],

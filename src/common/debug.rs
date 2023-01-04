@@ -1,5 +1,3 @@
-use std::borrow::Borrow;
-
 use crate::common::value::Value;
 
 use super::{chunk::Chunk, opcode::OpCode};

@@ -1,5 +1,3 @@
-use std::thread::panicking;
-
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::{
