@@ -23,11 +23,11 @@ pub struct VariableDeclaration {
 impl CompileToBytecode for VariableDeclaration {
     fn to_bytecode(&self, compiler: &mut Compiler) {
         self.intializer.to_bytecode(compiler);
-        if compiler.scope_depth > 0 {
+        if compiler.bytecode.scope_depth > 0 {
             compiler.add_local(self.identifier.value.clone());
             return;
         }
-        let function = &mut compiler.function;
+        let function = &mut compiler.bytecode.function;
         let name = function
             .chunk
             .emit_value(self.identifier.value.lexeme.to_value());
@@ -36,11 +36,11 @@ impl CompileToBytecode for VariableDeclaration {
 }
 impl<'a> Compiler<'a> {
     pub fn add_local(&mut self, name: Token) {
-        let local = &mut self.locals[self.local_count];
-        self.local_count += 1;
+        let local = &mut self.bytecode.locals[self.bytecode.local_count];
+        self.bytecode.local_count += 1;
 
         local.name = name;
-        local.depth = self.scope_depth;
+        local.depth = self.bytecode.scope_depth;
     }
 }
 impl AsDeclaration for VariableDeclaration {

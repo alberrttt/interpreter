@@ -26,26 +26,31 @@ impl CompileToBytecode for IfExpr {
         self.then.to_bytecode(compiler);
 
         // where the then block ends
-        let then_end = compiler.function.chunk.code.len();
+        let then_end = compiler.bytecode.function.chunk.code.len();
         compiler
+            .bytecode
             .function
             .chunk
             .emit_op(OpCode::JumpTo(then_end + 1));
 
         if let Some(else_block) = &self.else_block {
             else_block.to_bytecode(compiler);
-            let after_else = compiler.function.chunk.code.len();
-            compiler.function.chunk.code[then_end] = OpCode::JumpTo(after_else);
+            let after_else = compiler.bytecode.function.chunk.code.len();
+            compiler.bytecode.function.chunk.code[then_end] = OpCode::JumpTo(after_else);
         }
 
-        compiler.function.chunk.code[predicate_jump] = OpCode::PopJumpToIfFalse(then_end + 1);
+        compiler.bytecode.function.chunk.code[predicate_jump] =
+            OpCode::PopJumpToIfFalse(then_end + 1);
     }
 }
 
 impl<'a> Compiler<'a> {
     pub fn emit_pop_jump_if_false(&mut self) -> usize {
-        let jump_op = self.function.chunk.code.len();
-        self.function.chunk.emit_op(OpCode::PopJumpToIfFalse(0xfff));
+        let jump_op = self.bytecode.function.chunk.code.len();
+        self.bytecode
+            .function
+            .chunk
+            .emit_op(OpCode::PopJumpToIfFalse(0xfff));
         jump_op
     }
 }

@@ -19,7 +19,7 @@ pub struct FunctionDeclaration {
 }
 impl<'a> Compiler<'a> {
     fn in_scope(&self) -> bool {
-        self.scope_depth > 0
+        self.bytecode.scope_depth > 0
     }
 }
 impl CompileToBytecode for FunctionDeclaration {
@@ -33,8 +33,8 @@ impl CompileToBytecode for FunctionDeclaration {
         );
         let function = {
             // sets the function name and arity
-            temp_compiler.function.arity = self.parameters.len() as u8;
-            temp_compiler.function.name = self.name.value.lexeme.clone();
+            temp_compiler.bytecode.function.arity = self.parameters.len() as u8;
+            temp_compiler.bytecode.function.name = self.name.value.lexeme.clone();
 
             // tells the compiler to recongize any parameters
             for param in &self.parameters {
@@ -44,11 +44,16 @@ impl CompileToBytecode for FunctionDeclaration {
             // finally compiles the block
             self.block.to_bytecode(&mut temp_compiler);
 
-            temp_compiler.function.chunk.emit_op(OpCode::Return);
-            temp_compiler.function
+            temp_compiler
+                .bytecode
+                .function
+                .chunk
+                .emit_op(OpCode::Return);
+            temp_compiler.bytecode.function
         };
 
         compiler
+            .bytecode
             .function
             .chunk
             .emit_constant(Value::Function(rcrf(function)));
@@ -58,10 +63,15 @@ impl CompileToBytecode for FunctionDeclaration {
         } else {
             // location of the name in the constant pool
             let name = compiler
+                .bytecode
                 .function
                 .chunk
                 .emit_value(self.name.value.lexeme.to_value());
-            compiler.function.chunk.emit_op(OpCode::DefineGlobal(name))
+            compiler
+                .bytecode
+                .function
+                .chunk
+                .emit_op(OpCode::DefineGlobal(name))
         };
         // compilation context is returned
     }

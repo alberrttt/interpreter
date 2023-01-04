@@ -27,17 +27,20 @@ impl CompileToBytecode for Block {
 }
 impl<'a> Compiler<'a> {
     pub fn begin_scope(&mut self) {
-        self.scope_depth += 1;
+        self.bytecode.scope_depth += 1;
     }
     pub fn end_scope(&mut self) {
-        self.scope_depth -= 1;
-        while self.local_count > 0 && self.locals[self.local_count - 1].depth > self.scope_depth {
-            self.function.chunk.emit_op(OpCode::Pop);
-            self.local_count -= 1;
+        self.bytecode.scope_depth -= 1;
+        while self.bytecode.local_count > 0
+            && self.bytecode.locals[self.bytecode.local_count - 1].depth > self.bytecode.scope_depth
+        {
+            self.bytecode.function.chunk.emit_op(OpCode::Pop);
+            self.bytecode.local_count -= 1;
         }
-        self.function
+        self.bytecode
+            .function
             .chunk
-            .emit_many(std::mem::take(&mut self.emit_after_block))
+            .emit_many(std::mem::take(&mut self.bytecode.emit_after_block))
     }
 }
 impl AsExpr for Block {

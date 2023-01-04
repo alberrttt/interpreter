@@ -1,3 +1,6 @@
+pub mod local;
+use local::{Local, LOCAL};
+
 use std::{cell::RefCell, rc::Rc};
 
 /// its so messy omg..
@@ -8,8 +11,9 @@ use crate::{
 
 use super::{
     ast::CompileToBytecode,
+    bytecode::{self, Bytecode},
     parser::Parser,
-    scanner::{Position, Scanner, Token, TokenKind},
+    scanner::Scanner,
 };
 
 #[derive(Debug)]
@@ -29,17 +33,7 @@ pub struct Compiler<'a> {
     pub enclosing: Option<Enclosing<'a>>,
     pub diagnostics: Rc<RefCell<Diagnostics<'a>>>,
     pub interner: Rc<RefCell<StringInterner>>,
-
-    pub function: Function,
-    pub scope_depth: u8,
-    pub locals: [Local; 512],
-    pub local_count: usize,
-    pub emit_after_block: Vec<OpCode>,
-    pub function_type: FunctionType,
-
-    pub compiling_statement: bool,
-
-    pub returned_from_block: bool,
+    pub bytecode: Bytecode,
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]
@@ -48,33 +42,7 @@ pub enum FunctionType {
     Script, // file
     Function,
 }
-#[derive(Debug, Default, Clone)]
-pub struct Local {
-    pub name: Token,
-    pub depth: u8,
-}
-impl Local {
-    pub fn new() -> Local {
-        Local {
-            name: Token::default(),
-            depth: 0,
-        }
-    }
-}
-const LOCAL: Local = Local {
-    name: Token {
-        kind: TokenKind::Error,
-        lexeme: String::new(),
-        line: 9999,
-        length: 9999,
-        position: Position {
-            start_in_line: 9999,
-            start_in_source: 9999,
-            line: 9999,
-        },
-    },
-    depth: 0,
-};
+
 #[derive(Debug)]
 pub enum CompileResult {
     Error,
@@ -86,21 +54,12 @@ impl<'a> Compiler<'a> {
         function_type: FunctionType,
     ) -> Compiler<'a> {
         Compiler {
-            diagnostics,
-            locals: [LOCAL; 512],
-            local_count: 0,
-            scope_depth: 0,
-            enclosing: None,
-            emit_after_block: Vec::new(),
-            function_type,
-            returned_from_block: false,
-
-            compiling_statement: false,
-
             scanner: Scanner::default(),
-            function: Function::default(),
             parser: Parser::default(),
+            enclosing: None,
+            diagnostics,
             interner,
+            bytecode: Bytecode::default(),
         }
     }
 
@@ -110,7 +69,7 @@ impl<'a> Compiler<'a> {
         let parser = Parser::new(
             scanner,
             self.diagnostics.clone(),
-            self.function_type.clone(),
+            self.bytecode.function_type.clone(),
         );
         self.parser = parser;
 
@@ -119,11 +78,11 @@ impl<'a> Compiler<'a> {
             return Err(CompileResult::Error);
         }
         let function = Function::new();
-        self.function = function;
+        self.bytecode.function = function;
         parsed_file.to_bytecode(&mut self);
 
-        self.function.chunk.emit_many(vec![OpCode::Return]);
+        self.bytecode.function.chunk.emit_many(vec![OpCode::Return]);
 
-        Ok(self.function)
+        Ok(self.bytecode.function)
     }
 }

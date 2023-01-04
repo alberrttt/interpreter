@@ -19,7 +19,7 @@ pub struct Identifier {
 impl CompileToBytecode for Identifier {
     fn to_bytecode(&self, compiler: &mut Compiler) {
         let local = compiler.resolve_local(&self.value);
-        let function = &mut compiler.function;
+        let function = &mut compiler.bytecode.function;
         #[allow(unused_assignments)]
         let mut op: OpCode = OpCode::Nop;
         if let Some(index) = local {
@@ -35,7 +35,11 @@ impl CompileToBytecode for Identifier {
 impl<'a> Compiler<'a> {
     pub fn resolve_local(&mut self, name: &Token) -> Option<usize> {
         assert_eq!(name.kind, TokenKind::Identifier);
-        for (i, token) in self.locals[0..self.local_count].iter().enumerate().rev() {
+        for (i, token) in self.bytecode.locals[0..self.bytecode.local_count]
+            .iter()
+            .enumerate()
+            .rev()
+        {
             if name.lexeme.eq(&token.name.lexeme) {
                 return Some(i);
             }

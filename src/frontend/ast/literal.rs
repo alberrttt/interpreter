@@ -48,7 +48,7 @@ impl From<Literal> for Value {
 
 impl CompileToBytecode for Literal {
     fn to_bytecode(&self, compiler: &mut Compiler) {
-        let function = &mut compiler.function;
+        let function = &mut compiler.bytecode.function;
         let pos = match self {
             Literal::Void => function.chunk.emit_value(Value::Void),
             Literal::Number(number) => function.chunk.emit_value(Value::Number(*number)),

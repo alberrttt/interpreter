@@ -16,6 +16,7 @@ impl CompileToBytecode for CallExpr {
             .iter()
             .for_each(|param| param.clone().to_bytecode(compiler));
         compiler
+            .bytecode
             .function
             .chunk
             .emit_op(OpCode::Call(self.parameters.len()));

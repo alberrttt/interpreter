@@ -26,7 +26,7 @@ impl CompileToBytecode for Comparison {
     fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         self.lhs.to_bytecode(compiler);
         self.rhs.to_bytecode(compiler);
-        let mut emit_op = |op: OpCode| compiler.function.chunk.emit_op(op);
+        let mut emit_op = |op: OpCode| compiler.bytecode.function.chunk.emit_op(op);
         match self.kind {
             ComparisonKind::GreaterEq => emit_op(OpCode::GreaterEq),
             ComparisonKind::LessEq => emit_op(OpCode::LessEq),

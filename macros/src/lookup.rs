@@ -1,16 +1,13 @@
-use std::{collections::HashMap, error::Error};
+use std::collections::HashMap;
 
 use proc_macro2::Ident;
-use quote::{quote, spanned::Spanned, ToTokens};
-use syn::{
-    parse::Parse, parse_macro_input, token::Colon, Arm, Expr, ExprLit, LifetimeDef, Lit, Pat,
-    PatLit, TypePath,
-};
+use quote::quote;
+use syn::{parse::Parse, parse_macro_input, token::Colon, Expr, TypePath};
 pub fn lookup(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
-    let arms = parse_macro_input!(input as Definitions);
-    let mut indexes = 0;
-    let mut lookup_indexes: HashMap<String, usize> = HashMap::new();
-    let mut lookup_array: Vec<Expr> = Vec::new();
+    let _arms = parse_macro_input!(input as Definitions);
+    let _indexes = 0;
+    let _up_indexes: HashMap<String, usize> = HashMap::new();
+    let _up_array: Vec<Expr> = Vec::new();
     quote! {}.into()
 }
 

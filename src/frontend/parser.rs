@@ -274,12 +274,16 @@ impl<'a> Parser<'a> {
                     match self.previous().lexeme.as_str() {
                         "void" => {
                             return Node::Emit(|compiler| {
-                                compiler.function.chunk.emit_op(OpCode::Void);
+                                compiler.bytecode.function.chunk.emit_op(OpCode::Void);
                             })
                         }
                         "debug_stack" => {
                             return Node::Emit(|compiler| {
-                                compiler.function.chunk.emit_op(OpCode::CallNative(0))
+                                compiler
+                                    .bytecode
+                                    .function
+                                    .chunk
+                                    .emit_op(OpCode::CallNative(0))
                             })
                         }
                         "assert_stack" => {

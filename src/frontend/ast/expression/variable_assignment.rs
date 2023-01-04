@@ -16,15 +16,21 @@ impl VariableAssignment {
         let local = compiler.resolve_local(&self.name.value);
         if let Some(local) = local {
             compiler
+                .bytecode
                 .function
                 .chunk
                 .emit_op(OpCode::SetLocal(local as u16));
             return;
         }
         let name = compiler
+            .bytecode
             .function
             .chunk
             .emit_value(self.name.value.lexeme.to_value());
-        compiler.function.chunk.emit_op(OpCode::SetGlobal(name))
+        compiler
+            .bytecode
+            .function
+            .chunk
+            .emit_op(OpCode::SetGlobal(name))
     }
 }

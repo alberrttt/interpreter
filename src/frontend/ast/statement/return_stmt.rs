@@ -17,6 +17,6 @@ impl CompileToBytecode for ReturnStmt {
                 &Expression::Literal(this)
             })
             .to_bytecode(compiler);
-        compiler.function.chunk.emit_op(OpCode::Return);
+        compiler.bytecode.function.chunk.emit_op(OpCode::Return);
     }
 }

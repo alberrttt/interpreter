@@ -86,7 +86,7 @@ pub trait AsNode {
 impl CompileToBytecode for Node {
     // we need it to emit constants
     fn to_bytecode(&self, compiler: &mut Compiler) {
-        let _function = &mut compiler.function;
+        let _function = &mut compiler.bytecode.function;
         match self {
             Node::Expression(expr) => expr.to_bytecode(compiler),
             Node::Statement(statement) => statement.to_bytecode(compiler),

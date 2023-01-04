@@ -82,12 +82,12 @@ impl CompileToBytecode for Expression {
             Expression::VariableAssignment(var) => var.to_bytecode(compiler),
             Expression::Not(expr) => {
                 expr.to_bytecode(compiler);
-                compiler.function.chunk.emit_op(OpCode::Not);
+                compiler.bytecode.function.chunk.emit_op(OpCode::Not);
             }
             Expression::If(if_expr) => if_expr.to_bytecode(compiler),
             Expression::Negate(expr) => {
                 expr.to_bytecode(compiler);
-                compiler.function.chunk.emit_op(OpCode::Negate);
+                compiler.bytecode.function.chunk.emit_op(OpCode::Negate);
             }
             Expression::Comparison(comparison) => comparison.to_bytecode(compiler),
             Expression::Block(block) => block.to_bytecode(compiler),
@@ -97,7 +97,7 @@ impl CompileToBytecode for Expression {
                 lhs.to_bytecode(compiler);
                 rhs.to_bytecode(compiler);
 
-                let chunk = &mut compiler.function.chunk;
+                let chunk = &mut compiler.bytecode.function.chunk;
                 chunk.emit_op(match op {
                     super::BinaryOperation::Add => OpCode::Add,
                     super::BinaryOperation::Subtract => OpCode::Sub,
