@@ -11,7 +11,7 @@ pub struct VariableAssignment {
     pub name: Identifier,
 }
 impl VariableAssignment {
-    pub fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) {
+    pub fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         self.initializer.to_bytecode(compiler);
         let local = compiler.resolve_local(&self.name.value);
         if let Some(local) = local {

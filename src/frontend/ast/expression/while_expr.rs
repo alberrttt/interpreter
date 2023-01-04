@@ -14,7 +14,7 @@ impl AsExpr for WhileExpr {
 }
 /// GUAGE YOUR EYES OUT
 impl CompileToBytecode for WhileExpr {
-    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) {
+    fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         let predicate = compiler.function.chunk.code.len();
 
         self.predicate.to_bytecode(compiler);

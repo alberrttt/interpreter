@@ -21,10 +21,10 @@ pub struct VariableDeclaration {
     // pub mutable: bool,
 }
 impl CompileToBytecode for VariableDeclaration {
-    fn to_bytecode(self, compiler: &mut Compiler) {
+    fn to_bytecode(&self, compiler: &mut Compiler) {
         self.intializer.to_bytecode(compiler);
         if compiler.scope_depth > 0 {
-            compiler.add_local(self.identifier.value);
+            compiler.add_local(self.identifier.value.clone());
             return;
         }
         let function = &mut compiler.function;

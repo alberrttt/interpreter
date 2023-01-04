@@ -9,11 +9,12 @@ pub struct ReturnStmt {
 }
 
 impl CompileToBytecode for ReturnStmt {
-    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) {
+    fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         self.expr
+            .as_ref()
             .unwrap_or({
                 let this = Literal::Void;
-                Expression::Literal(this)
+                &Expression::Literal(this)
             })
             .to_bytecode(compiler);
         compiler.function.chunk.emit_op(OpCode::Return);

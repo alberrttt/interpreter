@@ -17,9 +17,9 @@ pub struct Block {
 }
 
 impl CompileToBytecode for Block {
-    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) {
+    fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         compiler.begin_scope();
-        for dec in self.declarations {
+        for dec in &self.declarations {
             dec.to_bytecode(compiler)
         }
         compiler.end_scope();

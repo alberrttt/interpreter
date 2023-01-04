@@ -10,7 +10,7 @@ pub struct CallExpr {
     pub parameters: Box<Vec<Expression>>,
 }
 impl CompileToBytecode for CallExpr {
-    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) {
+    fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         self.identifier.to_bytecode(compiler);
         self.parameters
             .iter()

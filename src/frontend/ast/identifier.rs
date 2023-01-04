@@ -17,7 +17,7 @@ pub struct Identifier {
 }
 
 impl CompileToBytecode for Identifier {
-    fn to_bytecode(self, compiler: &mut Compiler) {
+    fn to_bytecode(&self, compiler: &mut Compiler) {
         let local = compiler.resolve_local(&self.value);
         let function = &mut compiler.function;
         #[allow(unused_assignments)]

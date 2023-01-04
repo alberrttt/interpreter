@@ -73,7 +73,7 @@ impl Expression {
     }
 }
 impl CompileToBytecode for Expression {
-    fn to_bytecode(self, compiler: &mut Compiler) {
+    fn to_bytecode(&self, compiler: &mut Compiler) {
         match self {
             Expression::CallExpr(call_expr) => call_expr.to_bytecode(compiler),
             Expression::While(while_expr) => while_expr.to_bytecode(compiler),

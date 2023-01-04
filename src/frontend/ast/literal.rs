@@ -47,14 +47,14 @@ impl From<Literal> for Value {
 }
 
 impl CompileToBytecode for Literal {
-    fn to_bytecode(self, compiler: &mut Compiler) {
+    fn to_bytecode(&self, compiler: &mut Compiler) {
         let function = &mut compiler.function;
         let pos = match self {
             Literal::Void => function.chunk.emit_value(Value::Void),
-            Literal::Number(number) => function.chunk.emit_value(Value::Number(number)),
+            Literal::Number(number) => function.chunk.emit_value(Value::Number(*number)),
             Literal::String(string) => function.chunk.emit_value(string.to_value()),
             Literal::Bool(bool) => {
-                if bool {
+                if *bool {
                     function.chunk.emit_op(OpCode::True)
                 } else {
                     function.chunk.emit_op(OpCode::False)

@@ -23,7 +23,7 @@ impl<'a> Compiler<'a> {
     }
 }
 impl CompileToBytecode for FunctionDeclaration {
-    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) {
+    fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         // uses the current compiler's compilation context for the function
         // which is returned later
         let mut temp_compiler = Compiler::new(
@@ -37,8 +37,8 @@ impl CompileToBytecode for FunctionDeclaration {
             temp_compiler.function.name = self.name.value.lexeme.clone();
 
             // tells the compiler to recongize any parameters
-            for param in self.parameters {
-                temp_compiler.add_local(param.value)
+            for param in &self.parameters {
+                temp_compiler.add_local(param.value.clone())
             }
 
             // finally compiles the block
@@ -54,7 +54,7 @@ impl CompileToBytecode for FunctionDeclaration {
             .emit_constant(Value::Function(rcrf(function)));
 
         if compiler.in_scope() {
-            compiler.add_local(self.name.value);
+            compiler.add_local(self.name.value.clone());
         } else {
             // location of the name in the constant pool
             let name = compiler

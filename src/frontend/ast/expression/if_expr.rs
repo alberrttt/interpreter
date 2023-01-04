@@ -19,7 +19,7 @@ impl AsExpr for IfExpr {
 
 /// GUAGE YOUR EYES OUT
 impl CompileToBytecode for IfExpr {
-    fn to_bytecode(self, compiler: &mut crate::frontend::compiler::Compiler) {
+    fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         self.predicate.to_bytecode(compiler);
         let predicate_jump = compiler.emit_pop_jump_if_false();
 
@@ -32,7 +32,7 @@ impl CompileToBytecode for IfExpr {
             .chunk
             .emit_op(OpCode::JumpTo(then_end + 1));
 
-        if let Some(else_block) = self.else_block {
+        if let Some(else_block) = &self.else_block {
             else_block.to_bytecode(compiler);
             let after_else = compiler.function.chunk.code.len();
             compiler.function.chunk.code[then_end] = OpCode::JumpTo(after_else);

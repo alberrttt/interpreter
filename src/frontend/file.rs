@@ -17,8 +17,8 @@ pub struct FileAttributes {
 }
 
 impl<'a> CompileToBytecode for FileNode<'a> {
-    fn to_bytecode(self, compiler: &mut Compiler) {
-        for node in self.nodes {
+    fn to_bytecode(&self, compiler: &mut Compiler) {
+        for node in &self.nodes {
             node.to_bytecode(compiler)
         }
     }
