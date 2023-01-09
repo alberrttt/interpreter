@@ -138,6 +138,12 @@ impl VirtualMachine {
             ip += 1;
 
             match instruction.clone() {
+                OpCode::SetLocalConsumes(index) => {
+                    self.stack[index as usize + 1 + current_frame.slots] = {
+                        let tmp = self.stack.len() - 1;
+                        std::mem::take(&mut self.stack[tmp])
+                    };
+                }
                 OpCode::Equal => {
                     binary_op_bool!(==)
                 }
@@ -281,7 +287,6 @@ impl VirtualMachine {
                     self.frame_count -= 1;
 
                     if self.frame_count == 0 {
-                        self.stack.pop();
                         println!("vm took {}", start.elapsed().as_secs_f64());
                         return;
                     }

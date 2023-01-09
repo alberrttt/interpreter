@@ -16,6 +16,8 @@ pub enum OpCode {
     GetLocal(u16),
     DefineLocal(ConstantLocation),
     SetLocal(u16),
+    /// this doesn't clone off the stack, and uses mem::take instead of cloning
+    SetLocalConsumes(u16),
     DefineGlobal(ConstantLocation),
     GetGlobal(ConstantLocation),
     SetGlobal(ConstantLocation),

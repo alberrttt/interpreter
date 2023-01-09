@@ -40,6 +40,7 @@ impl CompileToBytecode for Statement {
                 }
                 _ => {
                     expr.to_bytecode(compiler);
+                    // big optimizations
                     compiler.bytecode.function.chunk.emit_op(OpCode::Pop)
                 }
             },

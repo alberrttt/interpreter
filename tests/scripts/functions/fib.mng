@@ -1,6 +1,5 @@
 func fib(n) {
-    let pred = n < 2;
-    if pred {
+    if n < 2 {
         return n;
     }
 
