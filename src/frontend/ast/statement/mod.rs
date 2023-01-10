@@ -35,12 +35,15 @@ impl CompileToBytecode for Statement {
         match self {
             Statement::Return(return_stmt) => return_stmt.to_bytecode(compiler),
             Statement::Expression(expr) => match &expr {
-                Expression::If(_) | Expression::Block(_) | Expression::While(_) => {
+                Expression::If(_)
+                | Expression::VariableAssignment(_)
+                | Expression::Block(_)
+                | Expression::While(_) => {
                     expr.to_bytecode(compiler);
                 }
+
                 _ => {
                     expr.to_bytecode(compiler);
-                    // big optimizations
                     compiler.bytecode.function.chunk.emit_op(OpCode::Pop)
                 }
             },

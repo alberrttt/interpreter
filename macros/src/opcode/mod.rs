@@ -1,30 +1,33 @@
+mod attributes;
+
 use proc_macro2::{Ident, TokenStream};
 use quote::quote;
 use syn::{
-    parse_macro_input, punctuated::Punctuated, spanned::Spanned, token::Comma, Data, DeriveInput,
-    Field, Fields, Variant,
+    parse_macro_input, punctuated::Punctuated, spanned::Spanned, token::Comma, Data, DataEnum,
+    DeriveInput, Field, Fields, Variant,
 };
 pub fn expand_opcode(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // Parse the input tokens into a syntax tree
     let input = parse_macro_input!(input as DeriveInput);
-    let variants = get_variants(&input.data);
+    let syn::Data::Enum(data_enum) = input.data else {
+        panic!()
+    };
+    let variants = data_enum.variants;
     let functions: Vec<TokenStream> = variants
         .iter()
         .map(|variant| create_function(variant))
         .collect();
-    proc_macro::TokenStream::from(quote! {
-         impl OpCode {
+
+    let impl_block = quote! {
+        impl OpCode {
             #(#functions)*
         }
+    };
+    proc_macro::TokenStream::from(quote! {
+        #impl_block
     })
 }
-fn get_variants(input_data: &Data) -> &Punctuated<Variant, Comma> {
-    if let syn::Data::Enum(data) = input_data {
-        &data.variants
-    } else {
-        panic!("Constructor can only be used on enums");
-    }
-}
+
 fn create_function(variant: &Variant) -> TokenStream {
     let variant_name = &variant.ident;
     // Check if the variant has fields

@@ -10,6 +10,7 @@ pub type Offset = usize;
 #[derive(Debug, Display, Clone, PartialEq, ExpandOpCode)]
 
 pub enum OpCode {
+    #[binary_op]
     Equal,
     NotEqual,
     Constant(ConstantLocation),

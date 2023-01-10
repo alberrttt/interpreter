@@ -32,3 +32,5 @@ impl Default for Bytecode {
         }
     }
 }
+
+impl Bytecode {}

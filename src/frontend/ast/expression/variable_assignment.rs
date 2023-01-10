@@ -15,11 +15,19 @@ impl VariableAssignment {
         self.initializer.to_bytecode(compiler);
         let local = compiler.resolve_local(&self.name.value);
         if let Some(local) = local {
-            compiler
-                .bytecode
-                .function
-                .chunk
-                .emit_op(OpCode::SetLocal(local as u16));
+            if compiler.bytecode.compiling_statement {
+                compiler
+                    .bytecode
+                    .function
+                    .chunk
+                    .emit_op(OpCode::SetLocalConsumes(local as u16));
+            } else {
+                compiler
+                    .bytecode
+                    .function
+                    .chunk
+                    .emit_op(OpCode::SetLocal(local as u16));
+            }
             return;
         }
         let name = compiler
