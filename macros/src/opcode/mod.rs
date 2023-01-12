@@ -17,13 +17,17 @@ pub fn expand_opcode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
         .iter()
         .map(|variant| create_function(variant))
         .collect();
-
+    let attributes: Vec<TokenStream> = variants
+        .iter()
+        .map(|variant| attributes::handle_variant(variant))
+        .collect();
     let impl_block = quote! {
         impl OpCode {
             #(#functions)*
         }
     };
     proc_macro::TokenStream::from(quote! {
+        #(#attributes,)*
         #impl_block
     })
 }

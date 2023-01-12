@@ -8,7 +8,7 @@ struct Arms {
 // the ground work for adding a better "api" for manipulating opcodes
 mod opcode;
 use opcode::expand_opcode as _expand_opcode;
-#[proc_macro_derive(ExpandOpCode)]
+#[proc_macro_derive(ExpandOpCode, attributes(binary_op, test))]
 pub fn expand_opcode(input: TokenStream) -> TokenStream {
     _expand_opcode(input)
 }
