@@ -77,7 +77,7 @@ impl VirtualMachine {
         }
         let mut function = read_current_frame_fn!();
         let mut chunk = &function.chunk;
-        let mut ip: usize = current_frame.ip;
+        let mut ip: usize = 0;
         let _interner = &self.interner;
 
         macro_rules! pop {

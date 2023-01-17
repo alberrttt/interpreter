@@ -1,11 +1,18 @@
-mod attributes;
-
 use proc_macro2::{Ident, TokenStream};
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::{
-    parse_macro_input, punctuated::Punctuated, spanned::Spanned, token::Comma, Data, DataEnum,
-    DeriveInput, Field, Fields, Variant,
+    parse::{self, Parse},
+    parse_macro_input,
+    punctuated::Punctuated,
+    spanned::Spanned,
+    token::Comma,
+    Data, DataEnum, DeriveInput, Field, Fields, Lit, LitInt, Meta, MetaList, Variant,
 };
+#[derive(Debug, Default)]
+struct StackInfo {
+    push: u8,
+    pop: u8,
+}
 pub fn expand_opcode(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     // Parse the input tokens into a syntax tree
     let input = parse_macro_input!(input as DeriveInput);
@@ -17,7 +24,49 @@ pub fn expand_opcode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
         .iter()
         .map(|variant| create_function(variant))
         .collect();
-
+    variants.iter().for_each(|variant| {
+        variant.attrs.iter().for_each(|attribute| {
+            let ident = attribute.path.segments.last().unwrap().ident.to_string();
+            match ident.as_str() {
+                "stack" => {
+                    let meta = attribute.parse_meta().expect("");
+                    let mut stack_info = StackInfo::default();
+                    match meta {
+                        Meta::List(list) => list.nested.iter().for_each(|nested| match nested {
+                            syn::NestedMeta::Meta(meta) => match meta {
+                                Meta::NameValue(name_value) => {
+                                    let name =
+                                        name_value.path.segments.last().unwrap().ident.to_string();
+                                    match name.as_str() {
+                                        "push" => {
+                                            let Lit::Int(int) = &name_value.lit else {
+                                                panic!()
+                                            };
+                                            let number: Result<u8, syn::Error> = int.base10_parse();
+                                            stack_info.push = number.unwrap();
+                                        }
+                                        "pop" => {
+                                            let Lit::Int(int) = &name_value.lit else {
+                                                panic!()
+                                            };
+                                            let number: Result<u8, syn::Error> = int.base10_parse();
+                                            stack_info.pop = number.unwrap();
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                                _ => panic!(),
+                            },
+                            syn::NestedMeta::Lit(_) => todo!(),
+                        }),
+                        _ => {}
+                    };
+                    dbg!(stack_info);
+                }
+                _ => {}
+            }
+        });
+    });
     let impl_block = quote! {
         impl OpCode {
             #(#functions)*

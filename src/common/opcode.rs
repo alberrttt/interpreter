@@ -10,8 +10,9 @@ pub type Offset = usize;
 #[derive(Debug, Display, Clone, PartialEq, ExpandOpCode)]
 
 pub enum OpCode {
-    #[binary_op]
+    #[stack(pop = 2, push = 1)]
     Equal,
+    #[stack(pop = 2, push = 1)]
     NotEqual,
     Constant(ConstantLocation),
     GetLocal(u16),
