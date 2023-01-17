@@ -67,6 +67,7 @@ pub fn expand_opcode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
             }
         });
     });
+
     let impl_block = quote! {
         impl OpCode {
             #(#functions)*

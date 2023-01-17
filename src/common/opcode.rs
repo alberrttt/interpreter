@@ -1,3 +1,5 @@
+use std::default;
+
 use super::value::Value;
 use macros::ExpandOpCode;
 use strum::Display;
@@ -7,7 +9,7 @@ pub type SlotIndex = u8;
 pub type Offset = usize;
 
 #[repr(u8)]
-#[derive(Debug, Display, Clone, PartialEq, ExpandOpCode)]
+#[derive(Debug, Display, Clone, PartialEq, ExpandOpCode, Default)]
 
 pub enum OpCode {
     #[stack(pop = 2, push = 1)]
@@ -46,6 +48,7 @@ pub enum OpCode {
     Div,
     Mul,
     Return,
+    #[default]
     Nop,
     CallNative(u16),
     CallNativeArgPtr(u16, *const [Value]),
