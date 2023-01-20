@@ -1,6 +1,3 @@
-extern "C" {
-    fn cmain();
-}
 use std::{cell::RefCell, ffi::OsString, fs::read_to_string, path::Path, rc::Rc, time::Instant};
 
 use clap::Parser;
@@ -12,7 +9,6 @@ use limesherbet::{
 };
 
 fn main() {
-    unsafe { cmain() };
     let cli = Cli::parse();
     let path = Path::new(&cli.path);
     let source = read_to_string(path).unwrap();

@@ -16,5 +16,3 @@ strum_macros = "0.24.3"
 macros = { path = "./macros" }
 lazy_static = "1.4.0"
 proc-macro2 = "1.0.49"
-[build-dependencies]
-cc = { version = "1.0", features = ["parallel"] }
