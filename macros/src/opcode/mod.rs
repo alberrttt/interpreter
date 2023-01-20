@@ -23,30 +23,22 @@ pub fn expand_opcode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
     let functions: Vec<TokenStream> = variants
         .iter()
         .map(|variant| {
-            let mut attrs: Vec<&Attribute> = Vec::new();
-
             let function = {
                 let stack_info = variant
                     .attrs
                     .iter()
                     .filter_map(|f| {
                         let attr = handle_attr(f);
-
                         attr
                     })
                     .take(1)
                     .next();
-                dbg!(&stack_info);
-
-                if let Some(stack_info) = stack_info {
-                    return create_function_with_info(variant, &stack_info);
-                }
-                create_function(variant)
+                create_function_with_info(variant, stack_info.as_ref())
             };
-            quote! {
-                #(#attrs)*
+            let tokens = quote! {
                 #function
-            }
+            };
+            return tokens;
         })
         .collect();
 
@@ -100,7 +92,7 @@ fn handle_attr(attribute: &Attribute) -> Option<StackInfo> {
         _ => None,
     }
 }
-fn create_function_with_info(variant: &Variant, stack_info: &StackInfo) -> TokenStream {
+fn create_function_with_info(variant: &Variant, stack_info: Option<&StackInfo>) -> TokenStream {
     let variant_name = &variant.ident;
     // Check if the variant has fields
     let fields = match &variant.fields {
@@ -128,18 +120,24 @@ fn create_function_with_info(variant: &Variant, stack_info: &StackInfo) -> Token
             })
             .collect();
         quote! {
-           self.function.chunk.emit_op(OpCode::#variant_name(#(#params),*));
-
+        OpCode::#variant_name(#(#params),*)
         }
     };
     let variant_fn_name = create_function_identifier(variant_name);
-    let push = stack_info.push;
-    let pop = stack_info.pop;
-    let stack_info_tokens = quote! {
-        self.stack_info.push(StackInfo {
-            push: #push,
-            pop: #pop,
-       });
+
+    let stack_info_tokens = {
+        if let Some(stack_info) = stack_info {
+            let push = stack_info.push;
+            let pop = stack_info.pop;
+            quote! {
+                self.stack_info.push(StackInfo {
+                    push: #push,
+                    pop: #pop,
+               });
+            }
+        } else {
+            quote! {}
+        }
     };
     let signature = quote! {
         pub fn #variant_fn_name(&mut self, #(#params),*) {
@@ -147,34 +145,9 @@ fn create_function_with_info(variant: &Variant, stack_info: &StackInfo) -> Token
             self.function.chunk.emit_op(#opcode)
         }
     };
-
     signature
 }
-fn create_function(variant: &Variant) -> TokenStream {
-    let variant_name = &variant.ident;
-    // Check if the variant has fields
-    let fields = match &variant.fields {
-        Fields::Named(fields) => fields.named.to_owned(),
-        Fields::Unnamed(fields) => fields.unnamed.to_owned(),
-        Fields::Unit => Punctuated::default(),
-    };
-    // Generate the function parameters based on the fields
-    let mut params: Vec<TokenStream> = Vec::new();
-    for (i, field) in fields.iter().enumerate() {
-        params.push(create_params(i, field))
-    }
 
-    // Generate the function body that constructs the variant
-    let opcode = create_function_body(&params, variant_name);
-    let variant_fn_name = create_function_identifier(variant_name);
-    let signature = quote! {
-        pub fn #variant_fn_name(&mut self, #(#params),*)  {
-            self.function.chunk.emit_op(#opcode)
-        }
-    };
-
-    signature
-}
 fn create_function_identifier(variant_name: &Ident) -> Ident {
     let variant_name_str = pascal_to_snake(variant_name.to_string().as_str());
     Ident::new(

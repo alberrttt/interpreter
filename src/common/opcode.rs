@@ -21,14 +21,21 @@ pub enum OpCode {
     Equal,
     #[stack(pop = 2, push = 1)]
     NotEqual,
+    #[stack(push = 1)]
     Constant(ConstantLocation),
     GetLocal(u16),
+    #[stack(push = 1)]
     DefineLocal(ConstantLocation),
+    #[stack(push = 1)]
     SetLocal(u16),
     /// this doesn't clone off the stack, and uses mem::take instead of cloning
+    #[stack(pop = 1)]
     SetLocalConsumes(u16),
+    #[stack(pop = 1)]
     DefineGlobal(ConstantLocation),
+    #[stack(push = 1)]
     GetGlobal(ConstantLocation),
+    #[stack(pop = 1, push = 0)]
     SetGlobal(ConstantLocation),
     Exit,
     PopJumpToIfFalse(Offset),
@@ -46,7 +53,9 @@ pub enum OpCode {
     Void,
     Not,
     Negate,
+    #[stack(pop = 1)]
     Pop,
+    #[stack(pop = 1)]
     Print,
     Add,
     Sub,
@@ -60,5 +69,5 @@ pub enum OpCode {
 }
 fn __test() {
     let mut b = Bytecode::default();
-    b.write_constant_op(0);
+    b.write_add_op()
 }

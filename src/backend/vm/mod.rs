@@ -139,10 +139,7 @@ impl VirtualMachine {
 
             match instruction.clone() {
                 OpCode::SetLocalConsumes(index) => {
-                    self.stack[index as usize + 1 + current_frame.slots] = {
-                        let tmp = self.stack.len() - 1;
-                        std::mem::take(&mut self.stack[tmp])
-                    };
+                    self.stack[index as usize + 1 + current_frame.slots] = pop!();
                 }
                 OpCode::Equal => {
                     binary_op_bool!(==)
