@@ -1,16 +1,21 @@
 use std::default;
 
 use super::value::Value;
+use crate::frontend::bytecode::Bytecode;
 use macros::ExpandOpCode;
 use strum::Display;
 
 pub type ConstantLocation = u16;
 pub type SlotIndex = u8;
 pub type Offset = usize;
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct StackInfo {
+    pub push: u8,
+    pub pop: u8,
+}
 
 #[repr(u8)]
-#[derive(Debug, Display, Clone, PartialEq, ExpandOpCode, Default)]
-
+#[derive(Debug, Display, Clone, PartialEq, Default, ExpandOpCode)]
 pub enum OpCode {
     #[stack(pop = 2, push = 1)]
     Equal,
@@ -52,4 +57,8 @@ pub enum OpCode {
     Nop,
     CallNative(u16),
     CallNativeArgPtr(u16, *const [Value]),
+}
+fn __test() {
+    let mut b = Bytecode::default();
+    b.write_constant_op(0);
 }

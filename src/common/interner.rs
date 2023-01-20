@@ -21,9 +21,13 @@ pub struct StringInterner {
     vec: Vec<String>,
 }
 use lazy_static::lazy_static;
-lazy_static! {
-    pub static ref STRING_INTERNER: Mutex<StringInterner> = Mutex::new(StringInterner::default());
-}
+use once_cell::sync::Lazy;
+pub static STRING_INTERNER: Lazy<Mutex<StringInterner>> = Lazy::new(|| {
+    Mutex::new(StringInterner {
+        strings: Default::default(),
+        vec: Default::default(),
+    })
+});
 impl StringInterner {
     pub fn get_or_intern(&mut self, s: &str) -> InternedString {
         let strings = &mut self.strings;

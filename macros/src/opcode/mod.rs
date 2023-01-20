@@ -6,7 +6,7 @@ use syn::{
     punctuated::Punctuated,
     spanned::Spanned,
     token::Comma,
-    Data, DataEnum, DeriveInput, Field, Fields, Lit, LitInt, Meta, MetaList, Variant,
+    Attribute, Data, DataEnum, DeriveInput, Field, Fields, Lit, LitInt, Meta, MetaList, Variant,
 };
 #[derive(Debug, Default)]
 struct StackInfo {
@@ -22,54 +22,36 @@ pub fn expand_opcode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
     let variants = data_enum.variants;
     let functions: Vec<TokenStream> = variants
         .iter()
-        .map(|variant| create_function(variant))
-        .collect();
-    variants.iter().for_each(|variant| {
-        variant.attrs.iter().for_each(|attribute| {
-            let ident = attribute.path.segments.last().unwrap().ident.to_string();
-            match ident.as_str() {
-                "stack" => {
-                    let meta = attribute.parse_meta().expect("");
-                    let mut stack_info = StackInfo::default();
-                    match meta {
-                        Meta::List(list) => list.nested.iter().for_each(|nested| match nested {
-                            syn::NestedMeta::Meta(meta) => match meta {
-                                Meta::NameValue(name_value) => {
-                                    let name =
-                                        name_value.path.segments.last().unwrap().ident.to_string();
-                                    match name.as_str() {
-                                        "push" => {
-                                            let Lit::Int(int) = &name_value.lit else {
-                                                panic!()
-                                            };
-                                            let number: Result<u8, syn::Error> = int.base10_parse();
-                                            stack_info.push = number.unwrap();
-                                        }
-                                        "pop" => {
-                                            let Lit::Int(int) = &name_value.lit else {
-                                                panic!()
-                                            };
-                                            let number: Result<u8, syn::Error> = int.base10_parse();
-                                            stack_info.pop = number.unwrap();
-                                        }
-                                        _ => {}
-                                    }
-                                }
-                                _ => panic!(),
-                            },
-                            syn::NestedMeta::Lit(_) => todo!(),
-                        }),
-                        _ => {}
-                    };
-                    dbg!(stack_info);
+        .map(|variant| {
+            let mut attrs: Vec<&Attribute> = Vec::new();
+
+            let function = {
+                let stack_info = variant
+                    .attrs
+                    .iter()
+                    .filter_map(|f| {
+                        let attr = handle_attr(f);
+
+                        attr
+                    })
+                    .take(1)
+                    .next();
+                dbg!(&stack_info);
+
+                if let Some(stack_info) = stack_info {
+                    return create_function_with_info(variant, &stack_info);
                 }
-                _ => {}
+                create_function(variant)
+            };
+            quote! {
+                #(#attrs)*
+                #function
             }
-        });
-    });
+        })
+        .collect();
 
     let impl_block = quote! {
-        impl OpCode {
+        impl Bytecode {
             #(#functions)*
         }
     };
@@ -77,7 +59,97 @@ pub fn expand_opcode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
         #impl_block
     })
 }
+fn handle_attr(attribute: &Attribute) -> Option<StackInfo> {
+    let ident = attribute.path.segments.last().unwrap().ident.to_string();
+    match ident.as_str() {
+        "stack" => {
+            let meta = attribute.parse_meta().expect("");
+            let mut stack_info = StackInfo::default();
+            match meta {
+                Meta::List(list) => list.nested.iter().for_each(|nested| match nested {
+                    syn::NestedMeta::Meta(meta) => match meta {
+                        Meta::NameValue(name_value) => {
+                            let name = name_value.path.segments.last().unwrap().ident.to_string();
+                            match name.as_str() {
+                                "push" => {
+                                    let Lit::Int(int) = &name_value.lit else {
+                                            panic!()
+                                        };
+                                    let number: Result<u8, syn::Error> = int.base10_parse();
+                                    stack_info.push = number.unwrap();
+                                }
+                                "pop" => {
+                                    let Lit::Int(int) = &name_value.lit else {
+                                            panic!()
+                                        };
+                                    let number: Result<u8, syn::Error> = int.base10_parse();
+                                    stack_info.pop = number.unwrap();
+                                }
+                                _ => {}
+                            }
+                        }
+                        _ => panic!(),
+                    },
+                    syn::NestedMeta::Lit(_) => todo!(),
+                }),
+                _ => {}
+            };
 
+            return Some(stack_info);
+        }
+        _ => None,
+    }
+}
+fn create_function_with_info(variant: &Variant, stack_info: &StackInfo) -> TokenStream {
+    let variant_name = &variant.ident;
+    // Check if the variant has fields
+    let fields = match &variant.fields {
+        Fields::Named(fields) => fields.named.to_owned(),
+        Fields::Unnamed(fields) => fields.unnamed.to_owned(),
+        Fields::Unit => Punctuated::default(),
+    };
+    // Generate the function parameters based on the fields
+    let mut params: Vec<TokenStream> = Vec::new();
+    for (i, field) in fields.iter().enumerate() {
+        params.push(create_params(i, field))
+    }
+
+    // Generate the function body that constructs the variant
+    let opcode = if params.is_empty() {
+        quote! { OpCode::#variant_name }
+    } else {
+        let params: Vec<proc_macro2::TokenStream> = params
+            .clone()
+            .into_iter()
+            .map(|tk| {
+                let ident: proc_macro2::TokenTree =
+                    tk.into_iter().next().unwrap().try_into().unwrap();
+                proc_macro2::TokenStream::from(ident)
+            })
+            .collect();
+        quote! {
+           self.function.chunk.emit_op(OpCode::#variant_name(#(#params),*));
+
+        }
+    };
+    let variant_fn_name = create_function_identifier(variant_name);
+    let push = stack_info.push;
+    let pop = stack_info.pop;
+    let stack_info_tokens = quote! {
+        self.stack_info.push(StackInfo {
+            push: #push,
+            pop: #pop,
+       });
+    };
+    let signature = quote! {
+        pub fn #variant_fn_name(&mut self, #(#params),*) {
+            #stack_info_tokens
+            self.function.chunk.emit_op(#opcode)
+        }
+    };
+
+    signature
+}
 fn create_function(variant: &Variant) -> TokenStream {
     let variant_name = &variant.ident;
     // Check if the variant has fields
@@ -93,26 +165,43 @@ fn create_function(variant: &Variant) -> TokenStream {
     }
 
     // Generate the function body that constructs the variant
-    let body = create_function_body(&params, variant_name);
+    let opcode = create_function_body(&params, variant_name);
     let variant_fn_name = create_function_identifier(variant_name);
     let signature = quote! {
-        pub fn #variant_fn_name(#(#params),*) -> Self {
-            #body
+        pub fn #variant_fn_name(&mut self, #(#params),*)  {
+            self.function.chunk.emit_op(#opcode)
         }
     };
 
     signature
 }
 fn create_function_identifier(variant_name: &Ident) -> Ident {
-    let variant_name_str = variant_name.to_owned().to_string().to_lowercase();
+    let variant_name_str = pascal_to_snake(variant_name.to_string().as_str());
     Ident::new(
-        format!("new_{variant_name_str}").as_str(),
+        format!("write_{variant_name_str}_op").as_str(),
         variant_name.span(),
     )
 }
+fn pascal_to_snake(input: &str) -> String {
+    let mut output = String::new();
+    let mut capitalize_next = false;
+
+    for c in input.chars() {
+        if c.is_uppercase() {
+            if !output.is_empty() {
+                output.push('_');
+            }
+            output.extend(c.to_lowercase());
+        } else {
+            output.push(c);
+        }
+    }
+    output
+}
+
 fn create_function_body(params: &Vec<TokenStream>, variant_name: &Ident) -> TokenStream {
     if params.is_empty() {
-        quote! { Self::#variant_name }
+        quote! { OpCode::#variant_name }
     } else {
         let params: Vec<proc_macro2::TokenStream> = params
             .clone()
@@ -124,7 +213,7 @@ fn create_function_body(params: &Vec<TokenStream>, variant_name: &Ident) -> Toke
             })
             .collect();
 
-        quote! { Self::#variant_name(#(#params),*) }
+        quote! { OpCode::#variant_name(#(#params),*) }
     }
 }
 fn create_params(i: usize, field: &Field) -> TokenStream {
