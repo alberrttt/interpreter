@@ -140,6 +140,7 @@ fn create_function_with_info(variant: &Variant, stack_info: Option<&StackInfo>) 
         }
     };
     let signature = quote! {
+        #[inline(always)]
         pub fn #variant_fn_name(&mut self, #(#params),*) {
             #stack_info_tokens
             self.function.chunk.emit_op(#opcode)

@@ -55,7 +55,7 @@ impl CompileToBytecode for Statement {
                 lhs.to_bytecode(compiler);
                 rhs.to_bytecode(compiler);
 
-                compiler.bytecode.function.chunk.emit_op(OpCode::AssertEq)
+                compiler.bytecode.write_assert_eq_op()
             }
             Statement::AssertNe(lhs, rhs) => {
                 lhs.to_bytecode(compiler);

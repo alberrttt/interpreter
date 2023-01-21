@@ -6,7 +6,7 @@ use std::{cell::RefCell, rc::Rc};
 /// its so messy omg..
 use crate::{
     cli_helper::Diagnostics,
-    common::{function::Function, interner::StringInterner, opcode::OpCode},
+    common::{chunk::Chunk, function::Function, interner::StringInterner, opcode::OpCode},
 };
 
 use super::{
@@ -80,9 +80,8 @@ impl<'a> Compiler<'a> {
         let function = Function::new();
         self.bytecode.function = function;
         parsed_file.to_bytecode(&mut self);
-
-        self.bytecode.function.chunk.emit_many(vec![OpCode::Return]);
-
+        self.bytecode.write_return_op();
+        dbg!(self.bytecode.stack_info);
         Ok(self.bytecode.function)
     }
 }

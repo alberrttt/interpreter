@@ -98,12 +98,12 @@ impl CompileToBytecode for Expression {
                 rhs.to_bytecode(compiler);
 
                 let chunk = &mut compiler.bytecode.function.chunk;
-                chunk.emit_op(match op {
-                    super::BinaryOperation::Add => OpCode::Add,
-                    super::BinaryOperation::Subtract => OpCode::Sub,
-                    super::BinaryOperation::Multiply => OpCode::Mul,
-                    super::BinaryOperation::Divide => OpCode::Div,
-                })
+                match op {
+                    super::BinaryOperation::Add => compiler.bytecode.write_add_op(),
+                    super::BinaryOperation::Subtract => compiler.bytecode.write_sub_op(),
+                    super::BinaryOperation::Multiply => compiler.bytecode.write_mul_op(),
+                    super::BinaryOperation::Divide => compiler.bytecode.write_div_op(),
+                }
             }
         }
     }

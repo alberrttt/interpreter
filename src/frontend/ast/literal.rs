@@ -62,7 +62,7 @@ impl CompileToBytecode for Literal {
                 return;
             }
         };
-        function.chunk.emit_op(OpCode::Constant(pos))
+        compiler.bytecode.write_constant_op(pos);
     }
 }
 impl AsExpr for Literal {
