@@ -4,11 +4,13 @@ use clap::Parser;
 use limesherbet::{
     backend::vm::VirtualMachine,
     cli_helper::Diagnostics,
-    common::{debug::dissasemble_chunk, interner::StringInterner, value::Value},
+    common::{debug::dissasemble_chunk, interner::StringInterner, opcode::OpCode, value::Value},
     frontend::compiler::{Compiler, FunctionType},
 };
 
 fn main() {
+    let v = OpCode::False;
+
     let cli = Cli::parse();
     let path = Path::new(&cli.path);
     let source = read_to_string(path).unwrap();

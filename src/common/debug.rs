@@ -19,7 +19,7 @@ pub fn dissasemble_chunk(chunk: &Chunk, name: &str) {
         });
     println!("{name} ----------------------");
     let mut instruction_ptr: usize = 0;
-
+    
     loop {
         if instruction_ptr >= chunk.code.len() {
             break;

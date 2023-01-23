@@ -20,35 +20,65 @@ pub fn expand_opcode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
         panic!()
     };
     let variants = data_enum.variants;
-    let functions: Vec<TokenStream> = variants
-        .iter()
-        .map(|variant| {
-            let function = {
-                let stack_info = variant
-                    .attrs
-                    .iter()
-                    .filter_map(|f| {
-                        let attr = handle_attr(f);
-                        attr
-                    })
-                    .take(1)
-                    .next();
-                create_function_with_info(variant, stack_info.as_ref())
-            };
-            let tokens = quote! {
-                #function
-            };
-            return tokens;
-        })
-        .collect();
+    let mut impls: Vec<TokenStream> = Vec::new();
+    let mut arms: Vec<TokenStream> = Vec::new();
+    variants.iter().for_each(|variant| {
+        let stack_info = variant
+            .attrs
+            .iter()
+            .filter_map(|f| {
+                let attr = handle_attr(f);
+                attr
+            })
+            .take(1)
+            .next();
+        let implementation = create_function_with_info(variant, stack_info.as_ref());
 
-    let impl_block = quote! {
-        impl Bytecode {
-            #(#functions)*
+        if let Some(stack_info) = stack_info {
+            let matchargs = {
+                let param: TokenStream = {
+                    if variant.fields.len() > 0 {
+                        let fields: Vec<TokenStream> = variant
+                            .fields
+                            .iter()
+                            .map(|field| {
+                                quote! {
+                                    _,
+                                }
+                            })
+                            .collect();
+                        quote! {(#(#fields)*)}
+                    } else {
+                        quote!()
+                    }
+                };
+
+                let push = stack_info.push;
+                let pop = stack_info.pop;
+                quote! {
+                    #param => StackInfo {
+                        push: #push,
+                        pop: #pop,
+                    },
+                }
+            };
+            let variant_name = variant.ident.clone();
+
+            arms.push(quote! {
+                OpCode::#variant_name #matchargs
+            })
         }
-    };
+        impls.push(implementation)
+    });
+    let tokens = quote! { #(#arms)*};
     proc_macro::TokenStream::from(quote! {
-        #impl_block
+        #(#impls)*
+        pub fn get_stack_info(op: &OpCode) -> StackInfo {
+            match op {
+                #(#arms)*
+                _ => unimplemented!()
+            }
+        }
     })
 }
 fn handle_attr(attribute: &Attribute) -> Option<StackInfo> {
@@ -140,11 +170,13 @@ fn create_function_with_info(variant: &Variant, stack_info: Option<&StackInfo>) 
         }
     };
     let signature = quote! {
+    impl Bytecode {
         #[inline(always)]
         pub fn #variant_fn_name(&mut self, #(#params),*) {
             #stack_info_tokens
             self.function.chunk.emit_op(#opcode)
         }
+    }
     };
     signature
 }
@@ -158,7 +190,6 @@ fn create_function_identifier(variant_name: &Ident) -> Ident {
 }
 fn pascal_to_snake(input: &str) -> String {
     let mut output = String::new();
-    let mut capitalize_next = false;
 
     for c in input.chars() {
         if c.is_uppercase() {
