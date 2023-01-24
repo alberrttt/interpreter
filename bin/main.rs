@@ -14,20 +14,10 @@ fn main() {
     let cli = Cli::parse();
     let path = Path::new(&cli.path);
     let source = read_to_string(path).unwrap();
-
     let interner = Rc::new(RefCell::new(StringInterner::default()));
-
     let diagnostics = create_rc(Diagnostics::new(path));
     let compiler = Compiler::new(interner.clone(), diagnostics.clone(), FunctionType::Script);
-
-    let start = Instant::now();
-
     let compiled = compiler.compile(source).unwrap();
-
-    println!(
-        "took {}s to compile to bytecode",
-        start.elapsed().as_secs_f64()
-    );
     if cli.display_bytecode {
         dissasemble_chunk(&compiled.chunk, "main");
     }

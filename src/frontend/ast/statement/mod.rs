@@ -34,19 +34,24 @@ impl CompileToBytecode for Statement {
         compiler.bytecode.compiling_statement = true;
         match self {
             Statement::Return(return_stmt) => return_stmt.to_bytecode(compiler),
-            Statement::Expression(expr) => match &expr {
-                Expression::If(_)
-                | Expression::VariableAssignment(_)
-                | Expression::Block(_)
-                | Expression::While(_) => {
-                    expr.to_bytecode(compiler);
-                }
-
-                _ => {
-                    expr.to_bytecode(compiler);
-                    compiler.bytecode.function.chunk.emit_op(OpCode::Pop)
-                }
-            },
+            Statement::Expression(expr) => {
+                compiler.bytecode.start_expr(expr);
+                match &expr {
+                    Expression::If(_)
+                    | Expression::VariableAssignment(_)
+                    | Expression::Block(_)
+                    | Expression::While(_) => {
+                        expr.to_bytecode(compiler);
+                    }
+                    Expression::CallExpr(_) => {
+                        expr.to_bytecode(compiler);
+                        compiler.bytecode.function.chunk.emit_op(OpCode::Pop)
+                    }
+                    unused => {
+                        dbg!(unused);
+                    }
+                };
+            }
             Statement::Print(expr) => {
                 expr.to_bytecode(compiler);
                 compiler.bytecode.function.chunk.emit_op(OpCode::Print);

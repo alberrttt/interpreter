@@ -32,7 +32,15 @@ pub fn expand_opcode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
             })
             .take(1)
             .next();
-        let implementation = create_function_with_info(variant, stack_info.as_ref());
+
+        let implementation = if variant.attrs.iter().any(|f| {
+            let ident = f.path.segments.last().unwrap().ident.to_string();
+            ident == "no_impl"
+        }) {
+            quote!()
+        } else {
+            create_function_with_info(variant, stack_info.as_ref())
+        };
 
         if let Some(stack_info) = stack_info {
             let matchargs = {
