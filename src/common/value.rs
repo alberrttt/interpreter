@@ -58,17 +58,20 @@ pub trait AsValue {
     fn to_value(self) -> Value;
 }
 impl AsValue for bool {
+    #[inline(always)]
     fn to_value(self) -> Value {
         Value::Boolean(self)
     }
 }
 impl Value {
+    #[inline(always)]
     pub fn as_bool(&self) -> &bool {
         let Value::Boolean(bool) = &self else {
             panic!()
         };
         bool
     }
+    #[inline(always)]
     pub fn as_string(&self) -> &InternedString {
         if let Value::String(string) = self {
             string
@@ -78,12 +81,14 @@ impl Value {
     }
 }
 impl AsValue for &str {
+    #[inline(always)]
     fn to_value(self) -> Value {
         let mut interner = STRING_INTERNER.lock().expect("already?");
         Value::String(interner.get_or_intern(self))
     }
 }
 impl AsValue for f64 {
+    #[inline(always)]
     fn to_value(self) -> Value {
         Value::Number(self)
     }

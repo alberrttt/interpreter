@@ -85,7 +85,3 @@ pub enum OpCode {
     CallNative(u16),
     CallNativeArgPtr(u16, *const [Value]),
 }
-fn __test() {
-    let mut b = Bytecode::default();
-    b.write_add_op()
-}

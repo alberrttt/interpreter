@@ -81,7 +81,6 @@ impl<'a> Compiler<'a> {
         self.bytecode.function = function;
         parsed_file.to_bytecode(&mut self);
         self.bytecode.write_return_op();
-        dbg!(self.bytecode.stack_info);
         Ok(self.bytecode.function)
     }
 }
