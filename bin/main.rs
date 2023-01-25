@@ -7,10 +7,12 @@ use limesherbet::{
     common::{debug::dissasemble_chunk, interner::StringInterner, opcode::OpCode, value::Value},
     frontend::compiler::{Compiler, FunctionType},
 };
-
+mod test;
 fn main() {
-    let v = OpCode::False;
-
+    #[cfg(debug_assertions)]
+    {
+        test::test()
+    }
     let cli = Cli::parse();
     let path = Path::new(&cli.path);
     let source = read_to_string(path).unwrap();
