@@ -45,10 +45,6 @@ impl Default for Bytecode {
 
 impl Bytecode {
     pub fn start_expr(&mut self, expr: &Expression) {
-        assert!(
-            self.current_expr.is_none(),
-            "previous expr failed to clean up"
-        );
         self.current_expr = Some(expr);
     }
 }

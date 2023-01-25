@@ -31,24 +31,28 @@ impl AsExpr for Statement {
 }
 impl CompileToBytecode for Statement {
     fn to_bytecode(&self, compiler: &mut Compiler) {
+        assert!(!compiler.bytecode.compiling_statement);
         compiler.bytecode.compiling_statement = true;
         match self {
             Statement::Return(return_stmt) => return_stmt.to_bytecode(compiler),
             Statement::Expression(expr) => {
                 compiler.bytecode.start_expr(expr);
                 match &expr {
-                    Expression::If(_)
-                    | Expression::VariableAssignment(_)
-                    | Expression::Block(_)
-                    | Expression::While(_) => {
+                    Expression::If(_) | Expression::Block(_) | Expression::While(_) => {
                         expr.to_bytecode(compiler);
                     }
                     Expression::CallExpr(_) => {
                         expr.to_bytecode(compiler);
                         compiler.bytecode.function.chunk.emit_op(OpCode::Pop)
                     }
+                    Expression::VariableAssignment(_) => {
+                        expr.to_bytecode(compiler);
+                        compiler.bytecode.function.chunk.emit_op(OpCode::Pop)
+                    }
                     unused => {
                         dbg!(unused);
+                        expr.to_bytecode(compiler);
+                        compiler.bytecode.function.chunk.emit_op(OpCode::Pop)
                     }
                 };
             }

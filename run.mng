@@ -1,10 +1,7 @@
-func fib(n) {
-    let pred = n < 2;
-    if pred {
-        return n;
-    }
-
-    return fib(n-2)+fib(n-1);
+let x = 0;
+x = 1;
+{
+    let hello = "hi";
+    3 + 4; 
 }
-
-print fib(30);
+print(x);
