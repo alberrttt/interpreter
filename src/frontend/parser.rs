@@ -11,15 +11,13 @@ use super::{
             function::FunctionDeclaration, variable_declaration::VariableDeclaration, AsDeclaration,
         },
         expression::{
-            block::Block, call_expr::CallExpr, comparison::Comparison, if_expr::IfExpr,
-            variable_assignment::VariableAssignment, while_expr::WhileExpr, AsExpr, BinaryExpr,
-            Expression,
+            binary_expr::BinaryExpr, block::Block, call_expr::CallExpr, if_expr::IfExpr,
+            variable_assignment::VariableAssignment, while_expr::WhileExpr, AsExpr, Expression,
         },
         identifier::Identifier,
         literal::Literal,
         node::{AsNode, Node},
         statement::{return_stmt::ReturnStmt, Statement},
-        BinaryOperation,
     },
     compiler::{Compiler, FunctionType},
     file::FileNode,
@@ -91,16 +89,7 @@ impl<'a> Parser<'a> {
             | TokenKind::BangEqual => Rule {
                 precedence: Precedence::Comparison,
                 prefix: None,
-                infix: Some(|parser: &mut Parser, lhs: Node| {
-                    let comparison_token = parser.previous().kind;
-                    Comparison {
-                        lhs: Box::new(lhs.to_expr()),
-                        rhs: Box::new(parser.expression().unwrap().to_expr()),
-                        kind: comparison_token.try_into().unwrap(),
-                    }
-                    .to_expr()
-                    .to_node()
-                }),
+                infix: Some(Self::binary),
             },
             TokenKind::If => Rule {
                 precedence: Precedence::None,
@@ -500,13 +489,7 @@ impl Parser<'_> {
     }
     pub fn binary(&mut self, lhs: Node) -> Node {
         let rule = Self::get_rule(self.previous().kind);
-        let op = match self.previous().kind {
-            TokenKind::Plus => BinaryOperation::Add,
-            TokenKind::Dash => BinaryOperation::Subtract,
-            TokenKind::Star => BinaryOperation::Multiply,
-            TokenKind::Slash => BinaryOperation::Divide,
-            _ => panic!(),
-        };
+        let op = self.previous().kind;
         // the precedence is +1 so it'll compile it as the rhs
         #[allow(unsafe_code)]
         let prec: Precedence = unsafe { transmute((rule.precedence as u8) + 1) };

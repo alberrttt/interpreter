@@ -1,7 +1,13 @@
-use crate::{common::opcode::OpCode, frontend::compiler::Compiler};
+use crate::{
+    common::opcode::OpCode,
+    frontend::{
+        compiler::Compiler,
+        scanner::{Token, TokenKind},
+    },
+};
 
 use self::{
-    block::Block, call_expr::CallExpr, comparison::Comparison, if_expr::IfExpr,
+    binary_expr::BinaryExpr, block::Block, call_expr::CallExpr, if_expr::IfExpr,
     variable_assignment::VariableAssignment, while_expr::WhileExpr,
 };
 
@@ -9,28 +15,18 @@ use super::{
     identifier::Identifier,
     literal::Literal,
     node::{AsNode, Node},
-    BinaryOperation, CompileToBytecode,
+    CompileToBytecode,
 };
 pub trait AsExpr {
     fn to_expr(self) -> Expression;
 }
+pub mod binary_expr;
 pub mod block;
 pub mod call_expr;
-pub mod comparison;
 pub mod if_expr;
 pub mod variable_assignment;
 pub mod while_expr;
-#[derive(Debug, PartialEq, Clone)]
-pub struct BinaryExpr {
-    pub lhs: Box<Node>,
-    pub rhs: Box<Node>,
-    pub op: BinaryOperation,
-}
-impl AsExpr for BinaryExpr {
-    fn to_expr(self) -> Expression {
-        Expression::Binary(self)
-    }
-}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Grouping(Box<Expression>),
@@ -44,7 +40,6 @@ pub enum Expression {
     If(IfExpr),
     While(WhileExpr),
     CallExpr(CallExpr),
-    Comparison(Comparison),
 }
 impl AsNode for Expression {
     fn to_node(self) -> Node {
@@ -89,7 +84,6 @@ impl CompileToBytecode for Expression {
                 expr.to_bytecode(compiler);
                 compiler.bytecode.function.chunk.emit_op(OpCode::Negate);
             }
-            Expression::Comparison(comparison) => comparison.to_bytecode(compiler),
             Expression::Block(block) => block.to_bytecode(compiler),
             Expression::Identifier(identifier) => identifier.to_bytecode(compiler),
             super::Expression::Binary(binary) => {
@@ -99,10 +93,17 @@ impl CompileToBytecode for Expression {
 
                 let chunk = &mut compiler.bytecode.function.chunk;
                 match op {
-                    super::BinaryOperation::Add => compiler.bytecode.write_add_op(),
-                    super::BinaryOperation::Subtract => compiler.bytecode.write_sub_op(),
-                    super::BinaryOperation::Multiply => compiler.bytecode.write_mul_op(),
-                    super::BinaryOperation::Divide => compiler.bytecode.write_div_op(),
+                    TokenKind::Plus => compiler.bytecode.write_add_op(),
+                    TokenKind::Dash => compiler.bytecode.write_sub_op(),
+                    TokenKind::Star => compiler.bytecode.write_mul_op(),
+                    TokenKind::Slash => compiler.bytecode.write_div_op(),
+                    TokenKind::Greater => compiler.bytecode.write_greater_op(),
+                    TokenKind::GreaterEqual => compiler.bytecode.write_greater_eq_op(),
+                    TokenKind::Less => compiler.bytecode.write_less_op(),
+                    TokenKind::LessEqual => compiler.bytecode.write_less_eq_op(),
+                    TokenKind::EqualEqual => compiler.bytecode.write_equal_op(),
+                    TokenKind::BangEqual => compiler.bytecode.write_not_equal_op(),
+                    x => panic!("Invalid binary operator {}", x),
                 }
             }
         }

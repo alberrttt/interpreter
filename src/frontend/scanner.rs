@@ -1,7 +1,5 @@
 use std::{char, fmt};
 
-use super::ast::expression::comparison::ComparisonKind;
-
 #[derive(Debug, Clone, Default)]
 pub struct Scanner {
     pub source: String,
@@ -383,21 +381,5 @@ impl Scanner {
             self.advance();
         }
         token!(self, Identifier)
-    }
-}
-
-impl TryFrom<TokenKind> for ComparisonKind {
-    type Error = String;
-
-    fn try_from(value: TokenKind) -> Result<Self, Self::Error> {
-        match value {
-            TokenKind::Greater => Ok(ComparisonKind::Greater),
-            TokenKind::GreaterEqual => Ok(ComparisonKind::GreaterEq),
-            TokenKind::Less => Ok(ComparisonKind::Less),
-            TokenKind::LessEqual => Ok(ComparisonKind::LessEq),
-            TokenKind::EqualEqual => Ok(ComparisonKind::Equal),
-            TokenKind::BangEqual => Ok(ComparisonKind::NotEqual),
-            x => Err(format!("cannot convert {} to comparison kind", x)),
-        }
     }
 }

@@ -1,9 +1,18 @@
 use limesherbet::common::value::Value;
-
+#[repr(u8)]
+enum Foo {
+    Bar(f64),
+}
 pub fn test() {
-    let v = Value::Number(1.0);
-    let bytes = unsafe { ::std::mem::transmute::<Value, [u8; 16]>(v) };
-    bytes.iter().enumerate().for_each(|(i, byte)| if i >= 8 {});
-    let f64_bytes: [u8; 8] = bytes[7..15].try_into().unwrap();
-    let f64_value = f64::from_be_bytes(f64_bytes);
+    let v = Foo::Bar(1.0);
+    let enum_bytes = unsafe { ::std::mem::transmute::<Foo, [u8; 16]>(v) };
+    let f64_bytes: [u8; 8] = enum_bytes
+        .iter()
+        .skip(8)
+        .copied()
+        .collect::<Vec<u8>>()
+        .try_into()
+        .unwrap();
+    let f64_value = f64::from_ne_bytes(f64_bytes);
+    dbg!(f64_value);
 }
