@@ -81,6 +81,11 @@ impl<'a> Parser<'a> {
                 prefix: Some(Self::while_expr),
                 infix: None,
             },
+            TokenKind::Equal => Rule {
+                precedence: Precedence::Assignment,
+                prefix: None,
+                infix: Some(Self::binary),
+            },
             TokenKind::Greater
             | TokenKind::Less
             | TokenKind::LessEqual
@@ -168,11 +173,12 @@ impl<'a> Parser<'a> {
 
                 infix: None,
             },
-            TokenKind::Equal | TokenKind::SemiColon | TokenKind::Comma => Rule {
+            TokenKind::SemiColon | TokenKind::Comma => Rule {
                 precedence: Precedence::None,
                 infix: None,
                 prefix: None,
             },
+
             _ => Rule {
                 precedence: Precedence::Unimpl,
                 infix: None,
@@ -576,7 +582,12 @@ impl<'a> Parser<'a> {
             };
             println!("{}", self.current().kind);
             match self.current().kind {
-                TokenKind::Return | TokenKind::Print | TokenKind::Func | TokenKind::Let => {
+                TokenKind::Return
+                | TokenKind::If
+                | TokenKind::While
+                | TokenKind::Print
+                | TokenKind::Func
+                | TokenKind::Let => {
                     return;
                 }
                 _ => {}
