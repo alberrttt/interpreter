@@ -99,14 +99,15 @@ impl VirtualMachine {
         macro_rules! binary_op {
             ($op:tt) => {{
                 let rhs = pop!();
-                let lhs = pop!();
+                let tmp = self.stack.len() - 1;
+                let lhs = &mut self.stack[tmp];
 
                 match lhs {
                     Value::Number(lhs) => {
                         let Value::Number(rhs) = rhs else {
                             panic!()
                         };
-                        self.stack.push(Value::Number(lhs $op rhs))
+                        *lhs = *lhs $op rhs;
                     }
                     x => unimplemented!("cannot apply binary operation to value {}", x),
                 }
@@ -226,21 +227,22 @@ impl VirtualMachine {
                 OpCode::Void => self.stack.push(Value::Void),
                 OpCode::Add => {
                     let rhs = pop!();
-                    let lhs = pop!();
+                    let tmp = self.stack.len() - 1;
+                    let lhs = &mut self.stack[tmp];
 
                     match lhs {
                         Value::Number(lhs) => {
                             let Value::Number(rhs) = rhs else {
                                 panic!()
                             };
-                            self.stack.push(Value::Number(lhs + rhs))
+                            *lhs += rhs;
                         }
                         Value::String(lhs) => {
                             let Value::String(rhs) = rhs else {
                                 panic!("lhs {:?}\nrhs{:?}",lhs,rhs);
                             };
 
-                            let mut lhs: String = lhs.into();
+                            let mut lhs: String = (*lhs).into();
                             let rhs: String = rhs.into();
                             lhs.push_str(rhs.as_str());
                             self.stack.push(lhs.to_value());
