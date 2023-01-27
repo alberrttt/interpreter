@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::Mutex};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(C)]
 pub struct InternedString(pub usize);
 impl From<InternedString> for String {
     fn from(value: InternedString) -> Self {
