@@ -1,9 +1,6 @@
 {
     "files.associations": {
         "*.mng": "mng",
-        "new": "cpp",
-        "bindings.h": "c",
-        "limits": "c",
-        "stdbool.h": "c"
+        "new": "cpp"
     }
 }

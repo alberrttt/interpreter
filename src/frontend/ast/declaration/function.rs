@@ -51,13 +51,12 @@ impl CompileToBytecode for FunctionDeclaration {
                 .emit_op(OpCode::Return);
             temp_compiler.bytecode.function
         };
-        let ptr = { &mut *Box::new(function) };
 
         compiler
             .bytecode
             .function
             .chunk
-            .emit_constant(Value::Function(ptr));
+            .emit_constant(Value::Function(rcrf(function)));
 
         if compiler.in_scope() {
             compiler.add_local(self.name.value.clone());

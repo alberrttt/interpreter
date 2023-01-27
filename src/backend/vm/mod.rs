@@ -2,7 +2,7 @@ use std::{collections::HashMap, time::Instant};
 
 use crate::common::{
     chunk::Chunk,
-    function::BytecodeFunction,
+    function::Function,
     interner::StringInterner,
     natives::Native,
     opcode::OpCode,
@@ -13,7 +13,7 @@ use super::callframe::CallFrame;
 
 pub mod natives;
 pub mod ops;
-pub const FUNCTION: BytecodeFunction = BytecodeFunction {
+pub const FUNCTION: Function = Function {
     chunk: Chunk {
         code: Vec::new(),
         constants: Vec::new(),
@@ -49,7 +49,7 @@ impl VirtualMachine {
         }
     }
     #[allow(clippy::not_unsafe_ptr_arg_deref, unsafe_code)]
-    pub fn call(&mut self, function: *const BytecodeFunction, arg_count: usize) {
+    pub fn call(&mut self, function: *const Function, arg_count: usize) {
         let arity = unsafe { (*function).arity };
         if arg_count != arity as usize {
             panic!(
@@ -300,7 +300,7 @@ impl VirtualMachine {
                     let Value::Function(callee) = callee else {
                         panic!()
                     };
-                    let callee: *const BytecodeFunction = *callee;
+                    let callee: *const Function = callee.as_ptr() as *const _;
 
                     self.call(callee, arg_count);
                     self.callframes[self.frame_count - 2].ip = ip;

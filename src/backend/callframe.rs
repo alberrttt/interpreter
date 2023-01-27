@@ -1,14 +1,14 @@
-use crate::common::function::BytecodeFunction;
+use crate::common::function::Function;
 
 #[derive(Debug, Clone)]
 pub struct CallFrame {
-    pub function: *const BytecodeFunction,
+    pub function: *const Function,
     pub ip: usize,
     pub slots: usize,
 }
 
 impl CallFrame {
-    pub fn new(function: &BytecodeFunction) -> CallFrame {
+    pub fn new(function: &Function) -> CallFrame {
         CallFrame {
             function,
             ip: 0,

@@ -1,14 +1,14 @@
 use super::chunk::Chunk;
 #[derive(Debug, Clone, Default)]
-pub struct BytecodeFunction {
+pub struct Function {
     pub chunk: Chunk,
     pub arity: u8,
     pub name: String,
 }
 
-impl BytecodeFunction {
-    pub fn new() -> BytecodeFunction {
-        BytecodeFunction {
+impl Function {
+    pub fn new() -> Function {
+        Function {
             chunk: Chunk::new(),
             arity: 0,
             name: String::from("main"),

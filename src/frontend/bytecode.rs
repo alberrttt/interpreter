@@ -1,5 +1,5 @@
 use crate::common::{
-    function::BytecodeFunction,
+    function::Function,
     opcode::{OpCode, StackInfo},
 };
 
@@ -13,7 +13,7 @@ use super::{
 #[derive(Debug, Clone)]
 pub struct Bytecode {
     pub stack_info: Vec<StackInfo>,
-    pub function: BytecodeFunction,
+    pub function: Function,
     pub scope_depth: u8,
     pub locals: Box<[Local]>,
     pub local_count: usize,

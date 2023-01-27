@@ -3,11 +3,17 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef struct BytecodeFunction BytecodeFunction;
+typedef struct Rc_RefCell_Function Rc_RefCell_Function;
+
+typedef struct Rc_RefCell_Vec_Value Rc_RefCell_Vec_Value;
 
 typedef struct InternedString {
   uintptr_t _0;
 } InternedString;
+
+typedef struct Rc_RefCell_Function Ptr_Function;
+
+typedef struct Rc_RefCell_Vec_Value Ptr_Vec_Value;
 
 enum Value_Tag {
   Number,
@@ -36,14 +42,14 @@ typedef union Value {
   };
   struct {
     Value_Tag function_tag;
-    const struct BytecodeFunction *function;
+    Ptr_Function function;
   };
   struct {
     Value_Tag array_tag;
-    const union Value *array;
+    Ptr_Vec_Value array;
   };
 } Value;
 
 
 
-extern union Value sum(union Value a, union Value b);
+extern int32_t sum(int32_t a, int32_t b);

@@ -10,9 +10,6 @@ pub fn main() {
         .with_language(Language::C)
         .generate()
         .expect("Unable to generate bindings")
-        .write_to_file("./c/bindings.h");
-    cc::Build::new()
-        .include("./c/bindings.h")
-        .file("./c/sum.c")
-        .compile("sum");
+        .write_to_file("bindings.h");
+    cc::Build::new().file("./c/sum.c").compile("sum");
 }
