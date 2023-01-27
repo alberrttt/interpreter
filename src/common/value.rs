@@ -8,7 +8,7 @@ use std::{
 };
 
 use super::{
-    function::Function,
+    function::BytecodeFunction,
     interner::{InternedString, STRING_INTERNER},
 };
 
@@ -18,8 +18,8 @@ pub enum Value {
     Number(f64),
     Boolean(bool),
     String(InternedString),
-    Function(Ptr<Function>),
-    Array(Ptr<Vec<Value>>),
+    Function(*const BytecodeFunction),
+    Array(*const Value),
     Void,
     #[default]
     None,
@@ -117,7 +117,7 @@ impl Display for Value {
                 write!(f, "<func {:?}>", addr_of!(function))
             }
             Value::Array(array) => {
-                let tmp = array.as_ref().borrow();
+                let tmp = unsafe { array.as_ref().unwrap() };
                 write!(f, "{:?}", tmp)
             }
         }

@@ -6,7 +6,7 @@ use std::{cell::RefCell, rc::Rc};
 /// its so messy omg..
 use crate::{
     cli_helper::Diagnostics,
-    common::{chunk::Chunk, function::Function, interner::StringInterner, opcode::OpCode},
+    common::{chunk::Chunk, function::BytecodeFunction, interner::StringInterner, opcode::OpCode},
 };
 
 use super::{
@@ -63,7 +63,7 @@ impl<'a> Compiler<'a> {
         }
     }
 
-    pub fn compile(mut self, source: String) -> Result<Function, CompileResult> {
+    pub fn compile(mut self, source: String) -> Result<BytecodeFunction, CompileResult> {
         let scanner = Scanner::new(source);
 
         let parser = Parser::new(
@@ -77,7 +77,7 @@ impl<'a> Compiler<'a> {
         if self.parser.had_error {
             return Err(CompileResult::Error);
         }
-        let function = Function::new();
+        let function = BytecodeFunction::new();
         self.bytecode.function = function;
         parsed_file.to_bytecode(&mut self);
         self.bytecode.write_return_op();

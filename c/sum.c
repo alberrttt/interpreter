@@ -1,5 +1,11 @@
+#include <stdio.h>
+#include <assert.h>
+#include <stdlib.h>
+#include "bindings.h"
 
-int sum(int a, int b)
+Value sum(Value a, Value b)
 {
-    return a + b + 123;
+
+    a.number += b.number;
+    return a;
 }

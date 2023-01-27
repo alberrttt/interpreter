@@ -14,12 +14,12 @@ pub fn dissasemble_chunk(chunk: &Chunk, name: &str) {
             }
         })
         .for_each(|f| {
-            let function = &f.as_ref().borrow();
+            let function = unsafe { f.as_ref().unwrap() };
             dissasemble_chunk(&function.chunk, &function.name)
         });
     println!("{name} ----------------------");
     let mut instruction_ptr: usize = 0;
-    
+
     loop {
         if instruction_ptr >= chunk.code.len() {
             break;
