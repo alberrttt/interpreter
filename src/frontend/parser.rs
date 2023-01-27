@@ -1,6 +1,7 @@
 /// the parser will make an ast
 use std::{cell::RefCell, mem::transmute, ops::Range, rc::Rc};
 
+use clap::parser;
 use colored::Colorize;
 
 use crate::{cli_helper::Diagnostics, common::opcode::OpCode};
@@ -12,7 +13,7 @@ use super::{
         },
         expression::{
             binary_expr::BinaryExpr, block::Block, call_expr::CallExpr, if_expr::IfExpr,
-            variable_assignment::VariableAssignment, while_expr::WhileExpr, AsExpr, Expression,
+            while_expr::WhileExpr, AsExpr, Expression,
         },
         identifier::Identifier,
         literal::Literal,
@@ -118,18 +119,7 @@ impl<'a> Parser<'a> {
             },
             TokenKind::Identifier => Rule {
                 precedence: Precedence::None,
-                prefix: Some(|parser, can_assign| {
-                    let token = parser.previous().clone();
-                    let _global = parser.scope_depth == 0;
-                    if can_assign && parser.match_token(TokenKind::Equal) {
-                        return Expression::VariableAssignment(VariableAssignment {
-                            name: Identifier { value: token },
-                            initializer: Box::new(parser.expression().unwrap().to_expr()),
-                        })
-                        .to_node();
-                    }
-                    Identifier { value: token }.to_node()
-                }),
+                prefix: Some(Self::identifier),
                 infix: None,
             },
             TokenKind::Number => Rule {
@@ -424,6 +414,20 @@ impl<'a> Parser<'a> {
     }
 }
 impl Parser<'_> {
+    pub fn identifier(&mut self, can_assign: bool) -> Node {
+        let token = self.previous().clone();
+        let is_global = self.scope_depth == 0;
+        if can_assign && self.match_token(TokenKind::Equal) {
+            return BinaryExpr {
+                lhs: Box::new(Identifier { value: token }.to_node()),
+                op: self.previous().kind,
+                rhs: Box::new(self.expression().unwrap()),
+            }
+            .to_expr()
+            .to_node();
+        }
+        Identifier { value: token }.to_node()
+    }
     pub fn call_expr(&mut self, lhs: Node) -> Node {
         let identifier = lhs.as_identifier();
         let mut parameters: Vec<Expression> = Vec::new();

@@ -12,6 +12,7 @@ use crate::{
 use super::{
     ast::CompileToBytecode,
     bytecode::{self, Bytecode},
+    file::FileNode,
     parser::Parser,
     scanner::Scanner,
 };
@@ -63,7 +64,7 @@ impl<'a> Compiler<'a> {
         }
     }
 
-    pub fn compile(mut self, source: String) -> Result<Function, CompileResult> {
+    pub fn compile(mut self, source: String) -> Result<(Function, FileNode<'a>), CompileResult> {
         let scanner = Scanner::new(source);
 
         let parser = Parser::new(
@@ -81,6 +82,6 @@ impl<'a> Compiler<'a> {
         self.bytecode.function = function;
         parsed_file.to_bytecode(&mut self);
         self.bytecode.write_return_op();
-        Ok(self.bytecode.function)
+        Ok((self.bytecode.function, parsed_file))
     }
 }

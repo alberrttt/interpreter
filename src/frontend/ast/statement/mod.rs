@@ -45,12 +45,8 @@ impl CompileToBytecode for Statement {
                         expr.to_bytecode(compiler);
                         compiler.bytecode.function.chunk.emit_op(OpCode::Pop)
                     }
-                    Expression::VariableAssignment(_) => {
-                        expr.to_bytecode(compiler);
-                        compiler.bytecode.function.chunk.emit_op(OpCode::Pop)
-                    }
+
                     unused => {
-                        dbg!(unused);
                         expr.to_bytecode(compiler);
                         compiler.bytecode.function.chunk.emit_op(OpCode::Pop)
                     }

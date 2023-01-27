@@ -19,9 +19,14 @@ fn main() {
     let interner = Rc::new(RefCell::new(StringInterner::default()));
     let diagnostics = create_rc(Diagnostics::new(path));
     let compiler = Compiler::new(interner.clone(), diagnostics.clone(), FunctionType::Script);
-    let compiled = compiler.compile(source).unwrap();
+    let (compiled, file_node) = compiler.compile(source).unwrap();
     if cli.display_bytecode {
         dissasemble_chunk(&compiled.chunk, "main");
+    }
+    if cli.display_ast {
+        file_node.nodes.iter().for_each(|node| {
+            println!("{:?}", node);
+        })
     }
     let interner = Rc::try_unwrap(interner).unwrap().into_inner();
     let mut vm = VirtualMachine::new(interner);
@@ -44,4 +49,6 @@ struct Cli {
 
     #[arg(long = "dbc", help = "Displays the compiled bytecode")]
     display_bytecode: bool,
+    #[arg(long = "dast", help = "Displays the ast")]
+    display_ast: bool,
 }

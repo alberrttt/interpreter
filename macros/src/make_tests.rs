@@ -45,7 +45,7 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                     let mut diagnostics = Rc::new(RefCell::new(Diagnostics::new(Path::new(#path_string))));
                     let interner_ref = Rc::new(RefCell::new(interner));
                     let compiler = Compiler::new(interner_ref.clone(), diagnostics, FunctionType::Script);
-                    let compiled = compiler.compile(source).unwrap();
+                    let (compiled, _) = compiler.compile(source).unwrap();
 
                     let interner = Rc::try_unwrap(interner_ref).unwrap().into_inner();
                     let mut vm = VirtualMachine::new(interner);

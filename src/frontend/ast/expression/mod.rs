@@ -8,7 +8,7 @@ use crate::{
 
 use self::{
     binary_expr::BinaryExpr, block::Block, call_expr::CallExpr, if_expr::IfExpr,
-    variable_assignment::VariableAssignment, while_expr::WhileExpr,
+    while_expr::WhileExpr,
 };
 
 use super::{
@@ -24,7 +24,6 @@ pub mod binary_expr;
 pub mod block;
 pub mod call_expr;
 pub mod if_expr;
-pub mod variable_assignment;
 pub mod while_expr;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -32,7 +31,6 @@ pub enum Expression {
     Grouping(Box<Expression>),
     Binary(BinaryExpr),
     Literal(Literal),
-    VariableAssignment(VariableAssignment),
     Not(Box<Expression>),
     Negate(Box<Expression>),
     Block(Block),
@@ -74,7 +72,6 @@ impl CompileToBytecode for Expression {
             Expression::While(while_expr) => while_expr.to_bytecode(compiler),
             Expression::Grouping(inner) => inner.to_bytecode(compiler),
             Expression::Literal(literal) => literal.to_bytecode(compiler),
-            Expression::VariableAssignment(var) => var.to_bytecode(compiler),
             Expression::Not(expr) => {
                 expr.to_bytecode(compiler);
                 compiler.bytecode.function.chunk.emit_op(OpCode::Not);
@@ -86,26 +83,7 @@ impl CompileToBytecode for Expression {
             }
             Expression::Block(block) => block.to_bytecode(compiler),
             Expression::Identifier(identifier) => identifier.to_bytecode(compiler),
-            super::Expression::Binary(binary) => {
-                let BinaryExpr { lhs, rhs, op } = binary;
-                lhs.to_bytecode(compiler);
-                rhs.to_bytecode(compiler);
-
-                let chunk = &mut compiler.bytecode.function.chunk;
-                match op {
-                    TokenKind::Plus => compiler.bytecode.write_add_op(),
-                    TokenKind::Dash => compiler.bytecode.write_sub_op(),
-                    TokenKind::Star => compiler.bytecode.write_mul_op(),
-                    TokenKind::Slash => compiler.bytecode.write_div_op(),
-                    TokenKind::Greater => compiler.bytecode.write_greater_op(),
-                    TokenKind::GreaterEqual => compiler.bytecode.write_greater_eq_op(),
-                    TokenKind::Less => compiler.bytecode.write_less_op(),
-                    TokenKind::LessEqual => compiler.bytecode.write_less_eq_op(),
-                    TokenKind::EqualEqual => compiler.bytecode.write_equal_op(),
-                    TokenKind::BangEqual => compiler.bytecode.write_not_equal_op(),
-                    x => panic!("Invalid binary operator {}", x),
-                }
-            }
+            super::Expression::Binary(binary) => binary.to_bytecode(compiler),
         }
     }
 }
