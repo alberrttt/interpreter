@@ -257,6 +257,10 @@ impl VirtualMachine {
                     binary_op!(*)
                 }
                 OpCode::Pop => {
+                    drop(std::mem::take({
+                        let tmp = self.stack.len() - 1;
+                        &mut self.stack[tmp]
+                    }));
                     #[allow(unsafe_code)]
                     unsafe {
                         self.stack.set_len(self.stack.len() - 1);
