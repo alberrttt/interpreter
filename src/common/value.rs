@@ -18,7 +18,7 @@ pub enum Value {
     Number(f64),
     Boolean(bool),
     String(InternedString),
-    Function(Ptr<Function>),
+    Function(Rc<Function>),
     Array(Ptr<Vec<Value>>),
     Void,
     #[default]

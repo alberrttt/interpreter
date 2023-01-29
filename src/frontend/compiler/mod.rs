@@ -33,7 +33,6 @@ pub struct Compiler<'a> {
     pub parser: Parser<'a>,
     pub enclosing: Option<Enclosing<'a>>,
     pub diagnostics: Rc<RefCell<Diagnostics<'a>>>,
-    pub interner: Rc<RefCell<StringInterner>>,
     pub bytecode: Bytecode,
 }
 
@@ -50,7 +49,6 @@ pub enum CompileResult {
 }
 impl<'a> Compiler<'a> {
     pub fn new(
-        interner: Rc<RefCell<StringInterner>>,
         diagnostics: Rc<RefCell<Diagnostics<'a>>>,
         function_type: FunctionType,
     ) -> Compiler<'a> {
@@ -59,7 +57,6 @@ impl<'a> Compiler<'a> {
             parser: Parser::default(),
             enclosing: None,
             diagnostics,
-            interner,
             bytecode: Bytecode::default(),
         }
     }

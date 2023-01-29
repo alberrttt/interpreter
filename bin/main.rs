@@ -16,10 +16,12 @@ fn main() {
     let cli = Cli::parse();
     let path = Path::new(&cli.path);
     let source = read_to_string(path).unwrap();
-    let interner: Rc<RefCell<StringInterner>> = Rc::new(RefCell::new(StringInterner::default()));
     let diagnostics = create_rc(Diagnostics::new(path));
-    let compiler = Compiler::new(interner.clone(), diagnostics.clone(), FunctionType::Script);
+    let duration = Instant::now();
+    let compiler = Compiler::new(diagnostics.clone(), FunctionType::Script);
+    let elapsed = duration.elapsed();
     let (compiled, file_node) = compiler.compile(source).unwrap();
+    println!("Compiled in {}s", elapsed.as_secs_f64() * 1000.0);
     if cli.display_bytecode {
         dissasemble_chunk(&compiled.chunk, "main");
     }
@@ -28,8 +30,8 @@ fn main() {
             println!("{node:?}");
         })
     }
-    let interner = Rc::try_unwrap(interner).unwrap().into_inner();
-    let mut vm = VirtualMachine::new(interner);
+
+    let mut vm = VirtualMachine::new();
 
     vm.stack.push(Value::Void);
     vm.call(&compiled, 0);

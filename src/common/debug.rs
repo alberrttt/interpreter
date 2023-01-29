@@ -13,10 +13,7 @@ pub fn dissasemble_chunk(chunk: &Chunk, name: &str) {
                 None
             }
         })
-        .for_each(|f| {
-            let function = &f.as_ref().borrow();
-            dissasemble_chunk(&function.chunk, &function.name)
-        });
+        .for_each(|function| dissasemble_chunk(&function.chunk, &function.name));
     println!("{name} ----------------------");
     let mut instruction_ptr: usize = 0;
 

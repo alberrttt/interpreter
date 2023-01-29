@@ -2,8 +2,9 @@ use std::{collections::HashMap, time::Instant};
 
 use crate::common::{
     chunk::Chunk,
+    debug::diassasemble_instruction,
     function::Function,
-    interner::{InternedString, StringInterner},
+    interner::InternedString,
     natives::Native,
     opcode::OpCode,
     value::{AsValue, Value},
@@ -29,11 +30,10 @@ pub struct VirtualMachine {
     pub frame_count: usize,
     pub globals: HashMap<usize, Value>,
     pub natives: Vec<Native>,
-    pub interner: StringInterner,
 }
 
 impl VirtualMachine {
-    pub fn new(interner: StringInterner) -> VirtualMachine {
+    pub fn new() -> VirtualMachine {
         pub const CALLFRAME: CallFrame = CallFrame {
             function: std::ptr::null(),
             ip: 0,
@@ -53,7 +53,6 @@ impl VirtualMachine {
             ],
             globals: HashMap::new(),
             frame_count: 0,
-            interner,
         }
     }
     #[allow(clippy::not_unsafe_ptr_arg_deref, unsafe_code)]
@@ -83,7 +82,6 @@ impl VirtualMachine {
         let mut function = read_current_frame_fn!();
         let mut chunk = &function.chunk;
         let mut ip: usize = 0;
-        let _interner = &self.interner;
 
         macro_rules! pop {
             () => {{
@@ -134,11 +132,11 @@ impl VirtualMachine {
         }
         loop {
             let instruction = &chunk.code[ip];
-            // #[cfg(debug_assertions)]
-            // {
-            // print!("{ip} Executing ");
-            // diassasemble_instruction(ip, instruction, &function.chunk);
-            // }
+            #[cfg(debug_assertions)]
+            {
+                print!("{ip} Executing ");
+                diassasemble_instruction(ip, instruction, &function.chunk);
+            }
             ip += 1;
 
             match instruction.clone() {
@@ -219,7 +217,8 @@ impl VirtualMachine {
                 }
                 OpCode::GetGlobal(name) => {
                     let name = chunk.constants[name as usize].as_string();
-                    self.stack.push(self.globals.get(&name.0).unwrap().clone())
+                    let value = self.globals.get(&name.0).unwrap().clone();
+                    self.stack.push(value)
                 }
                 OpCode::SetGlobal(name) => {
                     let name = chunk.constants[name as usize].as_string();
@@ -315,9 +314,8 @@ impl VirtualMachine {
                     let Value::Function(callee) = callee else {
                         panic!()
                     };
-                    let callee: *const Function = callee.as_ptr() as *const _;
 
-                    self.call(callee, arg_count);
+                    self.call(callee.as_ref(), arg_count);
                     self.callframes[self.frame_count - 2].ip = ip;
 
                     // prepares for the next callframe
@@ -343,5 +341,11 @@ impl VirtualMachine {
                 }
             }
         }
+    }
+}
+
+impl Default for VirtualMachine {
+    fn default() -> Self {
+        Self::new()
     }
 }
