@@ -3,3 +3,4 @@ func param(n) {
 }
 
 param(4);
+#assert_stack [#void]

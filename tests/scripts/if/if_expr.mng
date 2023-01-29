@@ -1,9 +1,12 @@
-assert_eq if true {
+assert_eq  if true {
+    print("hello");
+    print("hello");
     return 2834;
 }, 2834;
-
-assert_eq if false {
+let x = if false {
     return 2834;
 } else {
     return 123;
-}, 123;
+};
+assert_eq x, 123;
+#assert_stack [#void]

@@ -19,7 +19,7 @@ pub fn dissasemble_chunk(chunk: &Chunk, name: &str) {
         });
     println!("{name} ----------------------");
     let mut instruction_ptr: usize = 0;
-    
+
     loop {
         if instruction_ptr >= chunk.code.len() {
             break;
@@ -44,17 +44,22 @@ pub fn diassasemble_instruction(
         | OpCode::DefineLocal(pos) => {
             let constant = &chunk.constants[*pos as usize];
 
-            println!("{} <{:?}>", instruction, constant)
+            println!("{instruction} <{constant:?}>")
         }
-
+        OpCode::CallFnArgPtr(_, args) => {
+            println!("{instruction} {args}")
+        }
+        OpCode::CallNative(location) => {
+            println!("{instruction} <idx:{location}>")
+        }
         OpCode::JumpTo(offset)
         | OpCode::JumpToIfFalse(offset)
         | OpCode::PopJumpToIfFalse(offset)
         | OpCode::Call(offset) => {
-            println!("{} {}", instruction, offset)
+            println!("{instruction} {offset}")
         }
         OpCode::GetLocal(pos) | OpCode::SetLocal(pos) => {
-            println!("{} {}", instruction, pos)
+            println!("{instruction} {pos}")
         }
 
         _ => println!("{}", instruction),

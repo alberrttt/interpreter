@@ -16,7 +16,7 @@ fn main() {
     let cli = Cli::parse();
     let path = Path::new(&cli.path);
     let source = read_to_string(path).unwrap();
-    let interner = Rc::new(RefCell::new(StringInterner::default()));
+    let interner: Rc<RefCell<StringInterner>> = Rc::new(RefCell::new(StringInterner::default()));
     let diagnostics = create_rc(Diagnostics::new(path));
     let compiler = Compiler::new(interner.clone(), diagnostics.clone(), FunctionType::Script);
     let (compiled, file_node) = compiler.compile(source).unwrap();
@@ -25,7 +25,7 @@ fn main() {
     }
     if cli.display_ast {
         file_node.nodes.iter().for_each(|node| {
-            println!("{:?}", node);
+            println!("{node:?}");
         })
     }
     let interner = Rc::try_unwrap(interner).unwrap().into_inner();

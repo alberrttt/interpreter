@@ -83,5 +83,5 @@ pub enum OpCode {
     #[default]
     Nop,
     CallNative(u16),
-    CallNativeArgPtr(u16, *const [Value]),
+    CallFnArgPtr(u8, u8),
 }

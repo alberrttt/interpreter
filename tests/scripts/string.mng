@@ -1,1 +1,11 @@
-assert_eq "foobar"+"123", "foobar123";
+let x = "foobar"+"123";
+#debug_stack
+assert_eq x, "foobar123";
+#assert_stack [#void] 
+{
+    let x = "foobar"+"123";
+    #debug_stack
+    assert_eq x, "foobar123";
+    #assert_stack [#void, "foobar123"] // we need to add "foobar123" to the comparison because
+    // it doesn't get popped off until the end of the block
+}

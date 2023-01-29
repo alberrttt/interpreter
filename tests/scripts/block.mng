@@ -3,4 +3,4 @@
 }
 
 #debug_stack
-#assert_stack []
+#assert_stack [#void]

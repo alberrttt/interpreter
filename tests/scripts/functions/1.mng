@@ -4,3 +4,4 @@ func function() {
 
 
 function();
+#assert_stack [#void]

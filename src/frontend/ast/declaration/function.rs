@@ -43,7 +43,8 @@ impl CompileToBytecode for FunctionDeclaration {
 
             // finally compiles the block
             self.block.to_bytecode(&mut temp_compiler);
-
+            // unecessary return if the source code for the function already includes one
+            // i.e `func x() {return 1;}` will have two return ops
             temp_compiler
                 .bytecode
                 .function

@@ -50,6 +50,8 @@ impl PartialEq for Value {
             (Self::Number(l0), Self::Number(r0)) => l0 == r0,
             (Self::Boolean(l0), Self::Boolean(r0)) => l0 == r0,
             (Self::String(l0), Self::String(r0)) => l0.eq(r0),
+            (Self::Void, Self::Void) => true,
+            (Self::None, Self::None) => true,
             _ => false,
         }
     }

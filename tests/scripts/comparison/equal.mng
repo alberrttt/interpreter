@@ -1,2 +1,3 @@
 assert_eq 3==4, false;
 assert_eq 8*8+2==66,true;
+#assert_stack [#void]

@@ -21,7 +21,19 @@ pub enum Node {
     None,
     /// use this one if you don't want the node to be emitted
     Empty,
-    Emit(fn(compiler: &mut Compiler) -> ()),
+    Emit(EmitFn),
+}
+
+pub struct EmitFn(pub Box<dyn Fn(&mut Compiler)>);
+impl Clone for EmitFn {
+    fn clone(&self) -> Self {
+        panic!("EmitFn is not clonable")
+    }
+}
+impl From<EmitFn> for Node {
+    fn from(value: EmitFn) -> Self {
+        Node::Emit(value)
+    }
 }
 impl Debug for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -93,7 +105,7 @@ impl CompileToBytecode for Node {
             Node::Identifier(identifier) => identifier.to_bytecode(compiler),
             Node::Literal(literal) => literal.to_bytecode(compiler),
             Node::Declaration(declaration) => declaration.to_bytecode(compiler),
-            Node::Emit(emit) => emit(compiler),
+            Node::Emit(emit) => (emit.0)(compiler),
             _ => unimplemented!(),
         }
     }

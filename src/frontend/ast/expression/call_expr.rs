@@ -5,11 +5,11 @@ use crate::{
 
 use super::{AsExpr, Expression};
 #[derive(Debug, Clone, PartialEq)]
-pub struct CallExpr {
+pub struct Call {
     pub identifier: Identifier,
     pub parameters: Box<Vec<Expression>>,
 }
-impl CompileToBytecode for CallExpr {
+impl CompileToBytecode for Call {
     fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         self.identifier.to_bytecode(compiler);
         self.parameters
@@ -22,7 +22,7 @@ impl CompileToBytecode for CallExpr {
             .emit_op(OpCode::Call(self.parameters.len()));
     }
 }
-impl AsExpr for CallExpr {
+impl AsExpr for Call {
     fn to_expr(self) -> super::Expression {
         super::Expression::CallExpr(self)
     }

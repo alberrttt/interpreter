@@ -31,7 +31,6 @@ impl AsExpr for Statement {
 }
 impl CompileToBytecode for Statement {
     fn to_bytecode(&self, compiler: &mut Compiler) {
-        assert!(!compiler.bytecode.compiling_statement);
         compiler.bytecode.compiling_statement = true;
         match self {
             Statement::Return(return_stmt) => return_stmt.to_bytecode(compiler),

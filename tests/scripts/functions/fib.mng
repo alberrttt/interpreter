@@ -7,3 +7,4 @@ func fib(n) {
 }
 
 assert_eq fib(30), 832040;
+#assert_stack [#void]

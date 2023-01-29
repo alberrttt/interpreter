@@ -1,10 +1,10 @@
 /// the parser will make an ast
-use std::{cell::RefCell, mem::transmute, ops::Range, rc::Rc};
+use std::{alloc::Layout, cell::RefCell, mem::transmute, ops::Range, rc::Rc};
 
 use clap::parser;
 use colored::Colorize;
 
-use crate::{cli_helper::Diagnostics, common::opcode::OpCode};
+use crate::{cli_helper::Diagnostics, common::opcode::OpCode, frontend::ast::CompileToBytecode};
 
 use super::{
     ast::{
@@ -12,12 +12,12 @@ use super::{
             function::FunctionDeclaration, variable_declaration::VariableDeclaration, AsDeclaration,
         },
         expression::{
-            binary_expr::BinaryExpr, block::Block, call_expr::CallExpr, if_expr::IfExpr,
-            while_expr::WhileExpr, AsExpr, Expression,
+            binary_expr::BinaryExpr, block::Block, call_expr::Call, if_expr::If, while_expr::While,
+            AsExpr, Expression,
         },
         identifier::Identifier,
         literal::Literal,
-        node::{AsNode, Node},
+        node::{AsNode, EmitFn, Node},
         statement::{return_stmt::ReturnStmt, Statement},
     },
     compiler::{Compiler, FunctionType},
@@ -66,6 +66,21 @@ pub struct Rule<'a> {
 impl<'a> Parser<'a> {
     pub fn get_rule(kind: TokenKind) -> Rule<'a> {
         match kind {
+            TokenKind::Hash => Rule {
+                precedence: Precedence::None,
+                prefix: Some(|parser, _can_assign| {
+                    parser.advance();
+                    let ident = parser.previous();
+                    if ident.lexeme.eq("void") {
+                        return EmitFn(Box::new(|compiler| {
+                            compiler.bytecode.write_void_op();
+                        }))
+                        .into();
+                    }
+                    panic!()
+                }),
+                infix: None,
+            },
             TokenKind::LeftParen => Rule {
                 precedence: Precedence::Grouping,
                 prefix: Some(|parser: &mut Parser, _can_assign: bool| {
@@ -178,7 +193,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn at_end(&mut self) -> bool {
-        self.scanner.at_end()
+        self.current().kind.eq(&TokenKind::EOF)
     }
     pub fn precedence(&mut self, prec: Precedence) -> Result<Node, String> {
         self.advance();
@@ -258,18 +273,20 @@ impl<'a> Parser<'a> {
                 if self.match_token(TokenKind::Identifier) {
                     match self.previous().lexeme.as_str() {
                         "void" => {
-                            return Node::Emit(|compiler| {
+                            return EmitFn(Box::new(|compiler| {
                                 compiler.bytecode.function.chunk.emit_op(OpCode::Void);
-                            })
+                            }))
+                            .into()
                         }
                         "debug_stack" => {
-                            return Node::Emit(|compiler| {
+                            return EmitFn(Box::new(|compiler| {
                                 compiler
                                     .bytecode
                                     .function
                                     .chunk
                                     .emit_op(OpCode::CallNative(0))
-                            })
+                            }))
+                            .into()
                         }
                         "assert_stack" => {
                             self.consume(TokenKind::LeftBracket, "expected left bracket to close");
@@ -284,7 +301,13 @@ impl<'a> Parser<'a> {
                                     break;
                                 }
                             }
-                            return Node::Emit(|_compiler| todo!());
+                            return EmitFn(Box::new(move |compiler| {
+                                exprs.iter().for_each(|expr| expr.to_bytecode(compiler));
+                                compiler
+                                    .bytecode
+                                    .write_call_fn_arg_ptr_op(1, exprs.len() as u8);
+                            }))
+                            .into();
                         }
                         _ => return self.node(),
                     }
@@ -443,7 +466,7 @@ impl Parser<'_> {
                 break;
             }
         }
-        CallExpr {
+        Call {
             parameters: Box::new(parameters),
             identifier,
         }
@@ -454,7 +477,7 @@ impl Parser<'_> {
         let condition = self.expression().unwrap().to_expr();
         let block = self.expression().unwrap().to_expr().as_block();
 
-        WhileExpr {
+        While {
             predicate: Box::new(condition),
             block,
         }
@@ -470,7 +493,7 @@ impl Parser<'_> {
             let block = self.expression().unwrap().to_expr().as_block();
             else_block = Some(block)
         }
-        IfExpr {
+        If {
             predicate: Box::new(condition),
             then,
             else_block,

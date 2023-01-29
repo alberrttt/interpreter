@@ -1,2 +1,3 @@
 assert_eq 223 >= 223, true;
 assert_eq 223 >= 222, true;
+#assert_stack [#void]

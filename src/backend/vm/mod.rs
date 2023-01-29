@@ -3,7 +3,7 @@ use std::{collections::HashMap, time::Instant};
 use crate::common::{
     chunk::Chunk,
     function::Function,
-    interner::StringInterner,
+    interner::{InternedString, StringInterner},
     natives::Native,
     opcode::OpCode,
     value::{AsValue, Value},
@@ -42,7 +42,15 @@ impl VirtualMachine {
         VirtualMachine {
             callframes: [CALLFRAME; 2048],
             stack: vec![],
-            natives: vec![(Native(|_: &[Value], vm: _| println!("stack dump: {:?}", vm.stack)))],
+            natives: vec![
+                Native(|_: &[Value], vm: _| println!("stack dump: {:?}", vm.stack)),
+                Native(|args: &[Value], vm: _| {
+                    println!("stack comparison: {:?} == {:?}", args, &vm.stack);
+                    if args.ne(&vm.stack) {
+                        panic!("stack assertion failed")
+                    }
+                }),
+            ],
             globals: HashMap::new(),
             frame_count: 0,
             interner,
@@ -52,13 +60,10 @@ impl VirtualMachine {
     pub fn call(&mut self, function: *const Function, arg_count: usize) {
         let arity = unsafe { (*function).arity };
         if arg_count != arity as usize {
-            panic!(
-                "mismatched argument counts! expected {} got {arg_count}",
-                arity
-            )
+            panic!("mismatched argument counts! expected {arity} got {arg_count}")
         }
 
-        let frame = &mut self.callframes[self.frame_count];
+        let frame: &mut CallFrame = &mut self.callframes[self.frame_count];
         frame.function = function;
         frame.slots = self.stack.len() - (arg_count + 1);
 
@@ -90,9 +95,7 @@ impl VirtualMachine {
                 unsafe {
                     self.stack.set_len(i);
                 }
-                if tmp.eq(&Value::Void) {
-                    panic!()
-                }
+
                 tmp
             }};
         }
@@ -148,11 +151,16 @@ impl VirtualMachine {
                 OpCode::NotEqual => {
                     binary_op_bool!(!=)
                 }
-                OpCode::CallNativeArgPtr(_, _) => {
-                    todo!();
-                    // let native = &self.natives[location as usize];
-                    // let args = unsafe { &*ptr };
-                    // native.0(args, &self)
+                OpCode::CallFnArgPtr(location, args) => {
+                    // generate code only for CallFnArgPtr
+                    let native = &self.natives[location as usize];
+                    // rewrite the following line, but pop the args from the stack
+                    let drain: Vec<_> = self
+                        .stack
+                        .drain(self.stack.len() - args as usize..)
+                        .collect();
+                    let args = drain.as_slice();
+                    (native.0)(args, &self);
                 }
                 OpCode::CallNative(location) => {
                     let native = &self.natives[location as usize];
@@ -237,15 +245,15 @@ impl VirtualMachine {
                             };
                             *lhs += rhs;
                         }
-                        Value::String(lhs) => {
+                        Value::String(string_ref) => {
                             let Value::String(rhs) = rhs else {
                                 panic!("lhs {:?}\nrhs{:?}",lhs,rhs);
                             };
 
-                            let mut lhs: String = (*lhs).into();
+                            let mut lhs: String = (*string_ref).into();
                             let rhs: String = rhs.into();
                             lhs.push_str(rhs.as_str());
-                            self.stack.push(lhs.to_value());
+                            *string_ref = InternedString::from(lhs.as_ref());
                         }
                         _ => unimplemented!(),
                     }
@@ -301,6 +309,7 @@ impl VirtualMachine {
                     self.stack.truncate(self.callframes[self.frame_count].slots);
                     self.stack.push(returning);
                 }
+                // room for improvement
                 OpCode::Call(arg_count) => {
                     let callee = &self.stack[self.stack.len() - (1 + arg_count)];
                     let Value::Function(callee) = callee else {

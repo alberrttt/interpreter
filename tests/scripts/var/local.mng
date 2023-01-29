@@ -6,3 +6,4 @@
     assert_eq test, 3; 
     assert_eq var1, "awdawd";
 }
+#assert_stack [#void]

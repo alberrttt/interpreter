@@ -6,19 +6,19 @@ use crate::{
 use super::{block::Block, AsExpr, Expression};
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct IfExpr {
+pub struct If {
     pub predicate: Box<Expression>,
     pub then: Block,
     pub else_block: Option<Block>,
 }
-impl AsExpr for IfExpr {
+impl AsExpr for If {
     fn to_expr(self) -> super::Expression {
         super::Expression::If(self)
     }
 }
 
 /// GUAGE YOUR EYES OUT
-impl CompileToBytecode for IfExpr {
+impl CompileToBytecode for If {
     fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         self.predicate.to_bytecode(compiler);
         let predicate_jump = compiler.emit_pop_jump_if_false();

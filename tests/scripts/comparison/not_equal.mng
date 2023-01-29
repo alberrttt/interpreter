@@ -1,2 +1,3 @@
 assert_eq 3!=3,false;
 assert_eq 3782!=23*423,true;
+#assert_stack [#void]

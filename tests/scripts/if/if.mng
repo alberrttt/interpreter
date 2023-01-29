@@ -4,3 +4,4 @@ if true {
     x = 456;
 }
 assert_eq x, 456;
+#assert_stack [#void]

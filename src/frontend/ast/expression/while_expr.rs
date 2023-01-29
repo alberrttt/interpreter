@@ -3,17 +3,17 @@ use crate::{common::opcode::OpCode, frontend::ast::CompileToBytecode};
 use super::{block::Block, AsExpr, Expression};
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct WhileExpr {
+pub struct While {
     pub predicate: Box<Expression>,
     pub block: Block,
 }
-impl AsExpr for WhileExpr {
+impl AsExpr for While {
     fn to_expr(self) -> Expression {
         Expression::While(self)
     }
 }
 /// GUAGE YOUR EYES OUT
-impl CompileToBytecode for WhileExpr {
+impl CompileToBytecode for While {
     fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         let predicate = compiler.bytecode.function.chunk.code.len();
 

@@ -7,8 +7,7 @@ use crate::{
 };
 
 use self::{
-    binary_expr::BinaryExpr, block::Block, call_expr::CallExpr, if_expr::IfExpr,
-    while_expr::WhileExpr,
+    binary_expr::BinaryExpr, block::Block, call_expr::Call, if_expr::If, while_expr::While,
 };
 
 use super::{
@@ -35,9 +34,9 @@ pub enum Expression {
     Negate(Box<Expression>),
     Block(Block),
     Identifier(Identifier),
-    If(IfExpr),
-    While(WhileExpr),
-    CallExpr(CallExpr),
+    If(If),
+    While(While),
+    CallExpr(Call),
 }
 impl AsNode for Expression {
     fn to_node(self) -> Node {
