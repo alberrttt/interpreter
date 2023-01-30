@@ -6,13 +6,11 @@ use limesherbet::{
     cli_helper::Diagnostics,
     common::{debug::dissasemble_chunk, interner::StringInterner, opcode::OpCode, value::Value},
     frontend::compiler::{Compiler, FunctionType},
+    rust_bindings::sum,
 };
-mod test;
-fn main() {
-    #[cfg(debug_assertions)]
-    {
-        test::test()
-    }
+pub fn main() {
+    println!("{}", unsafe { sum(-12, 2) });
+
     let cli = Cli::parse();
     let path = Path::new(&cli.path);
     let source = read_to_string(path).unwrap();

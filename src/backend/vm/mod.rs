@@ -43,12 +43,14 @@ impl VirtualMachine {
             callframes: [CALLFRAME; 2048],
             stack: vec![],
             natives: vec![
-                Native(|_: &[Value], vm: _| println!("stack dump: {:?}", vm.stack)),
-                Native(|args: &[Value], vm: _| {
+                Native(|_: _, vm: _| println!("stack dump: {:?}", vm.stack)),
+                Native(|args: &mut Vec<Value>, vm: &VirtualMachine| {
+                    let args = std::mem::take(args);
                     println!("stack comparison: {:?} == {:?}", args, &vm.stack);
-                    if args.ne(&vm.stack) {
-                        panic!("stack assertion failed")
-                    }
+                    assert_eq!(args, vm.stack);
+                }),
+                Native(|args: _, vm: _| {
+                    let arg = args.pop().unwrap();
                 }),
             ],
             globals: HashMap::new(),
@@ -157,13 +159,13 @@ impl VirtualMachine {
                         .stack
                         .drain(self.stack.len() - args as usize..)
                         .collect();
-                    let args = drain.as_slice();
-                    (native.0)(args, &self);
+                    let mut args = drain.to_vec();
+                    (native.0)(&mut args, &self);
                 }
                 OpCode::CallNative(location) => {
                     let native = &self.natives[location as usize];
-                    let args = [];
-                    (native.0)(&args, &self);
+                    let mut args: Vec<Value> = vec![];
+                    (native.0)(&mut args, &self);
                 }
                 OpCode::JumpTo(offset) => {
                     ip = offset;

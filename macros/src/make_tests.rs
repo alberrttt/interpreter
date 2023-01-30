@@ -40,15 +40,14 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                     use std::path::Path;
                     use std::fs::read_to_string;
 
-                    let interner = StringInterner::default();
+
                     let source = read_to_string(Path::new(#path_string)).unwrap();
                     let mut diagnostics = Rc::new(RefCell::new(Diagnostics::new(Path::new(#path_string))));
-                    let interner_ref = Rc::new(RefCell::new(interner));
-                    let compiler = Compiler::new(interner_ref.clone(), diagnostics, FunctionType::Script);
+
+                    let compiler = Compiler::new(diagnostics, FunctionType::Script);
                     let (compiled, _) = compiler.compile(source).unwrap();
 
-                    let interner = Rc::try_unwrap(interner_ref).unwrap().into_inner();
-                    let mut vm = VirtualMachine::new(interner);
+                    let mut vm = VirtualMachine::new();
                     vm.stack.push(Value::Void);
                     vm.call(&compiled,0);
                     vm.run();
