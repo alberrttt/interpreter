@@ -51,6 +51,7 @@ impl VirtualMachine {
                 }),
                 Native(|args: _, vm: _| {
                     let arg = args.pop().unwrap();
+                    
                 }),
             ],
             globals: HashMap::new(),

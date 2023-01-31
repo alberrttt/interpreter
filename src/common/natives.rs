@@ -1,9 +1,10 @@
 use std::fmt::Debug;
 
+use macros::native_macro;
 use phf::phf_map;
 use strum::Display;
 
-use crate::backend::vm::VirtualMachine;
+use crate::backend::vm::{natives, VirtualMachine};
 
 use super::value::Value;
 #[repr(u8)]
@@ -13,7 +14,6 @@ pub enum Natives {
     Num,
 }
 
-pub static NATIVES: phf::Map<Natives, Native> = phf_map! {};
 pub struct Native(pub fn(args: &mut Vec<Value>, vm: &VirtualMachine));
 impl Debug for Native {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -25,4 +25,9 @@ impl From<Natives> for usize {
     fn from(native: Natives) -> Self {
         native as usize
     }
+}
+
+native_macro! {
+    ident => Native(),
+    hello => Native()
 }
