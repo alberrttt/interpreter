@@ -1,5 +1,5 @@
 use proc_macro::{Ident, TokenStream};
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{parse::Parse, parse_macro_input, Arm, Expr, Macro, Pat, PatIdent};
 // target use of macro
 // use limesherbet_macros::native_macro;
@@ -8,30 +8,38 @@ use syn::{parse::Parse, parse_macro_input, Arm, Expr, Macro, Pat, PatIdent};
 pub fn native(input: TokenStream) -> TokenStream {
     let parsed = parse_macro_input!(input as Arms);
     let mut static_array: Vec<Expr> = Vec::new();
-    let len = static_array.len();
     let binding = parsed.clone();
-    let index_macros = binding.0.iter().enumerate().map(|(index, arm)| {
+    let mut index_macros = Vec::new();
+    binding.0.iter().enumerate().for_each(|(index, arm)| {
         let arm = arm;
         let Pat::Ident(PatIdent { ident, .. }) = arm.pat.clone() else {
             panic!()
         };
-        return create_macro(ident, index);
+        static_array.push(*arm.body.clone());
+        index_macros.push(create_macro(ident, index));
     });
+    let static_array = static_array.clone();
+    let len = static_array.len();
+
     quote! {
+        pub const NATIVES_LEN: usize = #len;
         pub static NATIVES: [Native; #len] = [#(#static_array),*];
-        #(#index_macros)*
+        pub mod MACROS {
+            #(#index_macros)*
+        }
     }
     .into()
 }
 
 fn create_macro(name: syn::Ident, index: usize) -> proc_macro2::TokenStream {
+    let name = format_ident!("idx_{}", name);
     quote! {
-        macro_rules!  {
+        macro_rules! #name {
             () => {
                 #index
             };
         }
-
+        pub(crate) use #name;
     }
 }
 

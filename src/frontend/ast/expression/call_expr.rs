@@ -11,6 +11,16 @@ pub struct Call {
 }
 impl CompileToBytecode for Call {
     fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
+        // if let "to_str" = self.identifier.value.lexeme.as_str() {
+        //     self.parameters
+        //         .iter()
+        //         .for_each(|param| param.clone().to_bytecode(compiler));
+        //     compiler
+        //         .bytecode
+        //         .write_call_fn_arg_ptr_op(idx_to_str!(), field1);
+        //     return;
+        // }
+
         self.identifier.to_bytecode(compiler);
         self.parameters
             .iter()

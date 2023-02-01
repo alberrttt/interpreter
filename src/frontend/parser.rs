@@ -4,9 +4,8 @@ use std::{alloc::Layout, cell::RefCell, mem::transmute, ops::Range, rc::Rc};
 use clap::parser;
 use colored::Colorize;
 
-use crate::{cli_helper::Diagnostics, common::opcode::OpCode, frontend::ast::CompileToBytecode};
-
-use super::{
+use crate::backend::vm::natives::MACROS::*;
+use crate::frontend::{
     ast::{
         declaration::{
             function::FunctionDeclaration, variable_declaration::VariableDeclaration, AsDeclaration,
@@ -25,6 +24,7 @@ use super::{
     scanner::{Position, Scanner, Token, TokenKind},
     Precedence,
 };
+use crate::{cli_helper::Diagnostics, common::opcode::OpCode, frontend::ast::CompileToBytecode};
 
 #[derive(Debug)]
 pub struct CompilerRef<'a>(pub *const Compiler<'a>);
@@ -284,7 +284,7 @@ impl<'a> Parser<'a> {
                                     .bytecode
                                     .function
                                     .chunk
-                                    .emit_op(OpCode::CallNative(0))
+                                    .emit_op(OpCode::CallNative(idx_debug_stack!() as u16))
                             }))
                             .into()
                         }
@@ -303,9 +303,10 @@ impl<'a> Parser<'a> {
                             }
                             return EmitFn(Box::new(move |compiler| {
                                 exprs.iter().for_each(|expr| expr.to_bytecode(compiler));
-                                compiler
-                                    .bytecode
-                                    .write_call_fn_arg_ptr_op(1, exprs.len() as u8);
+                                compiler.bytecode.write_call_fn_arg_ptr_op(
+                                    idx_assert_stack!() as u8,
+                                    exprs.len() as u8,
+                                );
                             }))
                             .into();
                         }

@@ -1,14 +1,19 @@
 use std::{collections::HashMap, time::Instant};
 
-use crate::common::{
-    chunk::Chunk,
-    debug::diassasemble_instruction,
-    function::Function,
-    interner::InternedString,
-    natives::Native,
-    opcode::OpCode,
-    value::{AsValue, Value},
+use crate::{
+    backend::vm::natives::NATIVES,
+    common::{
+        chunk::Chunk,
+        debug::diassasemble_instruction,
+        function::Function,
+        interner::InternedString,
+        natives::Native,
+        opcode::OpCode,
+        value::{AsValue, Value},
+    },
 };
+
+use self::natives::NATIVES_LEN;
 
 use super::callframe::CallFrame;
 
@@ -29,7 +34,7 @@ pub struct VirtualMachine {
     pub callframes: [CallFrame; 2048],
     pub frame_count: usize,
     pub globals: HashMap<usize, Value>,
-    pub natives: Vec<Native>,
+    pub natives: &'static [Native; NATIVES_LEN],
 }
 
 impl VirtualMachine {
@@ -42,18 +47,7 @@ impl VirtualMachine {
         VirtualMachine {
             callframes: [CALLFRAME; 2048],
             stack: vec![],
-            natives: vec![
-                Native(|_: _, vm: _| println!("stack dump: {:?}", vm.stack)),
-                Native(|args: &mut Vec<Value>, vm: &VirtualMachine| {
-                    let args = std::mem::take(args);
-                    println!("stack comparison: {:?} == {:?}", args, &vm.stack);
-                    assert_eq!(args, vm.stack);
-                }),
-                Native(|args: _, vm: _| {
-                    let arg = args.pop().unwrap();
-                    
-                }),
-            ],
+            natives: &NATIVES,
             globals: HashMap::new(),
             frame_count: 0,
         }
@@ -73,12 +67,17 @@ impl VirtualMachine {
     }
     pub fn run(mut self) {
         let start = Instant::now();
-        let mut current_frame = &self.callframes[self.frame_count - 1];
+        let mut current_frame = &self.callframes[self.frame_count - 1] as *const CallFrame;
+        macro_rules! current_frame {
+            () => {
+                unsafe { &*current_frame }
+            };
+        }
         macro_rules! read_current_frame_fn {
             () => {{
                 #[allow(unsafe_code)]
                 unsafe {
-                    &(*current_frame.function)
+                    &(*(*current_frame).function)
                 }
             }};
         }
@@ -144,7 +143,7 @@ impl VirtualMachine {
 
             match instruction.clone() {
                 OpCode::SetLocalConsumes(index) => {
-                    self.stack[index as usize + 1 + current_frame.slots] = pop!();
+                    self.stack[index as usize + 1 + current_frame!().slots] = pop!();
                 }
                 OpCode::Equal => {
                     binary_op_bool!(==)
@@ -161,12 +160,16 @@ impl VirtualMachine {
                         .drain(self.stack.len() - args as usize..)
                         .collect();
                     let mut args = drain.to_vec();
-                    (native.0)(&mut args, &self);
+                    {
+                        (native.0)(&mut self, args);
+                    }
                 }
                 OpCode::CallNative(location) => {
                     let native = &self.natives[location as usize];
                     let mut args: Vec<Value> = vec![];
-                    (native.0)(&mut args, &self);
+                    {
+                        (native.0)(&mut self, args);
+                    }
                 }
                 OpCode::JumpTo(offset) => {
                     ip = offset;
@@ -208,11 +211,11 @@ impl VirtualMachine {
                     self.stack.push(chunk.constants[location as usize].clone())
                 }
                 OpCode::GetLocal(index) => {
-                    let value = self.stack[index as usize + 1 + current_frame.slots].clone();
+                    let value = self.stack[index as usize + 1 + current_frame!().slots].clone();
                     self.stack.push(value)
                 }
                 OpCode::SetLocal(index) => {
-                    self.stack[index as usize + 1 + current_frame.slots] =
+                    self.stack[index as usize + 1 + current_frame!().slots] =
                         self.stack.last().unwrap().clone();
                 }
                 OpCode::DefineLocal(location) => {
@@ -307,7 +310,7 @@ impl VirtualMachine {
                     current_frame = &self.callframes[self.frame_count - 1];
                     function = read_current_frame_fn!();
                     chunk = &function.chunk;
-                    ip = current_frame.ip;
+                    ip = current_frame!().ip;
                     self.stack.truncate(self.callframes[self.frame_count].slots);
                     self.stack.push(returning);
                 }
