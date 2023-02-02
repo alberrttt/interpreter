@@ -13,16 +13,13 @@ native_macro! {
 }
 
 pub fn to_str(vm: &mut VirtualMachine, mut args: Vec<Value>) {
-    let vm = unsafe { &mut *vm };
     let arg = args.pop().unwrap();
-    vm.stack.push(format!("{}", arg).to_value());
+    vm.stack.push(arg.to_string().to_value());
 }
 pub fn debug_stack(vm: &mut VirtualMachine, _: Vec<Value>) {
-    let vm = unsafe { &mut *vm };
     println!("Stack: {:?}", vm.stack);
 }
-pub fn assert_stack(vm: &mut VirtualMachine, mut args: Vec<Value>) {
-    let vm = unsafe { &mut *vm };
+pub fn assert_stack(vm: &mut VirtualMachine, args: Vec<Value>) {
     println!("stack comparison: {:?} == {:?}", args, &vm.stack);
     assert_eq!(args, vm.stack);
 }
