@@ -49,12 +49,12 @@ impl CompileToBytecode for FunctionDeclaration {
             temp_compiler.bytecode.function
         };
 
-        compiler
+        let location = compiler
             .bytecode
             .function
             .chunk
-            .emit_constant(Value::Function(function.into()));
-
+            .emit_value(Value::Function(function.into()));
+        compiler.bytecode.write_closure_op(location);
         if compiler.in_scope() {
             compiler.add_local(self.name.value.clone());
         } else {

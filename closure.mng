@@ -1,9 +1,10 @@
-let x = "global";
-func outer() {
-    let x = "outer";
-    func inner() {
-        print(x);
-    }
-    inner();
+func makeClosure() {
+  let local = "local";
+  func closure() {
+    print local;
+  }
+  return closure;
 }
-outer();
+
+let closure = makeClosure();
+closure();

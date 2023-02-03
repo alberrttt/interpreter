@@ -1,0 +1,9 @@
+let x = "global";
+func outer() {
+  let x = "outer";
+  func inner() {
+    print x;
+  }
+  inner();
+}
+outer();

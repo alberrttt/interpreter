@@ -8,6 +8,7 @@ use std::{
 };
 
 use super::{
+    closure::Closure,
     function::Function,
     interner::{InternedString, STRING_INTERNER},
 };
@@ -20,6 +21,7 @@ pub enum Value {
     String(InternedString),
     Function(Rc<Function>),
     Array(Ptr<Vec<Value>>),
+    Closure(Closure),
     Void,
     #[default]
     None,
@@ -40,6 +42,7 @@ impl Debug for Value {
             Self::Function(_arg0) => f.debug_tuple("Function").finish(),
             Self::Void => write!(f, "Void"),
             Self::None => write!(f, "None"),
+            Self::Closure(closure) => write!(f, "<closure {:?}>", closure.func),
         }
     }
 }
@@ -117,6 +120,9 @@ impl Display for Value {
             }
             Value::Function(function) => {
                 write!(f, "<func {:?}>", addr_of!(function))
+            }
+            Value::Closure(function) => {
+                write!(f, "<closure {:?}>", addr_of!(function))
             }
             Value::Array(array) => {
                 let tmp = array.as_ref().borrow();

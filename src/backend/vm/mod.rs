@@ -4,6 +4,7 @@ use crate::{
     backend::vm::natives::NATIVES,
     common::{
         chunk::Chunk,
+        closure::Closure,
         debug::diassasemble_instruction,
         function::Function,
         interner::InternedString,
@@ -53,14 +54,16 @@ impl VirtualMachine {
         }
     }
     #[allow(clippy::not_unsafe_ptr_arg_deref, unsafe_code)]
-    pub fn call(&mut self, function: *const Function, arg_count: usize) {
-        let arity = unsafe { (*function).arity };
+    pub fn call(&mut self, closure: *const Closure, arg_count: usize) {
+        let closure = unsafe { &*closure };
+        let function = &closure.func;
+        let arity = function.arity;
         if arg_count != arity as usize {
             panic!("mismatched argument counts! expected {arity} got {arg_count}")
         }
 
         let frame: &mut CallFrame = &mut self.callframes[self.frame_count];
-        frame.function = function;
+        frame.function = function.as_ref();
         frame.slots = self.stack.len() - (arg_count + 1);
 
         self.frame_count += 1;
@@ -142,6 +145,14 @@ impl VirtualMachine {
             ip += 1;
 
             match instruction.clone() {
+                OpCode::Closure(location) => {
+                    let function = &chunk.constants[location as usize];
+                    let Value::Function(function) = function else {
+                        panic!()
+                    };
+                    let closure: Closure = function.into();
+                    self.stack.push(Value::Closure(closure))
+                }
                 OpCode::SetLocalConsumes(index) => {
                     self.stack[index as usize + 1 + current_frame!().slots] = pop!();
                 }
@@ -317,11 +328,11 @@ impl VirtualMachine {
                 // room for improvement
                 OpCode::Call(arg_count) => {
                     let callee = &self.stack[self.stack.len() - (1 + arg_count)];
-                    let Value::Function(callee) = callee else {
-                        panic!()
-                    };
+                    let Value::Closure(callee) = callee else {
+                            panic!()
+                        };
 
-                    self.call(callee.as_ref(), arg_count);
+                    self.call(callee, arg_count);
                     self.callframes[self.frame_count - 2].ip = ip;
 
                     // prepares for the next callframe

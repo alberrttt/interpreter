@@ -4,7 +4,10 @@ use clap::Parser;
 use limesherbet::{
     backend::vm::VirtualMachine,
     cli_helper::Diagnostics,
-    common::{debug::dissasemble_chunk, interner::StringInterner, opcode::OpCode, value::Value},
+    common::{
+        closure::Closure, debug::dissasemble_chunk, interner::StringInterner, opcode::OpCode,
+        value::Value,
+    },
     frontend::compiler::{Compiler, FunctionType},
 };
 pub fn main() {
@@ -16,6 +19,7 @@ pub fn main() {
     let compiler = Compiler::new(diagnostics.clone(), FunctionType::Script);
     let elapsed = duration.elapsed();
     let (compiled, file_node) = compiler.compile(source).unwrap();
+
     println!("Compiled in {}s", elapsed.as_secs_f64() * 1000.0);
     if cli.display_bytecode {
         dissasemble_chunk(&compiled.chunk, "main");
@@ -28,8 +32,11 @@ pub fn main() {
 
     let mut vm = VirtualMachine::new();
 
+    let closure = Closure {
+        func: Rc::new(compiled),
+    };
     vm.stack.push(Value::Void);
-    vm.call(&compiled, 0);
+    vm.call(&closure, 0);
     vm.run();
 }
 

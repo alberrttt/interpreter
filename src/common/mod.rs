@@ -1,4 +1,5 @@
 pub mod chunk;
+pub mod closure;
 pub mod debug;
 pub mod function;
 pub mod interner;

@@ -17,6 +17,8 @@ pub struct StackInfo {
 #[repr(u8)]
 #[derive(Debug, Display, Clone, PartialEq, Default, ExpandOpCode)]
 pub enum OpCode {
+    #[stack(push = 1)]
+    Closure(ConstantLocation),
     #[stack(pop = 2, push = 1)]
     Equal,
     #[stack(pop = 2, push = 1)]

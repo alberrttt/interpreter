@@ -20,7 +20,6 @@ pub struct StringInterner {
     strings: HashMap<String, usize>,
     vec: Vec<String>,
 }
-use lazy_static::lazy_static;
 use once_cell::sync::Lazy;
 pub static STRING_INTERNER: Lazy<Mutex<StringInterner>> = Lazy::new(|| {
     Mutex::new(StringInterner {
