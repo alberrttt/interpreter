@@ -49,6 +49,10 @@ pub fn diassasemble_instruction(
         OpCode::CallNative(location) => {
             println!("{instruction} <idx:{location}>")
         }
+        OpCode::Closure(closure) => {
+            let constant = &chunk.constants[*closure as usize];
+            println!("{instruction} <{constant:?}>")
+        }
         OpCode::JumpTo(offset)
         | OpCode::JumpToIfFalse(offset)
         | OpCode::PopJumpToIfFalse(offset)

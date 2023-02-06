@@ -41,7 +41,7 @@ pub struct VirtualMachine {
 impl VirtualMachine {
     pub fn new() -> VirtualMachine {
         pub const CALLFRAME: CallFrame = CallFrame {
-            function: std::ptr::null(),
+            closure: std::ptr::null(),
             ip: 0,
             slots: 0,
         };
@@ -63,7 +63,7 @@ impl VirtualMachine {
         }
 
         let frame: &mut CallFrame = &mut self.callframes[self.frame_count];
-        frame.function = function.as_ref();
+        frame.closure = closure;
         frame.slots = self.stack.len() - (arg_count + 1);
 
         self.frame_count += 1;
@@ -80,7 +80,7 @@ impl VirtualMachine {
             () => {{
                 #[allow(unsafe_code)]
                 unsafe {
-                    &(*(*current_frame).function)
+                    &((*(*current_frame).closure).func)
                 }
             }};
         }

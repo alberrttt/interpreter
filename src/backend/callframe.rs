@@ -1,16 +1,19 @@
-use crate::common::function::Function;
+use crate::common::{
+    closure::{self, Closure},
+    function::Function,
+};
 
 #[derive(Debug, Clone)]
 pub struct CallFrame {
-    pub function: *const Function,
+    pub closure: *const Closure,
     pub ip: usize,
     pub slots: usize,
 }
 
 impl CallFrame {
-    pub fn new(function: &Function) -> CallFrame {
+    pub fn new(closure: &Closure) -> CallFrame {
         CallFrame {
-            function,
+            closure,
             ip: 0,
             slots: 0,
         }
