@@ -1,4 +1,13 @@
-let x = 10;
-x = 12;
+func t() {
+    let x = 10;
+    func v() {
+        let x = 9;
+        func z() {
+            print(x);
+        }
+        return z;
+    }
+    return v();
+}
 
-print(x);
+t()();

@@ -27,6 +27,7 @@ pub const FUNCTION: Function = Function {
     },
     arity: 0,
     name: String::new(),
+    upvalue_count: 0,
 };
 
 #[derive(Debug)]
@@ -59,7 +60,7 @@ impl VirtualMachine {
         let function = &closure.func;
         let arity = function.arity;
         if arg_count != arity as usize {
-            panic!("mismatched argument counts! expected {arity} got {arg_count}")
+            panic!("mismatched argument counts! expected {arity} got {arg_count}");
         }
 
         let frame: &mut CallFrame = &mut self.callframes[self.frame_count];
@@ -72,9 +73,12 @@ impl VirtualMachine {
         let start = Instant::now();
         let mut current_frame = &self.callframes[self.frame_count - 1] as *const CallFrame;
         macro_rules! current_frame {
-            () => {
-                unsafe { &*current_frame }
-            };
+            () => {{
+                #[allow(unsafe_code)]
+                unsafe {
+                    &*current_frame
+                }
+            }};
         }
         macro_rules! read_current_frame_fn {
             () => {{
@@ -145,6 +149,8 @@ impl VirtualMachine {
             ip += 1;
 
             match instruction.clone() {
+                OpCode::SetUpValue(u) => {}
+                OpCode::GetUpValue(u) => {}
                 OpCode::Closure(location) => {
                     let function = &chunk.constants[location as usize];
                     let Value::Function(function) = function else {
@@ -328,10 +334,11 @@ impl VirtualMachine {
                 // room for improvement
                 OpCode::Call(arg_count) => {
                     let callee = &self.stack[self.stack.len() - (1 + arg_count)];
+
                     let Value::Closure(callee) = callee else {
                             panic!()
                         };
-
+                    println!("called {}", callee.func.name);
                     self.call(callee, arg_count);
                     self.callframes[self.frame_count - 2].ip = ip;
 

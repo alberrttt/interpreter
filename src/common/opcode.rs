@@ -84,6 +84,10 @@ pub enum OpCode {
     Return,
     #[default]
     Nop,
+    #[stack(push = 1)]
+    GetUpValue(u16),
+    #[stack(push = 1)]
+    SetUpValue(u16),
     CallNative(u16),
     CallFnArgPtr(u8, u8),
 }

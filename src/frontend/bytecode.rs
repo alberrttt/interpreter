@@ -10,6 +10,11 @@ use super::{
         FunctionType,
     },
 };
+#[derive(Debug, Default, Clone, Copy)]
+pub struct Upvalue {
+    pub index: usize,
+    pub is_local: bool,
+}
 #[derive(Debug, Clone)]
 pub struct Bytecode {
     pub stack_info: Vec<StackInfo>,
@@ -23,6 +28,7 @@ pub struct Bytecode {
     pub current_expr: Option<*const Expression>,
     pub returned_from_block: bool,
     pub eliminated: bool,
+    pub upvalues: [Upvalue; 512],
 }
 
 impl Default for Bytecode {
@@ -38,7 +44,9 @@ impl Default for Bytecode {
             compiling_statement: Default::default(),
             returned_from_block: Default::default(),
             current_expr: Default::default(),
+
             eliminated: Default::default(),
+            upvalues: [Upvalue::default(); 512],
         }
     }
 }

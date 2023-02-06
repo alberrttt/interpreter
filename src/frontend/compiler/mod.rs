@@ -20,10 +20,10 @@ use super::{
 #[derive(Debug)]
 pub struct Enclosing<'a>(*mut Compiler<'a>);
 impl<'a> Enclosing<'a> {
-    pub fn get_compiler(&self) -> &Compiler<'a> {
+    pub fn get_compiler(&mut self) -> &mut Compiler<'a> {
         #[allow(unsafe_code)]
         unsafe {
-            self.0.as_ref().unwrap()
+            self.0.as_mut().unwrap()
         }
     }
 }

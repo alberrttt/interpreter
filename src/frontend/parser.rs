@@ -453,7 +453,7 @@ impl Parser<'_> {
         Identifier { value: token }.to_node()
     }
     pub fn call_expr(&mut self, lhs: Node) -> Node {
-        let identifier = lhs.as_identifier();
+        let expr = lhs.to_expr();
         let mut parameters: Vec<Expression> = Vec::new();
         loop {
             if self.match_token(TokenKind::RightParen) {
@@ -469,7 +469,7 @@ impl Parser<'_> {
         }
         Call {
             parameters: Box::new(parameters),
-            identifier,
+            expr: Box::new(expr),
         }
         .to_expr()
         .to_node()

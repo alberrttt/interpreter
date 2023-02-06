@@ -4,6 +4,7 @@ pub struct Function {
     pub chunk: Chunk,
     pub arity: u8,
     pub name: String,
+    pub upvalue_count: usize,
 }
 
 impl Function {
@@ -12,6 +13,7 @@ impl Function {
             chunk: Chunk::new(),
             arity: 0,
             name: String::from("main"),
+            upvalue_count: 0,
         }
     }
 }
