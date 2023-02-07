@@ -1,12 +1,8 @@
 use std::fmt::Debug;
 
-use macros::native_macro;
-use phf::phf_map;
-use strum::Display;
-
 use crate::backend::vm::VirtualMachine;
 
-use super::value::{AsValue, Value};
+use super::value::Value;
 
 pub struct Native(pub fn(vm: &mut VirtualMachine, args: Vec<Value>));
 impl Debug for Native {

@@ -1,3 +1,5 @@
+use std::mem;
+
 use crate::common::value::Value;
 
 use super::{chunk::Chunk, opcode::OpCode};
@@ -22,14 +24,15 @@ pub fn dissasemble_chunk(chunk: &Chunk, name: &str) {
             break;
         }
         let instruction = &chunk.code[instruction_ptr];
-        print!("{instruction_ptr} \t");
+        print!("{instruction_ptr:0>4} \t");
+        instruction_ptr += 1;
         instruction_ptr = diassasemble_instruction(instruction_ptr, instruction, chunk);
     }
     println!("----------------------");
 }
 
 pub fn diassasemble_instruction(
-    instruction_ptr: usize,
+    mut instruction_ptr: usize,
     instruction: &OpCode,
     chunk: &Chunk,
 ) -> usize {
@@ -53,8 +56,31 @@ pub fn diassasemble_instruction(
             println!("{instruction} <idx:{location}>")
         }
         OpCode::Closure(closure) => {
-            let constant = &chunk.constants[*closure as usize];
-            println!("{instruction} <{constant:?}>")
+            let constant = &chunk.constants[(*closure as usize)];
+            let Value::Function(function) = constant else {
+                dbg!(&chunk.constants);
+                dbg!(closure);
+                panic!()
+            };
+            println!("{instruction} <{constant:?}> <name:{}>", function.name);
+            [0..function.upvalue_count].iter().for_each(|f| {
+                let is_local = unsafe {
+                    ::std::mem::transmute::<OpCode, u128>(
+                        function.chunk.code[instruction_ptr].clone(),
+                    )
+                } != 0;
+                instruction_ptr += 1;
+                let index = function.chunk.code[instruction_ptr].clone();
+                let index: u128 = unsafe { ::std::mem::transmute(index) };
+                instruction_ptr += 1;
+
+                println!(
+                    "{:0>4}\t|\t\t{} {}",
+                    instruction_ptr - 2,
+                    if is_local { "local" } else { "upvalue" },
+                    index
+                );
+            });
         }
         OpCode::JumpTo(offset)
         | OpCode::JumpToIfFalse(offset)
@@ -68,5 +94,5 @@ pub fn diassasemble_instruction(
 
         _ => println!("{}", instruction),
     }
-    instruction_ptr + 1
+    instruction_ptr
 }

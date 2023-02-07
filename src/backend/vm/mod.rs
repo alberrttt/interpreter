@@ -151,12 +151,14 @@ impl VirtualMachine {
             ip += 1;
 
             match instruction.clone() {
+                OpCode::Byte(_) => panic!(),
                 OpCode::SetUpValue(u) => {}
                 OpCode::GetUpValue(u) => {}
                 OpCode::Closure(location) => {
                     let function = &chunk.constants[location as usize];
+
                     let Value::Function(function) = function else {
-                        panic!()
+                        panic!("{:?}", function)
                     };
                     let closure: Closure = function.into();
                     self.stack.push(Value::Closure(closure))
@@ -340,7 +342,10 @@ impl VirtualMachine {
                     let Value::Closure(callee) = callee else {
                             panic!()
                         };
-                    println!("{}", format!("\tcalled {}", callee.func.name).red());
+                    #[cfg(debug_assertions)]
+                    {
+                        println!("{}", format!("\tcalled {}", callee.func.name).red());
+                    }
                     self.call(callee, arg_count);
                     self.callframes[self.frame_count - 2].ip = ip;
 

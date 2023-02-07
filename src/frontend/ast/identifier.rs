@@ -43,7 +43,7 @@ impl<'a> Compiler<'a> {
             .iter()
             .enumerate()
         {
-            if up_value.index == local && up_value.is_local == is_local {
+            if up_value.index == local as u8 && up_value.is_local == is_local {
                 return Some(i);
             }
         }
@@ -55,7 +55,7 @@ impl<'a> Compiler<'a> {
         // WORK HERE
 
         self.bytecode.upvalues[*up_value_count].is_local = is_local;
-        self.bytecode.upvalues[*up_value_count].index = local;
+        self.bytecode.upvalues[*up_value_count].index = local as u8;
 
         {
             *up_value_count += 1;

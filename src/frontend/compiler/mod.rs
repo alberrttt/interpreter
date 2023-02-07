@@ -87,11 +87,7 @@ impl Bytecode {
     ///
     /// This function is unsafe because it is not guaranteed that the value is a valid OpCode
     /// + it may mess up the virtual machine
-    #[allow(unsafe_code)]
-    pub unsafe fn write_byte(&mut self, byte: u8) {
-        self.function
-            .chunk
-            .code
-            .push(unsafe { ::std::mem::transmute(byte as u128) })
+    pub fn write_byte(&mut self, byte: u8) {
+        self.function.chunk.code.push(OpCode::Byte(byte))
     }
 }

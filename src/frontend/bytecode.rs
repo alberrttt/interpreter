@@ -12,7 +12,7 @@ use super::{
 };
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Upvalue {
-    pub index: usize,
+    pub index: u8,
     pub is_local: bool,
 }
 #[derive(Debug, Clone)]

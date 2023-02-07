@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{borrow::Borrow, rc::Rc};
 
 use crate::{
     common::{
@@ -56,9 +56,17 @@ impl CompileToBytecode for FunctionDeclaration {
             .bytecode
             .function
             .chunk
-            .emit_value(Value::Function(function));
+            .emit_value(Value::Function(function.clone()));
         compiler.bytecode.write_closure_op(location);
-        
+
+        let count = function.upvalue_count;
+        let upvalues = &compiler.bytecode.upvalues[..count].to_vec();
+        for upvalue in upvalues {
+            compiler.bytecode.write_byte(upvalue.is_local as u8);
+            compiler.bytecode.write_byte(upvalue.index)
+        }
+        dbg!(&compiler.bytecode.function.name);
+        println!("{:?}", &compiler.bytecode.function.chunk.code);
         if compiler.in_scope() {
             compiler.add_local(self.name.value.clone());
         } else {
