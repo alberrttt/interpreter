@@ -1,3 +1,7 @@
-let number = 1 + 2 + 3;
-
-print("the sum of the numbers is " + to_str(number));
+{
+  let a = 3;
+  func f() {
+    print a;
+  }
+  f();
+}

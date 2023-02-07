@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::{
     common::{
         opcode::OpCode,
@@ -5,7 +7,7 @@ use crate::{
     },
     frontend::{
         ast::{expression::block::Block, identifier::Identifier, CompileToBytecode},
-        compiler::{Compiler, FunctionType},
+        compiler::{Compiler, Enclosing, FunctionType},
     },
 };
 
@@ -27,6 +29,7 @@ impl CompileToBytecode for FunctionDeclaration {
         // uses the current compiler's compilation context for the function
         // which is returned later
         let mut temp_compiler = Compiler::new(compiler.diagnostics.clone(), FunctionType::Function);
+        temp_compiler.enclosing = Some(Enclosing(compiler));
         let function = {
             // sets the function name and arity
             temp_compiler.bytecode.function.arity = self.parameters.len() as u8;
@@ -48,13 +51,14 @@ impl CompileToBytecode for FunctionDeclaration {
                 .emit_op(OpCode::Return);
             temp_compiler.bytecode.function
         };
-
+        let function = Rc::new(function);
         let location = compiler
             .bytecode
             .function
             .chunk
-            .emit_value(Value::Function(function.into()));
+            .emit_value(Value::Function(function));
         compiler.bytecode.write_closure_op(location);
+        
         if compiler.in_scope() {
             compiler.add_local(self.name.value.clone());
         } else {

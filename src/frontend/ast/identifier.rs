@@ -38,6 +38,19 @@ impl CompileToBytecode for Identifier {
 impl<'a> Compiler<'a> {
     pub fn add_up_value(&mut self, local: usize, is_local: bool) -> Option<usize> {
         let up_value_count = &mut self.bytecode.function.upvalue_count;
+        // cjeck if the upvalue is already in
+        for (i, up_value) in self.bytecode.upvalues[0..*up_value_count]
+            .iter()
+            .enumerate()
+        {
+            if up_value.index == local && up_value.is_local == is_local {
+                return Some(i);
+            }
+        }
+
+        if *up_value_count == 255 {
+            panic!("Too many upvalues");
+        }
 
         // WORK HERE
 
@@ -50,15 +63,20 @@ impl<'a> Compiler<'a> {
         }
     }
     pub fn resolve_up_value(&mut self, token: &Token) -> Option<usize> {
-        self.enclosing.as_ref()?;
-        let local = self
-            .enclosing
-            .as_mut()
-            .unwrap()
-            .get_compiler()
-            .resolve_local(token);
+        let compiler = self.enclosing.as_mut()?.get_compiler();
+        let local = compiler.resolve_local(token);
+        println!(
+            "{:?}",
+            &compiler.bytecode.locals[0..compiler.bytecode.local_count]
+        );
+
         if let Some(local) = local {
             return self.add_up_value(local, true);
+        }
+
+        let upvalue = compiler.resolve_up_value(token);
+        if let Some(upvalue) = upvalue {
+            return self.add_up_value(upvalue, false);
         }
 
         None

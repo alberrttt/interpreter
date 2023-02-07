@@ -40,6 +40,8 @@ impl BinaryExpr {
                 compiler.bytecode.write_set_local_op(local as u16);
             }
             return;
+        } else if let Some(arg) = compiler.resolve_up_value(name) {
+            compiler.bytecode.write_set_up_value_op(arg as u16);
         }
         let string: Value = (&name.lexeme).to_value();
         let location = compiler.bytecode.function.chunk.emit_value(string);

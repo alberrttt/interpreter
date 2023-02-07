@@ -18,7 +18,7 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct Enclosing<'a>(*mut Compiler<'a>);
+pub struct Enclosing<'a>(pub *mut Compiler<'a>);
 impl<'a> Enclosing<'a> {
     pub fn get_compiler(&mut self) -> &mut Compiler<'a> {
         #[allow(unsafe_code)]
@@ -80,5 +80,18 @@ impl<'a> Compiler<'a> {
         parsed_file.to_bytecode(&mut self);
         self.bytecode.write_return_op();
         Ok((self.bytecode.function, parsed_file))
+    }
+}
+impl Bytecode {
+    /// # Safety
+    ///
+    /// This function is unsafe because it is not guaranteed that the value is a valid OpCode
+    /// + it may mess up the virtual machine
+    #[allow(unsafe_code)]
+    pub unsafe fn write_byte(&mut self, byte: u8) {
+        self.function
+            .chunk
+            .code
+            .push(unsafe { ::std::mem::transmute(byte as u128) })
     }
 }

@@ -1,5 +1,7 @@
 use std::{collections::HashMap, time::Instant};
 
+use colored::Colorize;
+
 use crate::{
     backend::vm::natives::NATIVES,
     common::{
@@ -143,7 +145,7 @@ impl VirtualMachine {
             let instruction = &chunk.code[ip];
             #[cfg(debug_assertions)]
             {
-                print!("{ip} Executing ");
+                print!("{}", format!("\t{ip} Executing ").bold());
                 diassasemble_instruction(ip, instruction, &function.chunk);
             }
             ip += 1;
@@ -338,7 +340,7 @@ impl VirtualMachine {
                     let Value::Closure(callee) = callee else {
                             panic!()
                         };
-                    println!("called {}", callee.func.name);
+                    println!("{}", format!("\tcalled {}", callee.func.name).red());
                     self.call(callee, arg_count);
                     self.callframes[self.frame_count - 2].ip = ip;
 
