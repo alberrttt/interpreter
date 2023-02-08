@@ -66,7 +66,6 @@ impl CompileToBytecode for FunctionDeclaration {
             compiler.bytecode.write_byte(upvalue.index)
         }
         dbg!(&compiler.bytecode.function.name);
-        println!("{:?}", &compiler.bytecode.function.chunk.code);
         if compiler.in_scope() {
             compiler.add_local(self.name.value.clone());
         } else {

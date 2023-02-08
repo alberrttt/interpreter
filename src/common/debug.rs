@@ -25,7 +25,6 @@ pub fn dissasemble_chunk(chunk: &Chunk, name: &str) {
         }
         let instruction = &chunk.code[instruction_ptr];
         print!("{instruction_ptr:0>4} \t");
-        instruction_ptr += 1;
         instruction_ptr = diassasemble_instruction(instruction_ptr, instruction, chunk);
     }
     println!("----------------------");
@@ -36,6 +35,8 @@ pub fn diassasemble_instruction(
     instruction: &OpCode,
     chunk: &Chunk,
 ) -> usize {
+    instruction_ptr += 1;
+
     match instruction {
         OpCode::DefineGlobal(pos)
         | OpCode::Constant(pos)
@@ -63,16 +64,19 @@ pub fn diassasemble_instruction(
                 panic!()
             };
             println!("{instruction} <{constant:?}> <name:{}>", function.name);
-            [0..function.upvalue_count].iter().for_each(|f| {
-                let is_local = unsafe {
-                    ::std::mem::transmute::<OpCode, u128>(
-                        function.chunk.code[instruction_ptr].clone(),
-                    )
+            for _ in 0..function.upvalue_count {
+                let byte = chunk.code[instruction_ptr].clone();
+                let is_local = if let OpCode::Byte(byte) = byte {
+                    byte
+                } else {
+                    panic!("{byte}")
                 } != 0;
                 instruction_ptr += 1;
-                let index = function.chunk.code[instruction_ptr].clone();
-                let index: u128 = unsafe { ::std::mem::transmute(index) };
-                instruction_ptr += 1;
+                let index = chunk.code[instruction_ptr].clone();
+
+                let OpCode::Byte(index) = index else {
+                    panic!()
+                };
 
                 println!(
                     "{:0>4}\t|\t\t{} {}",
@@ -80,7 +84,7 @@ pub fn diassasemble_instruction(
                     if is_local { "local" } else { "upvalue" },
                     index
                 );
-            });
+            }
         }
         OpCode::JumpTo(offset)
         | OpCode::JumpToIfFalse(offset)

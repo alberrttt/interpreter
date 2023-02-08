@@ -36,14 +36,14 @@ impl CompileToBytecode for Identifier {
     }
 }
 impl<'a> Compiler<'a> {
-    pub fn add_up_value(&mut self, local: usize, is_local: bool) -> Option<usize> {
+    pub fn add_up_value(&mut self, index: usize, is_local: bool) -> Option<usize> {
         let up_value_count = &mut self.bytecode.function.upvalue_count;
         // cjeck if the upvalue is already in
         for (i, up_value) in self.bytecode.upvalues[0..*up_value_count]
             .iter()
             .enumerate()
         {
-            if up_value.index == local as u8 && up_value.is_local == is_local {
+            if up_value.index == index as u8 && up_value.is_local == is_local {
                 return Some(i);
             }
         }
@@ -55,22 +55,24 @@ impl<'a> Compiler<'a> {
         // WORK HERE
 
         self.bytecode.upvalues[*up_value_count].is_local = is_local;
-        self.bytecode.upvalues[*up_value_count].index = local as u8;
+        self.bytecode.upvalues[*up_value_count].index = index as u8;
 
         {
             *up_value_count += 1;
-            Some(*up_value_count)
+            Some(*up_value_count - 1)
         }
     }
     pub fn resolve_up_value(&mut self, token: &Token) -> Option<usize> {
         let compiler = self.enclosing.as_mut()?.get_compiler();
         let local = compiler.resolve_local(token);
-        println!(
-            "{:?}",
-            &compiler.bytecode.locals[0..compiler.bytecode.local_count]
-        );
+        // println!(
+        //     "{:?}",
+        //     &compiler.bytecode.locals[0..compiler.bytecode.local_count]
+        // );
 
         if let Some(local) = local {
+            dbg!(local);
+            dbg!(&compiler.bytecode.locals[local]);
             return self.add_up_value(local, true);
         }
 
