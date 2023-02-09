@@ -82,18 +82,23 @@ impl VirtualMachine {
                 }
             }};
         }
+        macro_rules! read_current_closure {
+            () => {
+                unsafe { &(*current_frame!().closure) }
+            };
+        }
         macro_rules! read_current_frame_fn {
             () => {{
                 #[allow(unsafe_code)]
                 unsafe {
-                    &((*(*current_frame).closure).func)
+                    &*read_current_closure!().func
                 }
             }};
         }
+        let mut closure = read_current_closure!();
         let mut function = read_current_frame_fn!();
         let mut chunk = &function.chunk;
         let mut ip: usize = 0;
-
         macro_rules! pop {
             () => {{
                 assert!(self.stack.len() > 0);
@@ -329,6 +334,7 @@ impl VirtualMachine {
                     }
 
                     current_frame = &self.callframes[self.frame_count - 1];
+                    closure = read_current_closure!();
                     function = read_current_frame_fn!();
                     chunk = &function.chunk;
                     ip = current_frame!().ip;
@@ -352,6 +358,7 @@ impl VirtualMachine {
                     // prepares for the next callframe
                     {
                         current_frame = &self.callframes[self.frame_count - 1];
+                        closure = read_current_closure!();
                         function = read_current_frame_fn!();
                         chunk = &function.chunk;
                         ip = 0;

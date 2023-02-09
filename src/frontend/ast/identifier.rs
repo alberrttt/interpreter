@@ -1,3 +1,5 @@
+use std::ptr::addr_of_mut;
+
 use crate::{
     common::{opcode::OpCode, value::AsValue},
     frontend::{
@@ -24,7 +26,11 @@ impl CompileToBytecode for Identifier {
         let mut op: OpCode = OpCode::Nop;
         if let Some(arg) = local {
             op = OpCode::GetLocal(arg as u16);
-        } else if let Some(arg) = compiler.resolve_up_value(&self.value) {
+        } else if let Some(arg) = {
+            let tmp = compiler.resolve_up_value(&self.value);
+            dbg!(&tmp);
+            tmp
+        } {
             op = OpCode::GetUpValue(arg as u16);
         } else {
             let function = &mut compiler.bytecode.function;
@@ -53,7 +59,6 @@ impl<'a> Compiler<'a> {
         }
 
         // WORK HERE
-
         self.bytecode.upvalues[*up_value_count].is_local = is_local;
         self.bytecode.upvalues[*up_value_count].index = index as u8;
 
@@ -65,14 +70,11 @@ impl<'a> Compiler<'a> {
     pub fn resolve_up_value(&mut self, token: &Token) -> Option<usize> {
         let compiler = self.enclosing.as_mut()?.get_compiler();
         let local = compiler.resolve_local(token);
-        // println!(
-        //     "{:?}",
-        //     &compiler.bytecode.locals[0..compiler.bytecode.local_count]
-        // );
 
         if let Some(local) = local {
-            dbg!(local);
-            dbg!(&compiler.bytecode.locals[local]);
+            // println!("{local}");
+            // println!("{:?}", &compiler.bytecode.locals[local]);
+            // println!("{:?}",    self as *mut Compiler<'a>);
             return self.add_up_value(local, true);
         }
 
