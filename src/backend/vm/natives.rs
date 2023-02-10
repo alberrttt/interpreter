@@ -17,7 +17,8 @@ pub fn to_str(vm: &mut VirtualMachine, mut args: Vec<Value>) {
     vm.stack.push(arg.to_string().to_value());
 }
 pub fn debug_stack(vm: &mut VirtualMachine, _: Vec<Value>) {
-    println!("Stack: {:?}", vm.stack);
+    let callframe = &vm.callframes[vm.frame_count - 1];
+    println!("Stack: {:?}", &vm.stack[callframe.slots + 1..]);
 }
 pub fn assert_stack(vm: &mut VirtualMachine, args: Vec<Value>) {
     println!("stack comparison: {:?} == {:?}", args, &vm.stack);

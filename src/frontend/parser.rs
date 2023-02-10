@@ -288,6 +288,24 @@ impl<'a> Parser<'a> {
                             }))
                             .into()
                         }
+                        "push" => {
+                            self.consume(TokenKind::LeftBracket, "expected left bracket to close");
+                            let mut exprs = Vec::new();
+                            loop {
+                                if self.match_token(TokenKind::RightBracket) {
+                                    break;
+                                }
+                                exprs.push(self.expression().unwrap());
+                                if !self.match_token(TokenKind::Comma) {
+                                    self.advance();
+                                    break;
+                                }
+                            }
+                            return EmitFn(Box::new(move |compiler| {
+                                exprs.iter().for_each(|expr| expr.to_bytecode(compiler));
+                            }))
+                            .into();
+                        }
                         "assert_stack" => {
                             self.consume(TokenKind::LeftBracket, "expected left bracket to close");
                             let mut exprs = Vec::new();

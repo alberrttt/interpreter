@@ -58,7 +58,7 @@ pub struct Token {
     pub length: usize,
     pub position: Position,
 }
-#[derive(Clone, PartialEq, Debug, Default)]
+#[derive(Clone, PartialEq, Debug, Default, Copy)]
 pub struct Position {
     pub line: usize,
     pub start_in_line: u16,

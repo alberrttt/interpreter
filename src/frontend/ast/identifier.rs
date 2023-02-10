@@ -1,12 +1,8 @@
-use std::ptr::addr_of_mut;
-
-use crate::{
-    common::{opcode::OpCode, value::AsValue},
-    frontend::{
-        bytecode::Upvalue,
-        compiler::Compiler,
-        scanner::{Token, TokenKind},
-    },
+use crate::common::{opcode::OpCode, value::AsValue};
+use crate::frontend::bytecode::Upvalue;
+use crate::frontend::{
+    compiler::Compiler,
+    scanner::{Token, TokenKind},
 };
 
 use super::{
@@ -28,7 +24,6 @@ impl CompileToBytecode for Identifier {
             op = OpCode::GetLocal(arg as u16);
         } else if let Some(arg) = {
             let tmp = compiler.resolve_up_value(&self.value);
-            dbg!(&tmp);
             tmp
         } {
             op = OpCode::GetUpValue(arg as u16);
@@ -43,34 +38,32 @@ impl CompileToBytecode for Identifier {
 }
 impl<'a> Compiler<'a> {
     pub fn add_up_value(&mut self, index: usize, is_local: bool) -> Option<usize> {
-        let up_value_count = &mut self.bytecode.function.upvalue_count;
         // cjeck if the upvalue is already in
-        for (i, up_value) in self.bytecode.upvalues[0..*up_value_count]
-            .iter()
-            .enumerate()
-        {
+        for (i, up_value) in self.bytecode.upvalues.iter().enumerate() {
             if up_value.index == index as u8 && up_value.is_local == is_local {
                 return Some(i);
             }
         }
 
-        if *up_value_count == 255 {
+        if self.bytecode.upvalues.len() == 255 {
             panic!("Too many upvalues");
         }
 
         // WORK HERE
-        self.bytecode.upvalues[*up_value_count].is_local = is_local;
-        self.bytecode.upvalues[*up_value_count].index = index as u8;
-
+        self.bytecode.upvalues.push(Upvalue {
+            is_local,
+            index: index as u8,
+            #[cfg(debug_assertions)]
+            token: self.current_token.clone().unwrap(),
+        });
         {
-            *up_value_count += 1;
-            Some(*up_value_count - 1)
+            Some(self.bytecode.upvalues.len() - 1)
         }
     }
     pub fn resolve_up_value(&mut self, token: &Token) -> Option<usize> {
         let compiler = self.enclosing.as_mut()?.get_compiler();
         let local = compiler.resolve_local(token);
-
+        self.current_token = Some(token.clone());
         if let Some(local) = local {
             // println!("{local}");
             // println!("{:?}", &compiler.bytecode.locals[local]);
@@ -80,6 +73,7 @@ impl<'a> Compiler<'a> {
 
         let upvalue = compiler.resolve_up_value(token);
         if let Some(upvalue) = upvalue {
+            dbg!(upvalue);
             return self.add_up_value(upvalue, false);
         }
 
