@@ -156,7 +156,7 @@ impl VirtualMachine {
             ip += 1;
 
             match instruction.clone() {
-                OpCode::Byte(_) => {}
+                OpCode::Byte(_) => panic!(),
                 OpCode::SetUpValue(u) => {}
                 OpCode::GetUpValue(u) => {}
                 OpCode::Closure(location) => {

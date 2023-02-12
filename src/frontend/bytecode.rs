@@ -1,3 +1,8 @@
+use crate::common::{
+    function::Function,
+    opcode::{OpCode, StackInfo},
+};
+
 use super::{
     ast::expression::Expression,
     compiler::{
@@ -5,17 +10,10 @@ use super::{
         FunctionType,
     },
 };
-use crate::common::{
-    function::Function,
-    opcode::{OpCode, StackInfo},
-};
-use crate::frontend::scanner::Token;
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Upvalue {
     pub index: u8,
     pub is_local: bool,
-    #[cfg(debug_assertions)]
-    pub token: Token,
 }
 #[derive(Debug, Clone)]
 pub struct Bytecode {
@@ -30,7 +28,7 @@ pub struct Bytecode {
     pub current_expr: Option<*const Expression>,
     pub returned_from_block: bool,
     pub eliminated: bool,
-    pub upvalues: Vec<Upvalue>,
+    pub upvalues: [Upvalue; 512],
 }
 
 impl Default for Bytecode {
@@ -48,7 +46,7 @@ impl Default for Bytecode {
             current_expr: Default::default(),
 
             eliminated: Default::default(),
-            upvalues: Vec::new(),
+            upvalues: [Upvalue::default(); 512],
         }
     }
 }

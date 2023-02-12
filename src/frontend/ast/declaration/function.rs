@@ -58,12 +58,14 @@ impl CompileToBytecode for FunctionDeclaration {
             .chunk
             .emit_value(Value::Function(function.clone()));
         compiler.bytecode.write_closure_op(location);
-        dbg!(&compiler.bytecode.upvalues);
-        dbg!(temp_compiler.bytecode.upvalues);
-        for upvalue in compiler.bytecode.upvalues.clone().iter() {
+
+        let count = function.upvalue_count;
+        let upvalues = &compiler.bytecode.upvalues[..count].to_vec();
+        for upvalue in upvalues {
             compiler.bytecode.write_byte(upvalue.is_local as u8);
             compiler.bytecode.write_byte(upvalue.index)
         }
+        dbg!(&compiler.bytecode.function.name);
         if compiler.in_scope() {
             compiler.add_local(self.name.value.clone());
         } else {

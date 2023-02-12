@@ -1,19 +1,13 @@
 func outer() {
-  let n = 123; // 1
-  let m = "abc"; // 2
-  let x = 1; // 3
-  let q = 1232; // 4
-  #debug_stack
-  func inner() {
-
-    #push[1]
-    // ok bbut why is x
-    // GetUpvalue 0?
-    print x;
+  let a = 1; // slot 0
+  let b = 2; // slot 1
+  func middle() {
+    let c = 3; // slot 2
+    let d = 4; // slot 3
+    func inner() {
+      print a + c + b + d;
+    }
+    // c & d get dealloc
   }
-
-  return inner;
+  // a & b get dealloc
 }
-
-outer()();
-

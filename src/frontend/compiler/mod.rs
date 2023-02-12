@@ -14,7 +14,7 @@ use super::{
     bytecode::{self, Bytecode},
     file::FileNode,
     parser::Parser,
-    scanner::{Scanner, Token},
+    scanner::Scanner,
 };
 
 #[derive(Debug)]
@@ -34,7 +34,6 @@ pub struct Compiler<'a> {
     pub enclosing: Option<Enclosing<'a>>,
     pub diagnostics: Rc<RefCell<Diagnostics<'a>>>,
     pub bytecode: Bytecode,
-    pub current_token: Option<Token>,
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]
@@ -59,7 +58,6 @@ impl<'a> Compiler<'a> {
             enclosing: None,
             diagnostics,
             bytecode: Bytecode::default(),
-            current_token: None,
         }
     }
 
