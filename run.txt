@@ -1,13 +1,12 @@
 func outer() {
-  let a = 1; // slot 0
-  let b = 2; // slot 1
-  func middle() {
-    let c = 3; // slot 2
-    let d = 4; // slot 3
-    func inner() {
-      print a + c + b + d;
-    }
-    // c & d get dealloc
+  let a = 1;
+  func inner() {
+    let b = 2;
+    #void
+    print a + b;
   }
-  // a & b get dealloc
+
+  return inner;
 }
+
+outer()();

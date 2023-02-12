@@ -25,6 +25,8 @@ pub fn dissasemble_chunk(chunk: &Chunk, name: &str) {
         }
         let instruction = &chunk.code[instruction_ptr];
         print!("{instruction_ptr:0>4} \t");
+        instruction_ptr += 1;
+
         instruction_ptr = diassasemble_instruction(instruction_ptr, instruction, chunk);
     }
     println!("----------------------");
@@ -35,8 +37,6 @@ pub fn diassasemble_instruction(
     instruction: &OpCode,
     chunk: &Chunk,
 ) -> usize {
-    instruction_ptr += 1;
-
     match instruction {
         OpCode::DefineGlobal(pos)
         | OpCode::Constant(pos)
@@ -73,7 +73,7 @@ pub fn diassasemble_instruction(
                 } != 0;
                 instruction_ptr += 1;
                 let index = chunk.code[instruction_ptr].clone();
-
+                instruction_ptr += 1;
                 let OpCode::Byte(index) = index else {
                     panic!()
                 };
