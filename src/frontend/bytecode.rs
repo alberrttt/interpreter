@@ -28,7 +28,7 @@ pub struct Bytecode {
     pub current_expr: Option<*const Expression>,
     pub returned_from_block: bool,
     pub eliminated: bool,
-    pub upvalues: [Upvalue; 512],
+    pub upvalues: Vec<Upvalue>,
 }
 
 impl Default for Bytecode {
@@ -46,7 +46,7 @@ impl Default for Bytecode {
             current_expr: Default::default(),
 
             eliminated: Default::default(),
-            upvalues: [Upvalue::default(); 512],
+            upvalues: vec![Upvalue::default(); 512],
         }
     }
 }

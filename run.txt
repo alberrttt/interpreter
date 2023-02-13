@@ -1,9 +1,11 @@
 func outer() {
-  let a = 1;
+  let a = 2;
+  let b = 3;
+  let c = 4;
   func inner() {
-    let b = 2;
+    let d = 5;
     #void
-    print a + b;
+    print b + d;
   }
 
   return inner;

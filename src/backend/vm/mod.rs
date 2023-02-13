@@ -6,7 +6,7 @@ use crate::{
     backend::vm::natives::NATIVES,
     common::{
         chunk::Chunk,
-        closure::Closure,
+        closure::{self, Closure},
         debug::diassasemble_instruction,
         function::Function,
         interner::InternedString,
@@ -166,6 +166,22 @@ impl VirtualMachine {
                         panic!("{:?}", function)
                     };
                     let closure: Closure = function.into();
+                    for x in 0..function.upvalue_count {
+                        let OpCode::Byte(is_local) = &chunk.code[ip] else {
+                            panic!()
+                        };
+                        ip += 1;
+                        let OpCode::Byte(index) = &chunk.code[ip] else {
+                            panic!()
+                        };
+                        ip += 1;
+
+                        let is_local = *is_local != 0;
+                        let index = *index;
+
+                        dbg!(is_local, index);
+                    }
+
                     self.stack.push(Value::Closure(closure))
                 }
                 OpCode::SetLocalConsumes(index) => {

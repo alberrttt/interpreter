@@ -60,12 +60,11 @@ impl CompileToBytecode for FunctionDeclaration {
         compiler.bytecode.write_closure_op(location);
 
         let count = function.upvalue_count;
-        let upvalues = &compiler.bytecode.upvalues[..count].to_vec();
+        let upvalues = &temp_compiler.bytecode.upvalues[..count].to_vec();
         for upvalue in upvalues {
             compiler.bytecode.write_byte(upvalue.is_local as u8);
             compiler.bytecode.write_byte(upvalue.index)
         }
-        dbg!(&compiler.bytecode.function.name);
         if compiler.in_scope() {
             compiler.add_local(self.name.value.clone());
         } else {

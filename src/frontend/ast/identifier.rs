@@ -28,7 +28,6 @@ impl CompileToBytecode for Identifier {
             op = OpCode::GetLocal(arg as u16);
         } else if let Some(arg) = {
             let tmp = compiler.resolve_up_value(&self.value);
-            dbg!(&tmp);
             tmp
         } {
             op = OpCode::GetUpValue(arg as u16);
@@ -50,6 +49,8 @@ impl<'a> Compiler<'a> {
             .enumerate()
         {
             if up_value.index == index as u8 && up_value.is_local == is_local {
+                dbg!(up_value);
+
                 return Some(i);
             }
         }
@@ -72,14 +73,13 @@ impl<'a> Compiler<'a> {
         let local = compiler.resolve_local(token);
 
         if let Some(local) = local {
-            // println!("{local}");
-            // println!("{:?}", &compiler.bytecode.locals[local]);
-            // println!("{:?}",    self as *mut Compiler<'a>);
+            dbg!(local);
             return self.add_up_value(local, true);
         }
 
         let upvalue = compiler.resolve_up_value(token);
         if let Some(upvalue) = upvalue {
+            dbg!(upvalue);
             return self.add_up_value(upvalue, false);
         }
 
