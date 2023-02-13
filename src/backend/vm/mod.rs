@@ -12,7 +12,7 @@ use crate::{
         interner::InternedString,
         natives::Native,
         opcode::OpCode,
-        value::{AsValue, Value},
+        value::{AsValue, RuntimeUpvalue, Value},
     },
 };
 
@@ -158,14 +158,18 @@ impl VirtualMachine {
             match instruction.clone() {
                 OpCode::Byte(_) => {}
                 OpCode::SetUpValue(u) => {}
-                OpCode::GetUpValue(u) => {}
+                OpCode::GetUpValue(u) => {
+                    let tmp = closure.upvalues[u as usize].location.as_ref().clone();
+
+                    self.stack.push(tmp);
+                }
                 OpCode::Closure(location) => {
                     let function = &chunk.constants[location as usize];
 
                     let Value::Function(function) = function else {
                         panic!("{:?}", function)
                     };
-                    let closure: Closure = function.into();
+                    let mut closure: Closure = function.into();
                     for x in 0..function.upvalue_count {
                         let OpCode::Byte(is_local) = &chunk.code[ip] else {
                             panic!()
@@ -179,7 +183,13 @@ impl VirtualMachine {
                         let is_local = *is_local != 0;
                         let index = *index;
 
-                        dbg!(is_local, index);
+                        if is_local {
+                            let value =
+                                self.stack[index as usize + 1 + current_frame!().slots].clone();
+                            closure.upvalues.push(RuntimeUpvalue {
+                                location: Box::new(value),
+                            })
+                        }
                     }
 
                     self.stack.push(Value::Closure(closure))

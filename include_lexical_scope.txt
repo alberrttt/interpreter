@@ -4,6 +4,6 @@ func outer() {
   func inner() {
     print x;
   }
-  inner();
+  return inner;
 }
-outer();
+outer()();

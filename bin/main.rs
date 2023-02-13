@@ -34,6 +34,7 @@ pub fn main() {
 
     let closure = Closure {
         func: Rc::new(compiled),
+        upvalues: Vec::new(),
     };
     vm.stack.push(Value::Void);
     vm.call(&closure, 0);
