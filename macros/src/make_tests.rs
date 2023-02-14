@@ -25,6 +25,8 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
             let name = path.file_stem().unwrap().to_str().unwrap();
             let name = pre_pend.to_owned() + name;
             let tmp_name = format_ident!("{}", name);
+            let source = fs::read_to_string(Path::new(path_string)).unwrap();
+            dbg!(&source);
             let token = quote! {
                 #[test]
                 fn #tmp_name() {
@@ -41,11 +43,11 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                     use std::fs::read_to_string;
 
 
-                    let source = read_to_string(Path::new(#path_string)).unwrap();
+
                     let mut diagnostics = Rc::new(RefCell::new(Diagnostics::new(Path::new(#path_string))));
 
                     let compiler = Compiler::new(diagnostics, FunctionType::Script);
-                    let (compiled, _) = compiler.compile(source).unwrap();
+                    let (compiled, _) = compiler.compile(#source.to_string()).unwrap();
                     let closure = Closure {
                         func: Rc::new(compiled),
                         upvalues: Vec::new()

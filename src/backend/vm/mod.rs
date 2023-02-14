@@ -148,11 +148,7 @@ impl VirtualMachine {
         }
         loop {
             let instruction = &chunk.code[ip];
-            #[cfg(debug_assertions)]
-            {
-                print!("{}", format!("\t{ip} Executing ").bold());
-                diassasemble_instruction(ip, instruction, &function.chunk);
-            }
+
             ip += 1;
 
             match instruction.clone() {
@@ -374,10 +370,7 @@ impl VirtualMachine {
                     let Value::Closure(callee) = callee else {
                             panic!()
                         };
-                    #[cfg(debug_assertions)]
-                    {
-                        println!("{}", format!("\tcalled {}", callee.func.name).red());
-                    }
+
                     self.call(callee, arg_count);
                     self.callframes[self.frame_count - 2].ip = ip;
 
