@@ -83,9 +83,9 @@ impl VirtualMachine {
             }};
         }
         macro_rules! read_current_closure {
-            () => {
+            () => {{
                 unsafe { &(*current_frame!().closure) }
-            };
+            }};
         }
         macro_rules! read_current_frame_fn {
             () => {{
@@ -356,7 +356,11 @@ impl VirtualMachine {
                     }
 
                     current_frame = &self.callframes[self.frame_count - 1];
+
                     closure = read_current_closure!();
+
+                    println!("{:?}", current_frame!().closure);
+
                     function = read_current_frame_fn!();
                     chunk = &function.chunk;
                     ip = current_frame!().ip;

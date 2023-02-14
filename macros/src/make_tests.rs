@@ -26,7 +26,6 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
             let name = pre_pend.to_owned() + name;
             let tmp_name = format_ident!("{}", name);
             let source = fs::read_to_string(Path::new(path_string)).unwrap();
-            dbg!(&source);
             let token = quote! {
                 #[test]
                 fn #tmp_name() {
