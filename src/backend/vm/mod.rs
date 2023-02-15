@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::Instant};
+use std::{collections::HashMap, time::Instant, rc::Rc};
 
 use colored::Colorize;
 
@@ -58,14 +58,14 @@ impl VirtualMachine {
     }
     #[allow(clippy::not_unsafe_ptr_arg_deref, unsafe_code)]
     pub fn call(&mut self, closure: *const Closure, arg_count: usize) {
-        let closure = unsafe { &*closure };
-        let function = &closure.func;
+        let function = unsafe { &(*closure).func };
         let arity = function.arity;
         if arg_count != arity as usize {
             panic!("mismatched argument counts! expected {arity} got {arg_count}");
         }
 
         let frame: &mut CallFrame = &mut self.callframes[self.frame_count];
+
         frame.closure = closure;
         frame.slots = self.stack.len() - (arg_count + 1);
 
@@ -188,7 +188,7 @@ impl VirtualMachine {
                         }
                     }
 
-                    self.stack.push(Value::Closure(closure))
+                    self.stack.push(Value::Closure(Rc::new(closure)))
                 }
                 OpCode::SetLocalConsumes(index) => {
                     self.stack[index as usize + 1 + current_frame!().slots] = pop!();
@@ -359,8 +359,6 @@ impl VirtualMachine {
 
                     closure = read_current_closure!();
 
-                    println!("{:?}", current_frame!().closure);
-
                     function = read_current_frame_fn!();
                     chunk = &function.chunk;
                     ip = current_frame!().ip;
@@ -369,13 +367,14 @@ impl VirtualMachine {
                 }
                 // room for improvement
                 OpCode::Call(arg_count) => {
-                    let callee = &self.stack[self.stack.len() - (1 + arg_count)];
+                    let tmp = self.stack.len() - (1 + arg_count);
+                    let callee = std::mem::take(&mut self.stack[tmp]);
 
                     let Value::Closure(callee) = callee else {
                             panic!()
                         };
 
-                    self.call(callee, arg_count);
+                    self.call(callee.as_ref(), arg_count);
                     self.callframes[self.frame_count - 2].ip = ip;
 
                     // prepares for the next callframe
