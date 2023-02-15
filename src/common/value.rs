@@ -23,7 +23,7 @@ pub enum Value {
     String(InternedString),
     Function(Rc<Function>),
     Array(Ptr<Vec<Value>>),
-    Closure(Rc<Closure>),
+    Closure(Box<Closure>),
     Void,
     Upvalue(RuntimeUpvalue),
     #[default]

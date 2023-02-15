@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::Instant, rc::Rc};
+use std::{collections::HashMap, rc::Rc, time::Instant};
 
 use colored::Colorize;
 
@@ -188,7 +188,7 @@ impl VirtualMachine {
                         }
                     }
 
-                    self.stack.push(Value::Closure(Rc::new(closure)))
+                    self.stack.push(Value::Closure(Box::new(closure)))
                 }
                 OpCode::SetLocalConsumes(index) => {
                     self.stack[index as usize + 1 + current_frame!().slots] = pop!();
