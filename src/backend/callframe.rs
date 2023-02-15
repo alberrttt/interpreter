@@ -5,7 +5,7 @@ use crate::common::{
 
 #[derive(Debug, Clone)]
 pub struct CallFrame {
-    pub closure: *const Closure,
+    pub closure: *mut Closure,
     pub ip: usize,
     pub slots: usize,
 }

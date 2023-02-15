@@ -44,7 +44,7 @@ pub struct VirtualMachine {
 impl VirtualMachine {
     pub fn new() -> VirtualMachine {
         pub const CALLFRAME: CallFrame = CallFrame {
-            closure: std::ptr::null(),
+            closure: std::ptr::null_mut(),
             ip: 0,
             slots: 0,
         };
@@ -57,7 +57,7 @@ impl VirtualMachine {
         }
     }
     #[allow(clippy::not_unsafe_ptr_arg_deref, unsafe_code)]
-    pub fn call(&mut self, closure: *const Closure, arg_count: usize) {
+    pub fn call(&mut self, closure: *mut Closure, arg_count: usize) {
         let function = unsafe { &(*closure).func };
         let arity = function.arity;
         if arg_count != arity as usize {
@@ -84,7 +84,7 @@ impl VirtualMachine {
         }
         macro_rules! read_current_closure {
             () => {{
-                unsafe { &(*current_frame!().closure) }
+                unsafe { &mut (*current_frame!().closure) }
             }};
         }
         macro_rules! read_current_frame_fn {
@@ -146,6 +146,12 @@ impl VirtualMachine {
                 }
             }};
         }
+        macro_rules! peek {
+            () => {{
+                let tmp = self.stack.len() - 1;
+                &self.stack[tmp]
+            }};
+        }
         loop {
             let instruction = &chunk.code[ip];
 
@@ -153,9 +159,11 @@ impl VirtualMachine {
 
             match instruction.clone() {
                 OpCode::Byte(_) => {}
-                OpCode::SetUpValue(u) => {}
+                OpCode::SetUpValue(u) => {
+                    closure.upvalues[u as usize].location = peek!().clone();
+                }
                 OpCode::GetUpValue(u) => {
-                    let tmp = closure.upvalues[u as usize].location.as_ref().clone();
+                    let tmp = closure.upvalues[u as usize].location.clone();
 
                     self.stack.push(tmp);
                 }
@@ -180,11 +188,13 @@ impl VirtualMachine {
                         let index = *index;
 
                         if is_local {
+                            // captureUpvalue()
                             let value =
                                 self.stack[index as usize + 1 + current_frame!().slots].clone();
-                            closure.upvalues.push(RuntimeUpvalue {
-                                location: Box::new(value),
-                            })
+                            dbg!(&value);
+                            closure.upvalues.push(RuntimeUpvalue { location: value })
+                        } else {
+                            closure.upvalues[x] = closure.upvalues[index as usize].clone()
                         }
                     }
 
@@ -371,8 +381,8 @@ impl VirtualMachine {
                     let callee = std::mem::take(&mut self.stack[tmp]);
 
                     let Value::Closure(callee) = callee else {
-                            panic!()
-                        };
+                        panic!()
+                    };
 
                     self.call(Box::into_raw(callee), arg_count);
                     self.callframes[self.frame_count - 2].ip = ip;

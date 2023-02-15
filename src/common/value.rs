@@ -25,18 +25,16 @@ pub enum Value {
     Array(Ptr<Vec<Value>>),
     Closure(Box<Closure>),
     Void,
-    Upvalue(RuntimeUpvalue),
     #[default]
     None,
 }
 #[derive(Debug, Clone)]
 pub struct RuntimeUpvalue {
-    pub location: Box<Value>, // maybe this needs to be a pointer
+    pub location: Value, // maybe this needs to be a pointer
 }
 impl Debug for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Upvalue(upvalue) => f.debug_tuple("Upvalue").field(&upvalue.location).finish(),
             Self::Array(arg0) => f.debug_tuple("Array").field(arg0).finish(),
             Self::Number(arg0) => f.debug_tuple("Number").field(arg0).finish(),
             Self::Boolean(arg0) => f.debug_tuple("Boolean").field(arg0).finish(),
@@ -115,9 +113,6 @@ pub fn rcrf<T>(inner: T) -> Ptr<T> {
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Value::Upvalue(upvalue) => {
-                write!(f, "<upvalue {:?}>", upvalue.location)
-            }
             Value::Number(number) => write!(f, "{}", number),
             Value::String(string) => {
                 let tmp: String = (*string).into();

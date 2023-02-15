@@ -47,13 +47,13 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
 
                     let compiler = Compiler::new(diagnostics, FunctionType::Script);
                     let (compiled, _) = compiler.compile(#source.to_string()).unwrap();
-                    let closure = Closure {
+                    let mut closure = Closure {
                         func: Rc::new(compiled),
                         upvalues: Vec::new()
                     };
                     let mut vm = VirtualMachine::new();
                     vm.stack.push(Value::Void);
-                    vm.call(&closure,0);
+                    vm.call(&mut closure,0);
                     vm.run();
                 }
             };
