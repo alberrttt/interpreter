@@ -374,7 +374,7 @@ impl VirtualMachine {
                             panic!()
                         };
 
-                    self.call(callee.as_ref(), arg_count);
+                    self.call(Box::into_raw(callee), arg_count);
                     self.callframes[self.frame_count - 2].ip = ip;
 
                     // prepares for the next callframe
