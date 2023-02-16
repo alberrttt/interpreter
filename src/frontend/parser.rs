@@ -278,6 +278,13 @@ impl<'a> Parser<'a> {
                             }))
                             .into()
                         }
+                        "expr" => {
+                            let expr = self.expression().unwrap();
+                            return EmitFn(Box::new(move |compiler| {
+                               expr.to_bytecode(compiler)
+                            }))
+                            .into();
+                        }
                         "debug_stack" => {
                             return EmitFn(Box::new(|compiler| {
                                 compiler

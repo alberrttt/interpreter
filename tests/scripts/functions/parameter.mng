@@ -1,5 +1,4 @@
 func param(n) {
-  #debug_stack
   print n + 2;
 
   return n * 4;
