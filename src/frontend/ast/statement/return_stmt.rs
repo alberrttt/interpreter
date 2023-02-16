@@ -18,5 +18,6 @@ impl CompileToBytecode for ReturnStmt {
             })
             .to_bytecode(compiler);
         compiler.bytecode.function.chunk.emit_op(OpCode::Return);
+        compiler.bytecode.returned = true;
     }
 }

@@ -44,11 +44,14 @@ impl CompileToBytecode for FunctionDeclaration {
             self.block.to_bytecode(&mut temp_compiler);
             // unecessary return if the source code for the function already includes one
             // i.e `func x() {return 1;}` will have two return ops
-            temp_compiler
-                .bytecode
-                .function
-                .chunk
-                .emit_op(OpCode::Return);
+            if !temp_compiler.bytecode.returned {
+                temp_compiler.bytecode.write_void_op();
+                temp_compiler
+                    .bytecode
+                    .function
+                    .chunk
+                    .emit_op(OpCode::Return);
+            }
             temp_compiler.bytecode.function
         };
         let function = Rc::new(function);

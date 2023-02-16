@@ -33,7 +33,7 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                         backend::vm::VirtualMachine,
                         cli_helper::{Diagnostics},
                         frontend::compiler::{{Compiler, FunctionType}},
-                        common::{value::Value, interner::StringInterner, closure::Closure},
+                        common::{value::Value, interner::StringInterner, closure::Closure, debug::dissasemble_chunk},
                     };
                     use std::rc::Rc;
                     use std::cell::RefCell;
@@ -47,6 +47,7 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
 
                     let compiler = Compiler::new(diagnostics, FunctionType::Script);
                     let (compiled, _) = compiler.compile(#source.to_string()).unwrap();
+                    limesherbet::common::debug::dissasemble_chunk(&compiled.chunk, "test");
                     let mut closure = Closure {
                         func: Rc::new(compiled),
                         upvalues: Vec::new()

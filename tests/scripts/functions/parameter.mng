@@ -1,6 +1,8 @@
 func param(n) {
+  #debug_stack
   print n + 2;
-}
 
-param(4);
+  return n * 4;
+}
+assert_eq param(4), 16;
 #assert_stack [#void]

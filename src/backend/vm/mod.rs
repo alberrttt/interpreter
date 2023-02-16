@@ -5,6 +5,7 @@ use colored::Colorize;
 use crate::{
     backend::vm::natives::NATIVES,
     common::{
+        self,
         chunk::Chunk,
         closure::{self, Closure},
         debug::diassasemble_instruction,
@@ -158,6 +159,7 @@ impl VirtualMachine {
             ip += 1;
 
             match instruction.clone() {
+                OpCode::CloseUpvalue => {}
                 OpCode::Byte(_) => {}
                 OpCode::SetUpValue(u) => {
                     closure.upvalues[u as usize].location = peek!().clone();
@@ -191,7 +193,6 @@ impl VirtualMachine {
                             // captureUpvalue()
                             let value =
                                 self.stack[index as usize + 1 + current_frame!().slots].clone();
-                            dbg!(&value);
                             closure.upvalues.push(RuntimeUpvalue { location: value })
                         } else {
                             closure.upvalues[x] = closure.upvalues[index as usize].clone()

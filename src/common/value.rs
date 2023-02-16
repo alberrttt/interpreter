@@ -52,7 +52,6 @@ impl Debug for Value {
         }
     }
 }
-pub const NONEVALUE: Value = Value::None;
 impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {

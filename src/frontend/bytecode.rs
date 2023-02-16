@@ -26,7 +26,7 @@ pub struct Bytecode {
     pub function_type: FunctionType,
     pub compiling_statement: bool,
     pub current_expr: Option<*const Expression>,
-    pub returned_from_block: bool,
+    pub returned: bool,
     pub eliminated: bool,
     pub upvalues: Vec<Upvalue>,
 }
@@ -42,7 +42,7 @@ impl Default for Bytecode {
             emit_after_block: Default::default(),
             function_type: Default::default(),
             compiling_statement: Default::default(),
-            returned_from_block: Default::default(),
+            returned: Default::default(),
             current_expr: Default::default(),
 
             eliminated: Default::default(),

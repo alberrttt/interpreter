@@ -1,4 +1,4 @@
-use std::ptr::addr_of_mut;
+use std::{ffi::c_int, ptr::addr_of_mut};
 
 use crate::{
     common::{opcode::OpCode, value::AsValue},
@@ -69,15 +69,16 @@ impl<'a> Compiler<'a> {
         }
     }
     pub fn resolve_up_value(&mut self, token: &Token) -> Option<usize> {
-        let compiler = self.enclosing.as_mut()?.get_compiler();
-        let local = compiler.resolve_local(token);
+        let enclosing = self.enclosing.as_mut()?.get_compiler();
+        let local = enclosing.resolve_local(token);
 
-        if let Some(local) = local {
-            dbg!(local);
-            return self.add_up_value(local, true);
+        if let Some(index) = local {
+            let local = &mut enclosing.bytecode.locals[index];
+            local.is_captured = true;
+            return self.add_up_value(index, true);
         }
 
-        let upvalue = compiler.resolve_up_value(token);
+        let upvalue = enclosing.resolve_up_value(token);
         if let Some(upvalue) = upvalue {
             dbg!(upvalue);
             return self.add_up_value(upvalue, false);
