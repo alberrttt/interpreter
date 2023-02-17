@@ -1,7 +1,11 @@
 func param(n) {
   print n + 2;
-
   return n * 4;
 }
+param(4);
+
+#expr param(4)
+#debug_stack
+#pop
 assert_eq param(4), 16;
 #assert_stack [#void]
