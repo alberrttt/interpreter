@@ -34,7 +34,7 @@ impl<'a> Compiler<'a> {
         while self.bytecode.local_count > 0
             && self.bytecode.locals[self.bytecode.local_count - 1].depth > self.bytecode.scope_depth
         {
-            if self.bytecode.locals[self.bytecode.local_count].is_captured {
+            if self.bytecode.locals[self.bytecode.local_count - 1].is_captured {
                 self.bytecode.write_close_upvalue_op()
             } else {
                 self.bytecode.function.chunk.emit_op(OpCode::Pop);
