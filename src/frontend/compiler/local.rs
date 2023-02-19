@@ -15,18 +15,3 @@ impl Local {
         }
     }
 }
-pub const LOCAL: Local = Local {
-    name: Token {
-        kind: TokenKind::Error,
-        lexeme: String::new(),
-        line: 1234,
-        length: 4321,
-        position: Position {
-            start_in_line: 1234,
-            start_in_source: 4321,
-            line: 1234,
-        },
-    },
-    depth: 255,
-    is_captured: false,
-};

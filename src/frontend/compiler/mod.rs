@@ -1,5 +1,5 @@
 pub mod local;
-use local::{Local, LOCAL};
+use local::Local;
 
 use std::{cell::RefCell, rc::Rc};
 

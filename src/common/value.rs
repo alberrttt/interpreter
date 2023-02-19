@@ -30,7 +30,8 @@ pub enum Value {
 }
 #[derive(Debug, Clone)]
 pub struct RuntimeUpvalue {
-    pub location: Value, // maybe this needs to be a pointer
+    pub location: Rc<RefCell<Value>>, // maybe this needs to be a pointer
+    pub index: u8,
 }
 impl Debug for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

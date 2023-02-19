@@ -1,4 +1,9 @@
-use std::{collections::HashMap, rc::Rc, time::Instant};
+use std::{
+    cell::{Ref, RefCell},
+    collections::HashMap,
+    rc::Rc,
+    time::Instant,
+};
 
 use colored::Colorize;
 
@@ -72,6 +77,7 @@ impl VirtualMachine {
 
         self.frame_count += 1;
     }
+
     pub fn run(mut self) {
         let start = Instant::now();
         let mut current_frame = &self.callframes[self.frame_count - 1] as *const CallFrame;
@@ -96,7 +102,7 @@ impl VirtualMachine {
                 }
             }};
         }
-        let mut closure = read_current_closure!();
+        let mut current_closure = read_current_closure!();
         let mut function = read_current_frame_fn!();
         let mut chunk = &function.chunk;
         let mut ip: usize = 0;
@@ -162,10 +168,13 @@ impl VirtualMachine {
                 OpCode::CloseUpvalue => {}
                 OpCode::Byte(_) => {}
                 OpCode::SetUpValue(u) => {
-                    closure.upvalues[u as usize].location = peek!().clone();
+                    *current_closure.upvalues[u as usize].location.borrow_mut() = peek!().clone();
                 }
                 OpCode::GetUpValue(u) => {
-                    let tmp = closure.upvalues[u as usize].location.clone();
+                    let tmp = current_closure.upvalues[u as usize]
+                        .location
+                        .borrow()
+                        .clone();
 
                     self.stack.push(tmp);
                 }
@@ -191,9 +200,15 @@ impl VirtualMachine {
 
                         if is_local {
                             // captureUpvalue()
-                            let value =
+                            let mut value =
                                 self.stack[index as usize + 1 + current_frame!().slots].clone();
-                            closure.upvalues.push(RuntimeUpvalue { location: value })
+
+                            let upvalue = RuntimeUpvalue {
+                                location: Rc::new(RefCell::new(value)),
+                                index,
+                            };
+                            closure.upvalues.push(upvalue);
+                            dbg!(&closure.upvalues);
                         } else {
                             closure.upvalues[x] = closure.upvalues[index as usize].clone()
                         }
@@ -368,7 +383,7 @@ impl VirtualMachine {
 
                     current_frame = &self.callframes[self.frame_count - 1];
 
-                    closure = read_current_closure!();
+                    current_closure = read_current_closure!();
 
                     function = read_current_frame_fn!();
                     chunk = &function.chunk;
@@ -391,7 +406,7 @@ impl VirtualMachine {
                     // prepares for the next callframe
                     {
                         current_frame = &self.callframes[self.frame_count - 1];
-                        closure = read_current_closure!();
+                        current_closure = read_current_closure!();
                         function = read_current_frame_fn!();
                         chunk = &function.chunk;
                         ip = 0;
