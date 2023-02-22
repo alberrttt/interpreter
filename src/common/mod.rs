@@ -3,6 +3,7 @@ pub mod closure;
 pub mod debug;
 pub mod function;
 pub mod interner;
+pub mod linkedlist;
 pub mod natives;
 pub mod opcode;
 pub mod value;

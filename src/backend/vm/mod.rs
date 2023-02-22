@@ -200,15 +200,23 @@ impl VirtualMachine {
 
                         if is_local {
                             // captureUpvalue()
-                            let mut value =
-                                self.stack[index as usize + 1 + current_frame!().slots].clone();
-
+                            let value = &self.stack[index as usize + 1 + current_frame!().slots];
+                            if let Value::UpvalueLocation(location) = value {
+                                let upvalue = RuntimeUpvalue {
+                                    location: location.clone(),
+                                    index,
+                                };
+                                closure.upvalues.push(upvalue);
+                                return;
+                            }
+                            let value = Rc::new(RefCell::new(value.clone()));
+                            self.stack[index as usize + 1 + current_frame!().slots] =
+                                Value::UpvalueLocation(value.clone());
                             let upvalue = RuntimeUpvalue {
-                                location: Rc::new(RefCell::new(value)),
+                                location: value.clone(),
                                 index,
                             };
                             closure.upvalues.push(upvalue);
-                            dbg!(&closure.upvalues);
                         } else {
                             closure.upvalues[x] = closure.upvalues[index as usize].clone()
                         }

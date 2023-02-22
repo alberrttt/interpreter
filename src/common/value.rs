@@ -27,6 +27,7 @@ pub enum Value {
     Void,
     #[default]
     None,
+    UpvalueLocation(Rc<RefCell<Value>>),
 }
 #[derive(Debug, Clone)]
 pub struct RuntimeUpvalue {
@@ -36,6 +37,7 @@ pub struct RuntimeUpvalue {
 impl Debug for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::UpvalueLocation(arg0) => f.debug_tuple("UpvalueLocation").field(arg0).finish(),
             Self::Array(arg0) => f.debug_tuple("Array").field(arg0).finish(),
             Self::Number(arg0) => f.debug_tuple("Number").field(arg0).finish(),
             Self::Boolean(arg0) => f.debug_tuple("Boolean").field(arg0).finish(),
@@ -113,6 +115,9 @@ pub fn rcrf<T>(inner: T) -> Ptr<T> {
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Value::UpvalueLocation(location) => {
+                write!(f, "<upvalue {:?}>", addr_of!(location))
+            }
             Value::Number(number) => write!(f, "{}", number),
             Value::String(string) => {
                 let tmp: String = (*string).into();
