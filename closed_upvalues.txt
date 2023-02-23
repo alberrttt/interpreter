@@ -2,23 +2,16 @@ let globalSet = "";
 let globalGet = "";
 
 func main() {
-  #debug_stack
   let a = "initial";
   func set() { 
     a = "updated"; 
   }
   func get() {
-    #expr a
-    #debug_stack
-    #pop
     print a; 
   }
-  #debug_stack
   globalSet = set;
   globalGet = get;
 }
-#expr globalGet
-#debug_stack
 main();
 globalSet();
 globalGet();

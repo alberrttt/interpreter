@@ -207,16 +207,16 @@ impl VirtualMachine {
                                     index,
                                 };
                                 closure.upvalues.push(upvalue);
-                                return;
+                            } else {
+                                let value = Rc::new(RefCell::new(value.clone()));
+                                self.stack[index as usize + 1 + current_frame!().slots] =
+                                    Value::UpvalueLocation(value.clone());
+                                let upvalue = RuntimeUpvalue {
+                                    location: value.clone(),
+                                    index,
+                                };
+                                closure.upvalues.push(upvalue);
                             }
-                            let value = Rc::new(RefCell::new(value.clone()));
-                            self.stack[index as usize + 1 + current_frame!().slots] =
-                                Value::UpvalueLocation(value.clone());
-                            let upvalue = RuntimeUpvalue {
-                                location: value.clone(),
-                                index,
-                            };
-                            closure.upvalues.push(upvalue);
                         } else {
                             closure.upvalues[x] = closure.upvalues[index as usize].clone()
                         }
