@@ -46,7 +46,11 @@ pub struct VirtualMachine {
     pub globals: HashMap<usize, Value>,
     pub natives: &'static [Native; NATIVES_LEN],
 }
-
+static mut CALLFRAME: CallFrame = CallFrame {
+    closure: std::ptr::null_mut(),
+    ip: 0,
+    slots: 0,
+};
 impl VirtualMachine {
     pub fn new() -> VirtualMachine {
         pub const CALLFRAME: CallFrame = CallFrame {
@@ -102,10 +106,6 @@ impl VirtualMachine {
                 }
             }};
         }
-        let mut current_closure = read_current_closure!();
-        let mut function = read_current_frame_fn!();
-        let mut chunk = &function.chunk;
-        let mut ip: usize = 0;
         macro_rules! pop {
             () => {{
                 assert!(self.stack.len() > 0);
@@ -159,6 +159,12 @@ impl VirtualMachine {
                 &self.stack[tmp]
             }};
         }
+
+        let mut current_closure = read_current_closure!();
+        let mut function = read_current_frame_fn!();
+        let mut chunk = &function.chunk;
+        let mut ip: usize = 0;
+
         loop {
             let instruction = &chunk.code[ip];
 
@@ -182,7 +188,7 @@ impl VirtualMachine {
                     let function = &chunk.constants[location as usize];
 
                     let Value::Function(function) = function else {
-                        panic!("{:?}", function)
+                        panic!("{function:?}")
                     };
                     let mut closure: Closure = function.into();
                     for x in 0..function.upvalue_count {
@@ -199,24 +205,7 @@ impl VirtualMachine {
                         let index = *index;
 
                         if is_local {
-                            // captureUpvalue()
-                            let value = &self.stack[index as usize + 1 + current_frame!().slots];
-                            if let Value::UpvalueLocation(location) = value {
-                                let upvalue = RuntimeUpvalue {
-                                    location: location.clone(),
-                                    index,
-                                };
-                                closure.upvalues.push(upvalue);
-                            } else {
-                                let value = Rc::new(RefCell::new(value.clone()));
-                                self.stack[index as usize + 1 + current_frame!().slots] =
-                                    Value::UpvalueLocation(value.clone());
-                                let upvalue = RuntimeUpvalue {
-                                    location: value.clone(),
-                                    index,
-                                };
-                                closure.upvalues.push(upvalue);
-                            }
+                            self.capture_upvalue(index.into(), &mut closure, current_frame!())
                         } else {
                             closure.upvalues[x] = closure.upvalues[index as usize].clone()
                         }
@@ -310,7 +299,6 @@ impl VirtualMachine {
                 }
                 OpCode::SetGlobal(name) => {
                     let name = chunk.constants[name as usize].as_string();
-                    assert!(self.globals.contains_key(&name.0));
                     let value = self.stack[self.stack.len() - 1].clone();
                     self.globals.insert(name.0, value);
                 }
@@ -434,6 +422,25 @@ impl VirtualMachine {
                     binary_op_bool!(>=)
                 }
             }
+        }
+    }
+
+    fn capture_upvalue(&mut self, index: usize, closure: &mut Closure, callframe: &CallFrame) {
+        let value = &self.stack[index + 1 + callframe.slots];
+        if let Value::UpvalueLocation(location) = value {
+            let upvalue = RuntimeUpvalue {
+                location: location.clone(),
+                index: index as u8,
+            };
+            closure.upvalues.push(upvalue);
+        } else {
+            let value = Rc::new(RefCell::new(value.clone()));
+            self.stack[index + 1 + callframe.slots] = Value::UpvalueLocation(value.clone());
+            let upvalue = RuntimeUpvalue {
+                location: value.clone(),
+                index: index as u8,
+            };
+            closure.upvalues.push(upvalue);
         }
     }
 }

@@ -12,6 +12,7 @@ func main() {
   globalSet = set;
   globalGet = get;
 }
+
 main();
 globalSet();
 globalGet();
