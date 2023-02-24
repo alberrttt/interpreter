@@ -36,17 +36,15 @@ impl<'a> CompilerRef<'a> {
         }
     }
 }
+
 #[derive(Debug, Default)]
 pub struct Parser<'a> {
     pub diagnostics: Rc<RefCell<Diagnostics<'a>>>,
     pub scanner: Scanner,
-
     pub had_error: bool,
     pub panic_mode: bool,
     pub scope_depth: usize,
-
     pub function_type: FunctionType,
-
     pub token_state: TokenState,
 }
 
@@ -455,7 +453,7 @@ impl Parser<'_> {
         if can_assign && self.match_token(TokenKind::Equal) {
             return BinaryExpr {
                 lhs: Box::new(Identifier { value: token }.to_node()),
-                op: self.previous().kind,
+                op: self.previous().clone(),
                 rhs: Box::new(self.expression().unwrap()),
             }
             .to_expr()
@@ -534,7 +532,7 @@ impl Parser<'_> {
     }
     pub fn binary(&mut self, lhs: Node) -> Node {
         let rule = Self::get_rule(self.previous().kind);
-        let op = self.previous().kind;
+        let op = self.previous().clone();
         // the precedence is +1 so it'll compile it as the rhs
         #[allow(unsafe_code)]
         let prec: Precedence = unsafe { transmute((rule.precedence as u8) + 1) };
@@ -675,13 +673,13 @@ impl<'a> Parser<'a> {
         &self.token_state.current
     }
 
-    pub fn consume(&mut self, kind: TokenKind, err: &str) {
+    pub fn consume(&mut self, kind: TokenKind, err: &str) -> &Token {
         let current = self.current().kind;
         if current.ne(&kind) {
             error_at_current!(self, err);
         }
 
-        self.advance();
+        return self.advance();
     }
 
     pub fn peek(&mut self, distance: usize) -> &Token {

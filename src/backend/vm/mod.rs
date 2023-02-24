@@ -1,21 +1,12 @@
-use std::{
-    cell::{Ref, RefCell},
-    collections::HashMap,
-    rc::Rc,
-    time::Instant,
-};
+use std::{cell::RefCell, collections::HashMap, rc::Rc, time::Instant};
 
-use colored::Colorize;
-
+use crate::common::interner::InternedString;
 use crate::{
     backend::vm::natives::NATIVES,
     common::{
-        self,
         chunk::Chunk,
-        closure::{self, Closure},
-        debug::diassasemble_instruction,
+        closure::Closure,
         function::Function,
-        interner::InternedString,
         natives::Native,
         opcode::OpCode,
         value::{AsValue, RuntimeUpvalue, Value},
@@ -46,11 +37,7 @@ pub struct VirtualMachine {
     pub globals: HashMap<usize, Value>,
     pub natives: &'static [Native; NATIVES_LEN],
 }
-static mut CALLFRAME: CallFrame = CallFrame {
-    closure: std::ptr::null_mut(),
-    ip: 0,
-    slots: 0,
-};
+
 impl VirtualMachine {
     pub fn new() -> VirtualMachine {
         pub const CALLFRAME: CallFrame = CallFrame {
@@ -85,25 +72,24 @@ impl VirtualMachine {
     pub fn run(mut self) {
         let start = Instant::now();
         let mut current_frame = &self.callframes[self.frame_count - 1] as *const CallFrame;
+        #[allow(unsafe_code)]
+
         macro_rules! current_frame {
             () => {{
-                #[allow(unsafe_code)]
-                unsafe {
-                    &*current_frame
-                }
+                unsafe { &*current_frame }
             }};
         }
         macro_rules! read_current_closure {
             () => {{
-                unsafe { &mut (*current_frame!().closure) }
+                #[allow(unsafe_code)]
+                unsafe {
+                    &mut (*current_frame!().closure)
+                }
             }};
         }
         macro_rules! read_current_frame_fn {
             () => {{
-                #[allow(unsafe_code)]
-                unsafe {
-                    &*read_current_closure!().func
-                }
+                &*read_current_closure!().func
             }};
         }
         macro_rules! pop {
@@ -433,15 +419,15 @@ impl VirtualMachine {
                 index: index as u8,
             };
             closure.upvalues.push(upvalue);
-        } else {
-            let value = Rc::new(RefCell::new(value.clone()));
-            self.stack[index + 1 + callframe.slots] = Value::UpvalueLocation(value.clone());
-            let upvalue = RuntimeUpvalue {
-                location: value.clone(),
-                index: index as u8,
-            };
-            closure.upvalues.push(upvalue);
+            return;
         }
+        let value = Rc::new(RefCell::new(value.clone()));
+        self.stack[index + 1 + callframe.slots] = Value::UpvalueLocation(value.clone());
+        let upvalue = RuntimeUpvalue {
+            location: value,
+            index: index as u8,
+        };
+        closure.upvalues.push(upvalue);
     }
 }
 

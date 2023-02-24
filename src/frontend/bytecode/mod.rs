@@ -1,3 +1,5 @@
+use std::thread::Scope;
+
 use crate::common::{
     function::Function,
     opcode::{OpCode, StackInfo},
@@ -12,6 +14,7 @@ pub struct Upvalue {
     pub index: u8,
     pub is_local: bool,
 }
+pub mod scope;
 #[derive(Debug, Clone)]
 pub struct Bytecode {
     pub stack_info: Vec<StackInfo>,
@@ -26,11 +29,13 @@ pub struct Bytecode {
     pub returned: bool,
     pub eliminated: bool,
     pub upvalues: Vec<Upvalue>,
+    pub scopes: Vec<scope::Scope>,
 }
 
 impl Default for Bytecode {
     fn default() -> Self {
         Self {
+            scopes: Vec::new(),
             stack_info: Vec::new(),
             function: Default::default(),
             scope_depth: Default::default(),

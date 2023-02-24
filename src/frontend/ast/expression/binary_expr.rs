@@ -6,7 +6,7 @@ use crate::{
     frontend::{
         ast::{node::Node, CompileToBytecode},
         compiler::Compiler,
-        scanner::TokenKind,
+        scanner::{Token, TokenKind},
     },
 };
 
@@ -16,7 +16,7 @@ use super::{AsExpr, Expression};
 pub struct BinaryExpr {
     pub lhs: Box<Node>,
     pub rhs: Box<Node>,
-    pub op: TokenKind,
+    pub op: Token,
 }
 impl AsExpr for BinaryExpr {
     fn to_expr(self) -> Expression {
@@ -52,7 +52,7 @@ impl BinaryExpr {
 impl CompileToBytecode for BinaryExpr {
     fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         let BinaryExpr { lhs, rhs, op } = self;
-        if op.eq(&TokenKind::Equal) {
+        if op.kind.eq(&TokenKind::Equal) {
             self.compile_assignment(compiler);
             return;
         }
@@ -60,7 +60,7 @@ impl CompileToBytecode for BinaryExpr {
         rhs.to_bytecode(compiler);
 
         let chunk = &mut compiler.bytecode.function.chunk;
-        match op {
+        match op.kind {
             TokenKind::Plus => compiler.bytecode.write_add_op(),
             TokenKind::Dash => compiler.bytecode.write_sub_op(),
             TokenKind::Star => compiler.bytecode.write_mul_op(),

@@ -4,7 +4,7 @@ use crate::{
         opcode::OpCode,
         value::{AsValue, Value},
     },
-    frontend::compiler::Compiler,
+    frontend::{compiler::Compiler, scanner::Token},
 };
 
 use super::{
@@ -14,34 +14,35 @@ use super::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum Literal {
+pub struct Literal(pub Literals, pub Token);
+#[derive(Debug, PartialEq, Clone)]
+enum Literals {
     Number(f64),
     String(String),
     Bool(bool),
     Void,
 }
-
 impl Literal {
     pub fn as_node(self) -> Node {
         Node::Literal(self)
     }
     pub fn as_number(self) -> f64 {
-        match self {
-            Literal::Number(number) => number,
+        match self.0 {
+            Literals::Number(number) => number,
             _ => panic!(),
         }
     }
 }
 impl From<Literal> for Value {
     fn from(literal: Literal) -> Self {
-        match literal {
-            Literal::Void => Value::Void,
-            Literal::Number(num) => Value::Number(num),
-            Literal::String(string) => {
+        match literal.0 {
+            Literals::Void => Value::Void,
+            Literals::Number(num) => Value::Number(num),
+            Literals::String(string) => {
                 let mut interner = STRING_INTERNER.lock().expect("already?");
                 Value::String(interner.get_or_intern(&string))
             }
-            Literal::Bool(bool) => Value::Boolean(bool),
+            Literals::Bool(bool) => Value::Boolean(bool),
         }
     }
 }
@@ -49,11 +50,11 @@ impl From<Literal> for Value {
 impl CompileToBytecode for Literal {
     fn to_bytecode(&self, compiler: &mut Compiler) {
         let function = &mut compiler.bytecode.function;
-        let pos = match self {
-            Literal::Void => function.chunk.emit_value(Value::Void),
-            Literal::Number(number) => function.chunk.emit_value(Value::Number(*number)),
-            Literal::String(string) => function.chunk.emit_value(string.to_value()),
-            Literal::Bool(bool) => {
+        let pos = match self.0 {
+            Literals::Void => function.chunk.emit_value(Value::Void),
+            Literals::Number(number) => function.chunk.emit_value(Value::Number(*number)),
+            Literals::String(string) => function.chunk.emit_value(string.to_value()),
+            Literals::Bool(bool) => {
                 if *bool {
                     function.chunk.emit_op(OpCode::True)
                 } else {

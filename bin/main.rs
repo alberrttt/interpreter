@@ -5,7 +5,7 @@ use limesherbet::{
     backend::vm::VirtualMachine,
     cli_helper::Diagnostics,
     common::{
-        closure::Closure, debug::dissasemble_chunk, interner::StringInterner, opcode::OpCode,
+        closure::Closure, debug::dissasemble_chunk,
         value::Value,
     },
     frontend::compiler::{Compiler, FunctionType},
