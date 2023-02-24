@@ -7,6 +7,8 @@ use std::{
     rc::Rc,
 };
 
+use crate::frontend::bytecode::Upvalue;
+
 use super::{
     closure::Closure,
     function::Function,
@@ -21,14 +23,21 @@ pub enum Value {
     String(InternedString),
     Function(Rc<Function>),
     Array(Ptr<Vec<Value>>),
-    Closure(Closure),
+    Closure(Box<Closure>),
     Void,
     #[default]
     None,
+    UpvalueLocation(Rc<RefCell<Value>>),
+}
+#[derive(Debug, Clone)]
+pub struct RuntimeUpvalue {
+    pub location: Rc<RefCell<Value>>, // maybe this needs to be a pointer
+    pub index: u8,
 }
 impl Debug for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Self::UpvalueLocation(arg0) => f.debug_tuple("UpvalueLocation").field(arg0).finish(),
             Self::Array(arg0) => f.debug_tuple("Array").field(arg0).finish(),
             Self::Number(arg0) => f.debug_tuple("Number").field(arg0).finish(),
             Self::Boolean(arg0) => f.debug_tuple("Boolean").field(arg0).finish(),
@@ -46,7 +55,6 @@ impl Debug for Value {
         }
     }
 }
-pub const NONEVALUE: Value = Value::None;
 impl PartialEq for Value {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -107,6 +115,9 @@ pub fn rcrf<T>(inner: T) -> Ptr<T> {
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Value::UpvalueLocation(location) => {
+                write!(f, "<upvalue {:?}>", addr_of!(location))
+            }
             Value::Number(number) => write!(f, "{}", number),
             Value::String(string) => {
                 let tmp: String = (*string).into();

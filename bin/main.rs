@@ -32,11 +32,12 @@ pub fn main() {
 
     let mut vm = VirtualMachine::new();
 
-    let closure = Closure {
+    let mut closure = Closure {
         func: Rc::new(compiled),
+        upvalues: Vec::new(),
     };
     vm.stack.push(Value::Void);
-    vm.call(&closure, 0);
+    vm.call(&mut closure, 0);
     vm.run();
 }
 

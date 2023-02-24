@@ -1,14 +1,8 @@
-func outer() {
-  let a = 2;
-  let b = 3;
-  let c = 4;
-  func inner() {
-    let d = 5;
-    #void
-    print b + d;
-  }
+func o () {
+  let x = 1;
+  let y = 2;
+  let z = 3;
 
-  return inner;
 }
 
-outer()();
+o();

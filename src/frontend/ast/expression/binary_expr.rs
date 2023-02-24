@@ -42,10 +42,11 @@ impl BinaryExpr {
             return;
         } else if let Some(arg) = compiler.resolve_up_value(name) {
             compiler.bytecode.write_set_up_value_op(arg as u16);
+        } else {
+            let string: Value = (&name.lexeme).to_value();
+            let location = compiler.bytecode.function.chunk.emit_value(string);
+            compiler.bytecode.write_set_global_op(location);
         }
-        let string: Value = (&name.lexeme).to_value();
-        let location = compiler.bytecode.function.chunk.emit_value(string);
-        compiler.bytecode.write_set_global_op(location);
     }
 }
 impl CompileToBytecode for BinaryExpr {

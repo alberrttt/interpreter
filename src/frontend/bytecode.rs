@@ -5,10 +5,7 @@ use crate::common::{
 
 use super::{
     ast::expression::Expression,
-    compiler::{
-        local::{Local, LOCAL},
-        FunctionType,
-    },
+    compiler::{local::Local, FunctionType},
 };
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Upvalue {
@@ -20,13 +17,13 @@ pub struct Bytecode {
     pub stack_info: Vec<StackInfo>,
     pub function: Function,
     pub scope_depth: u8,
-    pub locals: Box<[Local]>,
+    pub locals: Vec<Local>,
     pub local_count: usize,
     pub emit_after_block: Vec<OpCode>,
     pub function_type: FunctionType,
     pub compiling_statement: bool,
     pub current_expr: Option<*const Expression>,
-    pub returned_from_block: bool,
+    pub returned: bool,
     pub eliminated: bool,
     pub upvalues: Vec<Upvalue>,
 }
@@ -37,12 +34,12 @@ impl Default for Bytecode {
             stack_info: Vec::new(),
             function: Default::default(),
             scope_depth: Default::default(),
-            locals: Box::new([LOCAL; 512]),
+            locals: Vec::new(),
             local_count: Default::default(),
             emit_after_block: Default::default(),
             function_type: Default::default(),
             compiling_statement: Default::default(),
-            returned_from_block: Default::default(),
+            returned: Default::default(),
             current_expr: Default::default(),
 
             eliminated: Default::default(),

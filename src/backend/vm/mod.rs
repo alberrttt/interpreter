@@ -1,10 +1,16 @@
-use std::{collections::HashMap, time::Instant};
+use std::{
+    cell::{Ref, RefCell},
+    collections::HashMap,
+    rc::Rc,
+    time::Instant,
+};
 
 use colored::Colorize;
 
 use crate::{
     backend::vm::natives::NATIVES,
     common::{
+        self,
         chunk::Chunk,
         closure::{self, Closure},
         debug::diassasemble_instruction,
@@ -12,7 +18,7 @@ use crate::{
         interner::InternedString,
         natives::Native,
         opcode::OpCode,
-        value::{AsValue, Value},
+        value::{AsValue, RuntimeUpvalue, Value},
     },
 };
 
@@ -40,11 +46,15 @@ pub struct VirtualMachine {
     pub globals: HashMap<usize, Value>,
     pub natives: &'static [Native; NATIVES_LEN],
 }
-
+static mut CALLFRAME: CallFrame = CallFrame {
+    closure: std::ptr::null_mut(),
+    ip: 0,
+    slots: 0,
+};
 impl VirtualMachine {
     pub fn new() -> VirtualMachine {
         pub const CALLFRAME: CallFrame = CallFrame {
-            closure: std::ptr::null(),
+            closure: std::ptr::null_mut(),
             ip: 0,
             slots: 0,
         };
@@ -57,20 +67,21 @@ impl VirtualMachine {
         }
     }
     #[allow(clippy::not_unsafe_ptr_arg_deref, unsafe_code)]
-    pub fn call(&mut self, closure: *const Closure, arg_count: usize) {
-        let closure = unsafe { &*closure };
-        let function = &closure.func;
+    pub fn call(&mut self, closure: *mut Closure, arg_count: usize) {
+        let function = unsafe { &(*closure).func };
         let arity = function.arity;
         if arg_count != arity as usize {
             panic!("mismatched argument counts! expected {arity} got {arg_count}");
         }
 
         let frame: &mut CallFrame = &mut self.callframes[self.frame_count];
+
         frame.closure = closure;
         frame.slots = self.stack.len() - (arg_count + 1);
 
         self.frame_count += 1;
     }
+
     pub fn run(mut self) {
         let start = Instant::now();
         let mut current_frame = &self.callframes[self.frame_count - 1] as *const CallFrame;
@@ -83,9 +94,9 @@ impl VirtualMachine {
             }};
         }
         macro_rules! read_current_closure {
-            () => {
-                unsafe { &(*current_frame!().closure) }
-            };
+            () => {{
+                unsafe { &mut (*current_frame!().closure) }
+            }};
         }
         macro_rules! read_current_frame_fn {
             () => {{
@@ -95,10 +106,6 @@ impl VirtualMachine {
                 }
             }};
         }
-        let mut closure = read_current_closure!();
-        let mut function = read_current_frame_fn!();
-        let mut chunk = &function.chunk;
-        let mut ip: usize = 0;
         macro_rules! pop {
             () => {{
                 assert!(self.stack.len() > 0);
@@ -146,26 +153,44 @@ impl VirtualMachine {
                 }
             }};
         }
+        macro_rules! peek {
+            () => {{
+                let tmp = self.stack.len() - 1;
+                &self.stack[tmp]
+            }};
+        }
+
+        let mut current_closure = read_current_closure!();
+        let mut function = read_current_frame_fn!();
+        let mut chunk = &function.chunk;
+        let mut ip: usize = 0;
+
         loop {
             let instruction = &chunk.code[ip];
-            #[cfg(debug_assertions)]
-            {
-                print!("{}", format!("\t{ip} Executing ").bold());
-                diassasemble_instruction(ip, instruction, &function.chunk);
-            }
+
             ip += 1;
 
             match instruction.clone() {
+                OpCode::CloseUpvalue => {}
                 OpCode::Byte(_) => {}
-                OpCode::SetUpValue(u) => {}
-                OpCode::GetUpValue(u) => {}
+                OpCode::SetUpValue(u) => {
+                    *current_closure.upvalues[u as usize].location.borrow_mut() = peek!().clone();
+                }
+                OpCode::GetUpValue(u) => {
+                    let tmp = current_closure.upvalues[u as usize]
+                        .location
+                        .borrow()
+                        .clone();
+
+                    self.stack.push(tmp);
+                }
                 OpCode::Closure(location) => {
                     let function = &chunk.constants[location as usize];
 
                     let Value::Function(function) = function else {
-                        panic!("{:?}", function)
+                        panic!("{function:?}")
                     };
-                    let closure: Closure = function.into();
+                    let mut closure: Closure = function.into();
                     for x in 0..function.upvalue_count {
                         let OpCode::Byte(is_local) = &chunk.code[ip] else {
                             panic!()
@@ -179,10 +204,14 @@ impl VirtualMachine {
                         let is_local = *is_local != 0;
                         let index = *index;
 
-                        dbg!(is_local, index);
+                        if is_local {
+                            self.capture_upvalue(index.into(), &mut closure, current_frame!())
+                        } else {
+                            closure.upvalues[x] = closure.upvalues[index as usize].clone()
+                        }
                     }
 
-                    self.stack.push(Value::Closure(closure))
+                    self.stack.push(Value::Closure(Box::new(closure)))
                 }
                 OpCode::SetLocalConsumes(index) => {
                     self.stack[index as usize + 1 + current_frame!().slots] = pop!();
@@ -270,7 +299,6 @@ impl VirtualMachine {
                 }
                 OpCode::SetGlobal(name) => {
                     let name = chunk.constants[name as usize].as_string();
-                    assert!(self.globals.contains_key(&name.0));
                     let value = self.stack[self.stack.len() - 1].clone();
                     self.globals.insert(name.0, value);
                 }
@@ -350,7 +378,9 @@ impl VirtualMachine {
                     }
 
                     current_frame = &self.callframes[self.frame_count - 1];
-                    closure = read_current_closure!();
+
+                    current_closure = read_current_closure!();
+
                     function = read_current_frame_fn!();
                     chunk = &function.chunk;
                     ip = current_frame!().ip;
@@ -359,22 +389,20 @@ impl VirtualMachine {
                 }
                 // room for improvement
                 OpCode::Call(arg_count) => {
-                    let callee = &self.stack[self.stack.len() - (1 + arg_count)];
+                    let tmp = self.stack.len() - (1 + arg_count);
+                    let callee = std::mem::take(&mut self.stack[tmp]);
 
                     let Value::Closure(callee) = callee else {
-                            panic!()
-                        };
-                    #[cfg(debug_assertions)]
-                    {
-                        println!("{}", format!("\tcalled {}", callee.func.name).red());
-                    }
-                    self.call(callee, arg_count);
+                        panic!()
+                    };
+
+                    self.call(Box::into_raw(callee), arg_count);
                     self.callframes[self.frame_count - 2].ip = ip;
 
                     // prepares for the next callframe
                     {
                         current_frame = &self.callframes[self.frame_count - 1];
-                        closure = read_current_closure!();
+                        current_closure = read_current_closure!();
                         function = read_current_frame_fn!();
                         chunk = &function.chunk;
                         ip = 0;
@@ -394,6 +422,25 @@ impl VirtualMachine {
                     binary_op_bool!(>=)
                 }
             }
+        }
+    }
+
+    fn capture_upvalue(&mut self, index: usize, closure: &mut Closure, callframe: &CallFrame) {
+        let value = &self.stack[index + 1 + callframe.slots];
+        if let Value::UpvalueLocation(location) = value {
+            let upvalue = RuntimeUpvalue {
+                location: location.clone(),
+                index: index as u8,
+            };
+            closure.upvalues.push(upvalue);
+        } else {
+            let value = Rc::new(RefCell::new(value.clone()));
+            self.stack[index + 1 + callframe.slots] = Value::UpvalueLocation(value.clone());
+            let upvalue = RuntimeUpvalue {
+                location: value.clone(),
+                index: index as u8,
+            };
+            closure.upvalues.push(upvalue);
         }
     }
 }

@@ -25,6 +25,7 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
             let name = path.file_stem().unwrap().to_str().unwrap();
             let name = pre_pend.to_owned() + name;
             let tmp_name = format_ident!("{}", name);
+            let source = fs::read_to_string(Path::new(path_string)).unwrap();
             let token = quote! {
                 #[test]
                 fn #tmp_name() {
@@ -32,7 +33,7 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                         backend::vm::VirtualMachine,
                         cli_helper::{Diagnostics},
                         frontend::compiler::{{Compiler, FunctionType}},
-                        common::{value::Value, interner::StringInterner, closure::Closure},
+                        common::{value::Value, interner::StringInterner, closure::Closure, debug::dissasemble_chunk},
                     };
                     use std::rc::Rc;
                     use std::cell::RefCell;
@@ -41,17 +42,19 @@ fn recurse_dir(path: &Path, stream: &mut Vec<TokenStream>, pre_pend: String) {
                     use std::fs::read_to_string;
 
 
-                    let source = read_to_string(Path::new(#path_string)).unwrap();
+
                     let mut diagnostics = Rc::new(RefCell::new(Diagnostics::new(Path::new(#path_string))));
 
                     let compiler = Compiler::new(diagnostics, FunctionType::Script);
-                    let (compiled, _) = compiler.compile(source).unwrap();
-                    let closure = Closure {
+                    let (compiled, _) = compiler.compile(#source.to_string()).unwrap();
+                    limesherbet::common::debug::dissasemble_chunk(&compiled.chunk, "test");
+                    let mut closure = Closure {
                         func: Rc::new(compiled),
+                        upvalues: Vec::new()
                     };
                     let mut vm = VirtualMachine::new();
                     vm.stack.push(Value::Void);
-                    vm.call(&closure,0);
+                    vm.call(&mut closure,0);
                     vm.run();
                 }
             };

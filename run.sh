@@ -1,0 +1,1 @@
+MIRIFLAGS="-Zmiri-disable-isolation" cargo +nightly miri run --target x86_64-unknown-linux-gnu -- ./tests/scripts/functions/fib.mng 

@@ -91,4 +91,5 @@ pub enum OpCode {
     CallNative(u16),
     CallFnArgPtr(u8, u8),
     Byte(u8),
+    CloseUpvalue,
 }

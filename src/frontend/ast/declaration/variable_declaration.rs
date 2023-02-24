@@ -7,7 +7,7 @@ use crate::{
             node::{AsNode, Node},
             CompileToBytecode,
         },
-        compiler::Compiler,
+        compiler::{local::Local, Compiler},
         scanner::Token,
     },
 };
@@ -36,11 +36,12 @@ impl CompileToBytecode for VariableDeclaration {
 }
 impl<'a> Compiler<'a> {
     pub fn add_local(&mut self, name: Token) {
-        let local = &mut self.bytecode.locals[self.bytecode.local_count];
+        self.bytecode.locals.push(Local {
+            name,
+            depth: self.bytecode.scope_depth,
+            is_captured: false,
+        });
         self.bytecode.local_count += 1;
-
-        local.name = name;
-        local.depth = self.bytecode.scope_depth;
     }
 }
 impl AsDeclaration for VariableDeclaration {

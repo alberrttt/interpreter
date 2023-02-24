@@ -51,6 +51,9 @@ pub fn diassasemble_instruction(
         OpCode::GetUpValue(pos) | OpCode::SetUpValue(pos) => {
             println!("{instruction} <{pos}>")
         }
+        OpCode::CloseUpvalue => {
+            println!("{instruction}")
+        }
         OpCode::CallFnArgPtr(_, args) => {
             println!("{instruction} {args}")
         }

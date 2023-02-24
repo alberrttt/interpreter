@@ -1,0 +1,11 @@
+func outer() {
+  let x = "outside";
+  func inner() {
+    print x;
+  }
+  return inner;
+}
+
+let closure = outer();
+print "hello";
+closure();
