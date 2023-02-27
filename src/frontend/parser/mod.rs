@@ -329,6 +329,7 @@ impl<'a> Parser<'a> {
             _ => self.statement(),
         };
         if self.panic_mode {
+            println!("synchronizing");
             self.synchronize();
         }
         node
@@ -625,8 +626,8 @@ impl<'a> Parser<'a> {
             if self.previous().kind.eq(&TokenKind::SemiColon) {
                 return;
             };
-            println!("{}", self.current().kind);
-            match self.current().kind {
+            println!("{}", self.previous().kind);
+            match self.previous().kind {
                 TokenKind::Return
                 | TokenKind::If
                 | TokenKind::While
@@ -685,6 +686,7 @@ impl<'a> Parser<'a> {
         let current = self.current().kind;
         if current.ne(&kind) {
             error_at_current!(self, err);
+            return self.current();
         }
 
         return self.advance();

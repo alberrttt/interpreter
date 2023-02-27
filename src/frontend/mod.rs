@@ -1,8 +1,10 @@
 pub mod ast;
 pub mod bytecode;
 pub mod compiler;
+pub mod error;
 pub mod file;
 pub mod fixedvec;
+pub mod location;
 pub mod parser;
 pub mod scanner;
 #[derive(PartialEq, Eq, PartialOrd, Ord)]

@@ -1,8 +1,2 @@
-func o () {
-  let x = 1;
-  let y = 2;
-  let z = 3;
-
-}
-
-o();
+let a = true
+print a;

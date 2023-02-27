@@ -1,9 +1,13 @@
+use std::path::Path;
+
 use crate::common::value::Value;
 
 use super::{
     ast::{node::Node, CompileToBytecode},
     compiler::Compiler,
 };
+
+// for the ast
 #[derive(Default, Debug)]
 pub struct FileNode<'a> {
     pub nodes: Vec<Node>,
