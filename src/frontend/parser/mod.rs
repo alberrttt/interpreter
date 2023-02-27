@@ -26,6 +26,8 @@ use crate::frontend::{
 };
 use crate::{cli_helper::Diagnostics, common::opcode::OpCode, frontend::ast::CompileToBytecode};
 
+use super::ast::literal::Literals;
+
 #[derive(Debug)]
 pub struct CompilerRef<'a>(pub *const Compiler<'a>);
 impl<'a> CompilerRef<'a> {
@@ -122,12 +124,12 @@ impl<'a> Parser<'a> {
             },
             TokenKind::True => Rule {
                 precedence: Precedence::None,
-                prefix: Some(|_, _| Literal::Bool(true).as_node()),
+                prefix: Some(|p, _| Literal(Literals::Bool(true), p.previous().clone()).as_node()),
                 infix: None,
             },
             TokenKind::False => Rule {
                 precedence: Precedence::None,
-                prefix: Some(|_, _| Literal::Bool(false).as_node()),
+                prefix: Some(|p, _| Literal(Literals::Bool(false), p.previous().clone()).as_node()),
                 infix: None,
             },
             TokenKind::Identifier => Rule {
@@ -528,7 +530,11 @@ impl Parser<'_> {
         block.to_node()
     }
     pub fn string(&mut self, _can_assign: bool) -> Node {
-        Literal::String(self.previous().lexeme.clone()).as_node()
+        Literal(
+            Literals::String(self.previous().lexeme.clone()),
+            self.previous().clone(),
+        )
+        .as_node()
     }
     pub fn binary(&mut self, lhs: Node) -> Node {
         let rule = Self::get_rule(self.previous().kind);
@@ -546,7 +552,9 @@ impl Parser<'_> {
         .to_node()
     }
     pub fn number(&mut self, _can_assign: bool) -> Node {
-        Literal::Number(self.previous().lexeme.parse::<f64>().unwrap()).as_node()
+        let token = self.previous().clone();
+        let number = token.lexeme.parse::<f64>().unwrap();
+        Literal(Literals::Number(number), token).as_node()
     }
 }
 const EOF: &Token = &Token {

@@ -16,7 +16,7 @@ use super::{
 #[derive(Debug, PartialEq, Clone)]
 pub struct Literal(pub Literals, pub Token);
 #[derive(Debug, PartialEq, Clone)]
-enum Literals {
+pub enum Literals {
     Number(f64),
     String(String),
     Bool(bool),
@@ -50,7 +50,7 @@ impl From<Literal> for Value {
 impl CompileToBytecode for Literal {
     fn to_bytecode(&self, compiler: &mut Compiler) {
         let function = &mut compiler.bytecode.function;
-        let pos = match self.0 {
+        let pos = match &self.0 {
             Literals::Void => function.chunk.emit_value(Value::Void),
             Literals::Number(number) => function.chunk.emit_value(Value::Number(*number)),
             Literals::String(string) => function.chunk.emit_value(string.to_value()),

@@ -1,6 +1,13 @@
 use crate::{
     common::opcode::OpCode,
-    frontend::ast::{expression::Expression, literal::Literal, CompileToBytecode},
+    frontend::{
+        ast::{
+            expression::Expression,
+            literal::{Literal, Literals},
+            CompileToBytecode,
+        },
+        scanner::Token,
+    },
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -13,7 +20,12 @@ impl CompileToBytecode for ReturnStmt {
         self.expr
             .as_ref()
             .unwrap_or({
-                let this = Literal::Void;
+                let this = Literal(
+                    Literals::Void,
+                    Token {
+                        ..Default::default()
+                    },
+                );
                 &Expression::Literal(this)
             })
             .to_bytecode(compiler);
