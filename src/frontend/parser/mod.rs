@@ -391,6 +391,13 @@ impl<'a> Parser<'a> {
             TokenKind::Let => {
                 self.advance();
                 let identifier = self.token_as_identifier();
+                if !self.check(TokenKind::Equal) {
+                    self.consume(TokenKind::SemiColon, "Expected 'n' after variable declaration");
+                    return VariableDeclaration {
+                        intializer: Expression::None ,
+                        identifier,
+                    }.to_node()
+                }
                 self.consume(TokenKind::Equal, "Expected '=' after variable name");
                 let initializer = self.expression().unwrap().to_expr();
                 self.consume(

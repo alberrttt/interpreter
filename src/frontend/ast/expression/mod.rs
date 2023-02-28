@@ -37,6 +37,7 @@ pub enum Expression {
     If(If),
     While(While),
     CallExpr(Call),
+    None
 }
 impl AsNode for Expression {
     fn to_node(self) -> Node {
@@ -67,6 +68,10 @@ impl Expression {
 impl CompileToBytecode for Expression {
     fn to_bytecode(&self, compiler: &mut Compiler) {
         match self {
+            Expression::None => {
+                // fix later
+                compiler.bytecode.write_void_op()
+            }
             Expression::CallExpr(call_expr) => call_expr.to_bytecode(compiler),
             Expression::While(while_expr) => while_expr.to_bytecode(compiler),
             Expression::Grouping(inner) => inner.to_bytecode(compiler),
