@@ -576,6 +576,7 @@ macro_rules! error_at_current {
         error_at!($parser, &current, $msg);
     }};
 }
+
 macro_rules! error_at {
     ($parser:expr, $token:expr, $msg:expr) => {{
         $parser.panic_mode = true;
@@ -600,7 +601,11 @@ macro_rules! error_at {
                 );
             }
         }
-        println!("{} {}:{}", $msg.red(), file!(), line!());
+        println!("{}", $msg.red());
+        println!(
+            "{}",
+            format!("(location:  {}:{})", file!(), line!()).black()
+        );
     }};
 }
 impl<'a> Parser<'a> {

@@ -2,6 +2,7 @@ use std::thread::Scope;
 
 use crate::common::{
     function::Function,
+    interner::InternedString,
     opcode::{OpCode, StackInfo},
 };
 
@@ -29,13 +30,13 @@ pub struct Bytecode {
     pub returned: bool,
     pub eliminated: bool,
     pub upvalues: Vec<Upvalue>,
-    pub scopes: Vec<scope::Scope>,
+    pub globals: Vec<String>,
 }
 
 impl Default for Bytecode {
     fn default() -> Self {
         Self {
-            scopes: Vec::new(),
+            globals: Vec::new(),
             stack_info: Vec::new(),
             function: Default::default(),
             scope_depth: Default::default(),

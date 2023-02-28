@@ -72,11 +72,13 @@ impl CompileToBytecode for FunctionDeclaration {
             compiler.add_local(self.name.value.clone());
         } else {
             // location of the name in the constant pool
+            let lexeme = self.name.value.lexeme.clone();
             let name = compiler
                 .bytecode
                 .function
                 .chunk
-                .emit_value(self.name.value.lexeme.to_value());
+                .emit_value(lexeme.to_value());
+            compiler.bytecode.globals.push(lexeme);
             compiler
                 .bytecode
                 .function

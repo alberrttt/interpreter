@@ -28,9 +28,9 @@ impl CompileToBytecode for VariableDeclaration {
             return;
         }
         let function = &mut compiler.bytecode.function;
-        let name = function
-            .chunk
-            .emit_value(self.identifier.value.lexeme.to_value());
+        let lexeme = self.identifier.value.lexeme.clone();
+        let name = function.chunk.emit_value(lexeme.to_value());
+        compiler.bytecode.globals.push(lexeme);
         function.chunk.emit_op(OpCode::DefineGlobal(name))
     }
 }

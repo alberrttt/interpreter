@@ -1,5 +1,7 @@
 use std::{ffi::c_int, ptr::addr_of_mut};
 
+use colored::Colorize;
+
 use crate::{
     common::{opcode::OpCode, value::AsValue},
     frontend::{
@@ -33,8 +35,19 @@ impl CompileToBytecode for Identifier {
             op = OpCode::GetUpValue(arg as u16);
         } else {
             let function = &mut compiler.bytecode.function;
-            let arg = function.chunk.emit_value(self.value.lexeme.to_value());
-            op = OpCode::GetGlobal(arg)
+            let lexeme = self.value.lexeme.clone();
+            if compiler.bytecode.globals.contains(&lexeme) {
+                let arg = function.chunk.emit_value(lexeme.to_value());
+                op = OpCode::GetGlobal(arg)
+            } else {
+                compiler.diagnostics.borrow_mut().log(
+                    Some(&self.value.position),
+                    "Compiler",
+                    format!("Undefined variable '{}' \n", self.value.lexeme)
+                        .bright_red()
+                        .to_string(),
+                )
+            }
         }
         let function = &mut compiler.bytecode.function;
         function.chunk.emit_op(op);
