@@ -72,18 +72,20 @@ impl VirtualMachine {
     pub fn run(mut self) {
         let start = Instant::now();
         let mut current_frame = &self.callframes[self.frame_count - 1] as *const CallFrame;
-        #[allow(unsafe_code)]
 
         macro_rules! current_frame {
             () => {{
-                unsafe { &*current_frame }
+                #[allow(unsafe_code)]
+                unsafe {
+                    &*current_frame
+                }
             }};
         }
         macro_rules! read_current_closure {
             () => {{
                 #[allow(unsafe_code)]
                 unsafe {
-                    &mut (*current_frame!().closure)
+                    &mut (*(&*current_frame).closure)
                 }
             }};
         }
@@ -107,7 +109,9 @@ impl VirtualMachine {
             }};
         }
         macro_rules! binary_op {
-            ($op:tt) => {{
+            ($op:tt) => {
+                #[allow(clippy::assign_op_pattern)]
+                {
                 let rhs = pop!();
                 let tmp = self.stack.len() - 1;
                 let lhs = &mut self.stack[tmp];
@@ -190,14 +194,14 @@ impl VirtualMachine {
                         .stack
                         .drain(self.stack.len() - args as usize..)
                         .collect();
-                    let mut args = drain.to_vec();
+                    let args = drain.to_vec();
                     {
                         (native.0)(&mut self, args);
                     }
                 }
                 OpCode::CallNative(location) => {
                     let native = &self.natives[location as usize];
-                    let mut args: Vec<Value> = vec![];
+                    let args: Vec<Value> = vec![];
                     {
                         (native.0)(&mut self, args);
                     }
@@ -225,7 +229,7 @@ impl VirtualMachine {
                     if let Value::Boolean(bool) = pop {
                         self.stack.push((!bool).to_value());
                     } else {
-                        panic!("not cannot be applied to {} ", pop)
+                        panic!("not cannot be applied to {pop} ")
                     }
                 }
                 OpCode::Negate => {
@@ -233,7 +237,7 @@ impl VirtualMachine {
                     if let Value::Number(num) = pop {
                         self.stack.push((-num).to_value());
                     } else {
-                        panic!("negate cannot be applied to {} ", pop)
+                        panic!("negate cannot be applied to {pop} ")
                     }
                 }
                 OpCode::True => self.stack.push(Value::Boolean(true)),
@@ -282,7 +286,7 @@ impl VirtualMachine {
                         }
                         Value::String(string_ref) => {
                             let Value::String(rhs) = rhs else {
-                                panic!("lhs {:?}\nrhs{:?}",lhs,rhs);
+                                panic!("lhs {lhs:?}\nrhs{rhs:?}");
                             };
 
                             let mut lhs: String = (*string_ref).into();

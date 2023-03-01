@@ -27,6 +27,7 @@ use crate::frontend::{
 use crate::{cli_helper::Diagnostics, common::opcode::OpCode, frontend::ast::CompileToBytecode};
 
 use super::ast::literal::Literals;
+use super::error::ParseResult;
 
 #[derive(Debug)]
 pub struct CompilerRef<'a>(pub *const Compiler<'a>);
@@ -392,11 +393,15 @@ impl<'a> Parser<'a> {
                 self.advance();
                 let identifier = self.token_as_identifier();
                 if !self.check(TokenKind::Equal) {
-                    self.consume(TokenKind::SemiColon, "Expected 'n' after variable declaration");
+                    self.consume(
+                        TokenKind::SemiColon,
+                        "Expected 'n' after variable declaration",
+                    );
                     return VariableDeclaration {
-                        intializer: Expression::None ,
+                        intializer: Expression::None,
                         identifier,
-                    }.to_node()
+                    }
+                    .to_node();
                 }
                 self.consume(TokenKind::Equal, "Expected '=' after variable name");
                 let initializer = self.expression().unwrap().to_expr();
@@ -564,6 +569,40 @@ impl Parser<'_> {
         let number = token.lexeme.parse::<f64>().unwrap();
         Literal(Literals::Number(number), token).as_node()
     }
+    pub fn error_at_current(&mut self, msg: &str) {
+        self.had_error = true;
+        let current = self.current().to_owned();
+        self.error_at(&current, msg);
+    }
+    pub fn error_at(&mut self, token: &Token, msg: &str) {
+        self.panic_mode = true;
+        let mut diagnostics = self.diagnostics.borrow_mut();
+
+        match token.kind {
+            TokenKind::EOF => {
+                diagnostics.log(
+                    Some(&token.position),
+                    "Compiler",
+                    "Error at EOF: ".to_string(),
+                );
+            }
+
+            _ => {
+                let range: Range<usize> = (token.position.start_in_source as usize)
+                    ..(token.position.start_in_source as usize + token.length);
+                diagnostics.log(
+                    Some(&token.position),
+                    "Compiler",
+                    format!("Error at `{}`: ", &self.scanner.source[range]),
+                );
+            }
+        }
+        println!("{}", msg.red());
+        println!(
+            "{}",
+            format!("(location:  {}:{})", file!(), line!()).black()
+        );
+    }
 }
 const EOF: &Token = &Token {
     kind: TokenKind::EOF,
@@ -694,14 +733,14 @@ impl<'a> Parser<'a> {
         &self.token_state.current
     }
 
-    pub fn consume(&mut self, kind: TokenKind, err: &str) -> &Token {
+    pub fn consume(&mut self, kind: TokenKind, err: &str) -> ParseResult<&Token> {
         let current = self.current().kind;
         if current.ne(&kind) {
             error_at_current!(self, err);
-            return self.current();
+            return Ok(self.current());
         }
 
-        return self.advance();
+        Ok(self.advance())
     }
 
     pub fn peek(&mut self, distance: usize) -> &Token {

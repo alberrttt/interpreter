@@ -42,7 +42,7 @@ impl<'a> Diagnostics<'a> {
             format!("{}", self.file_path().bold()).yellow()
         );
         msg.iter().for_each(|line| {
-            println!("\t\t{}", line);
+            println!("\t\t{line}");
         });
     }
 }

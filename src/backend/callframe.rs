@@ -1,7 +1,4 @@
-use crate::common::{
-    closure::{self, Closure},
-    function::Function,
-};
+use crate::common::closure::Closure;
 
 #[derive(Debug, Clone)]
 pub struct CallFrame {

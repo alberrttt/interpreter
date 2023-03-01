@@ -1,5 +1,3 @@
-use std::mem;
-
 use crate::common::value::Value;
 
 use super::{chunk::Chunk, opcode::OpCode};
@@ -100,7 +98,7 @@ pub fn diassasemble_instruction(
             println!("{instruction} {pos}")
         }
 
-        _ => println!("{}", instruction),
+        _ => println!("{instruction}"),
     }
     instruction_ptr
 }

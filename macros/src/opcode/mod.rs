@@ -1,12 +1,8 @@
 use proc_macro2::{Ident, TokenStream};
-use quote::{quote, ToTokens};
+use quote::quote;
 use syn::{
-    parse::{self, Parse},
-    parse_macro_input,
-    punctuated::Punctuated,
-    spanned::Spanned,
-    token::Comma,
-    Attribute, Data, DataEnum, DeriveInput, Field, Fields, Lit, LitInt, Meta, MetaList, Variant,
+    parse_macro_input, punctuated::Punctuated, spanned::Spanned, Attribute, DeriveInput, Field,
+    Fields, Lit, Meta, Variant,
 };
 #[derive(Debug, Default)]
 struct StackInfo {
@@ -49,7 +45,7 @@ pub fn expand_opcode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
                         let fields: Vec<TokenStream> = variant
                             .fields
                             .iter()
-                            .map(|field| {
+                            .map(|_field| {
                                 quote! {
                                     _,
                                 }
@@ -78,7 +74,7 @@ pub fn expand_opcode(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
         }
         impls.push(implementation)
     });
-    let tokens = quote! { #(#arms)*};
+    let _tokens = quote! { #(#arms)*};
     proc_macro::TokenStream::from(quote! {
         #(#impls)*
         pub fn get_stack_info(op: &OpCode) -> StackInfo {
@@ -212,23 +208,6 @@ fn pascal_to_snake(input: &str) -> String {
     output
 }
 
-fn create_function_body(params: &Vec<TokenStream>, variant_name: &Ident) -> TokenStream {
-    if params.is_empty() {
-        quote! { OpCode::#variant_name }
-    } else {
-        let params: Vec<proc_macro2::TokenStream> = params
-            .clone()
-            .into_iter()
-            .map(|tk| {
-                let ident: proc_macro2::TokenTree =
-                    tk.into_iter().next().unwrap().try_into().unwrap();
-                proc_macro2::TokenStream::from(ident)
-            })
-            .collect();
-
-        quote! { OpCode::#variant_name(#(#params),*) }
-    }
-}
 fn create_params(i: usize, field: &Field) -> TokenStream {
     let field_name = &field.ident;
     if field_name.is_some() {

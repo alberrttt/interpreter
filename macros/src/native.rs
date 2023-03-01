@@ -1,6 +1,6 @@
-use proc_macro::{Ident, TokenStream};
+use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse::Parse, parse_macro_input, Arm, Expr, Macro, Pat, PatIdent};
+use syn::{parse::Parse, parse_macro_input, Arm, Expr, Pat, PatIdent};
 // target use of macro
 // use limesherbet_macros::native_macro;
 // static array = native!{ foo => Native(), bar => Native()};

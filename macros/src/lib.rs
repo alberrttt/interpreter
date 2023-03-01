@@ -1,7 +1,5 @@
 use proc_macro::{self, TokenStream};
 
-use syn::Arm;
-
 // the ground work for adding a better "api" for manipulating opcodes
 mod opcode;
 use opcode::expand_opcode as _expand_opcode;

@@ -1,9 +1,6 @@
 use std::rc::Rc;
 
-use super::{
-    function::Function,
-    value::{RuntimeUpvalue, Value},
-};
+use super::{function::Function, value::RuntimeUpvalue};
 
 #[derive(Debug, Clone)]
 pub struct Closure {

@@ -1,13 +1,6 @@
 use crate::{
     backend::callframe::CallFrame,
-    common::{
-        chunk::{self, Chunk},
-        closure::Closure,
-        function::Function,
-        opcode::OpCode,
-        value::Value,
-    },
-    frontend::location,
+    common::{chunk::Chunk, closure::Closure, function::Function, opcode::OpCode, value::Value},
 };
 
 use super::VirtualMachine;
@@ -15,7 +8,7 @@ use super::VirtualMachine;
 impl VirtualMachine {
     #[inline(always)]
     pub fn closure_op(&mut self, env: (&Chunk, &Function, usize, &CallFrame), location: u16) {
-        let (chunk, function, mut ip, current_callframe) = env;
+        let (chunk, _function, mut ip, current_callframe) = env;
         let function = &chunk.constants[location as usize];
 
         let Value::Function(function) = function else {
