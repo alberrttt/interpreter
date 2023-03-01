@@ -5,6 +5,6 @@ func fib(n) {
 
     return fib(n-2)+fib(n-1);
 }
-
+print(fib(30));
 assert_eq fib(15), 610;
 #assert_stack [#void]

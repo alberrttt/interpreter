@@ -28,8 +28,19 @@ impl CompileToBytecode for FunctionDeclaration {
     fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         // uses the current compiler's compilation context for the function
         // which is returned later
+        let lexeme = self.name.value.lexeme.clone();
+        let name = compiler
+            .bytecode
+            .function
+            .chunk
+            .emit_value(lexeme.to_value());
+        compiler.bytecode.globals.push(lexeme);
         let mut temp_compiler = Compiler::new(compiler.diagnostics.clone(), FunctionType::Function);
         temp_compiler.enclosing = Some(Enclosing(compiler));
+        temp_compiler
+            .bytecode
+            .globals
+            .extend(compiler.bytecode.globals.clone());
         let function = {
             // sets the function name and arity
             temp_compiler.bytecode.function.arity = self.parameters.len() as u8;
