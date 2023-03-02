@@ -1,8 +1,7 @@
-use std::thread::Scope;
+
 
 use crate::common::{
     function::Function,
-    interner::InternedString,
     opcode::{OpCode, StackInfo},
 };
 

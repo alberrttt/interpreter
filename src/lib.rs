@@ -1,4 +1,4 @@
-#![warn(unsafe_code)]
+#![deny(unsafe_code)]
 pub mod backend;
 pub mod cli_helper;
 pub mod common;

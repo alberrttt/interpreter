@@ -1,4 +1,4 @@
-use crate::frontend::scanner::{Position, Token, TokenKind};
+use crate::frontend::scanner::{Token};
 
 #[derive(Debug, Default, Clone)]
 pub struct Local {

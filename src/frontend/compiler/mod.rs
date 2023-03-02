@@ -1,17 +1,17 @@
 pub mod local;
-use local::Local;
+
 
 use std::{cell::RefCell, rc::Rc};
 
 /// its so messy omg..
 use crate::{
     cli_helper::Diagnostics,
-    common::{chunk::Chunk, function::Function, interner::StringInterner, opcode::OpCode},
+    common::{function::Function, opcode::OpCode},
 };
 
 use super::{
     ast::CompileToBytecode,
-    bytecode::{self, Bytecode},
+    bytecode::{Bytecode},
     file::FileNode,
     parser::Parser,
     scanner::Scanner,
@@ -50,7 +50,7 @@ pub enum CompileResult {
 impl<'a> Compiler<'a> {
     pub fn new(
         diagnostics: Rc<RefCell<Diagnostics<'a>>>,
-        function_type: FunctionType,
+        _function_type: FunctionType,
     ) -> Compiler<'a> {
         Compiler {
             scanner: Scanner::default(),

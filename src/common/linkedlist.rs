@@ -9,7 +9,7 @@ pub struct LinkedListNode<T> {
     pub next: *mut LinkedListNode<T>,
     pub value: T,
 }
-
+#[allow(unsafe_code)]
 impl<T> LinkedList<T> {
     pub fn new() -> LinkedList<T> {
         LinkedList {

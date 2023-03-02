@@ -1,6 +1,5 @@
 use std::{
-    error::Error,
-    fmt::{write, Display, Formatter},
+    fmt::{Display},
 };
 
 use super::scanner::{Token, TokenKind};

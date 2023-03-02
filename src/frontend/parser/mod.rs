@@ -1,7 +1,6 @@
 /// the parser will make an ast
-use std::{alloc::Layout, cell::RefCell, mem::transmute, ops::Range, rc::Rc};
+use std::{cell::RefCell, mem::transmute, ops::Range, rc::Rc};
 
-use clap::parser;
 use colored::Colorize;
 
 use crate::backend::vm::natives::MACROS::*;
@@ -88,7 +87,9 @@ impl<'a> Parser<'a> {
                     let expr =
                         Expression::Grouping(Box::new(parser.expression().unwrap().to_expr()))
                             .to_node();
-                    parser.consume(TokenKind::RightParen, "expected right parenthesis to close");
+                    parser
+                        .consume(TokenKind::RightParen, "expected right parenthesis to close")
+                        .expect("msg");
                     expr
                 }),
                 infix: Some(Self::call_expr),
@@ -420,7 +421,7 @@ impl<'a> Parser<'a> {
                 self.advance();
                 let identifier = self.token_as_identifier();
                 let mut parameters: Vec<Identifier> = Vec::new();
-                self.consume(TokenKind::LeftParen, "err");
+                self.consume(TokenKind::LeftParen, "err").unwrap();
                 loop {
                     if self.match_token(TokenKind::RightParen) {
                         break;
@@ -464,7 +465,7 @@ impl<'a> Parser<'a> {
 impl Parser<'_> {
     pub fn identifier(&mut self, can_assign: bool) -> Node {
         let token = self.previous().clone();
-        let is_global = self.scope_depth == 0;
+        let _is_global = self.scope_depth == 0;
         if can_assign && self.match_token(TokenKind::Equal) {
             return BinaryExpr {
                 lhs: Box::new(Identifier { value: token }.to_node()),
@@ -538,7 +539,8 @@ impl Parser<'_> {
                 break;
             }
         }
-        self.consume(TokenKind::RightBrace, "Expected '}' after block to close");
+        self.consume(TokenKind::RightBrace, "Expected '}' after block to close")
+            .unwrap();
         self.end_scope();
         block.to_node()
     }

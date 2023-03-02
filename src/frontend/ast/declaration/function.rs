@@ -1,9 +1,9 @@
-use std::{borrow::Borrow, rc::Rc};
+use std::{rc::Rc};
 
 use crate::{
     common::{
         opcode::OpCode,
-        value::{rcrf, AsValue, Value},
+        value::{AsValue, Value},
     },
     frontend::{
         ast::{expression::block::Block, identifier::Identifier, CompileToBytecode},
@@ -29,7 +29,7 @@ impl CompileToBytecode for FunctionDeclaration {
         // uses the current compiler's compilation context for the function
         // which is returned later
         let lexeme = self.name.value.lexeme.clone();
-        let name = compiler
+        let _name = compiler
             .bytecode
             .function
             .chunk

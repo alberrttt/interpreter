@@ -1,7 +1,4 @@
-use std::default;
-
-use super::value::Value;
-use crate::frontend::{ast::statement, bytecode::Bytecode};
+use crate::frontend::bytecode::Bytecode;
 use macros::ExpandOpCode;
 use strum::Display;
 

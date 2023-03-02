@@ -1,11 +1,10 @@
-use std::{ffi::c_int, ptr::addr_of_mut};
+
 
 use colored::Colorize;
 
 use crate::{
     common::{opcode::OpCode, value::AsValue},
     frontend::{
-        bytecode::Upvalue,
         compiler::Compiler,
         scanner::{Token, TokenKind},
     },

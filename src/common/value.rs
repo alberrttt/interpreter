@@ -7,7 +7,7 @@ use std::{
     rc::Rc,
 };
 
-use crate::frontend::bytecode::Upvalue;
+
 
 use super::{
     closure::Closure,

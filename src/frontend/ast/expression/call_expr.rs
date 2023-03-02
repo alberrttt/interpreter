@@ -1,7 +1,7 @@
 use crate::{
     backend::vm::natives::MACROS::idx_to_str,
     common::opcode::OpCode,
-    frontend::ast::{identifier::Identifier, node::Node, CompileToBytecode},
+    frontend::ast::{CompileToBytecode},
 };
 
 use super::{AsExpr, Expression};

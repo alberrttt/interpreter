@@ -45,7 +45,7 @@ impl CompileToBytecode for Statement {
                         compiler.bytecode.function.chunk.emit_op(OpCode::Pop)
                     }
 
-                    unused => {
+                    _unused => {
                         expr.to_bytecode(compiler);
                         compiler.bytecode.function.chunk.emit_op(OpCode::Pop)
                     }

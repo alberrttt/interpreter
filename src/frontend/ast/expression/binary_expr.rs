@@ -1,6 +1,5 @@
 use crate::{
     common::{
-        interner::{InternedString, StringInterner},
         value::{AsValue, Value},
     },
     frontend::{
@@ -25,7 +24,7 @@ impl AsExpr for BinaryExpr {
 }
 impl BinaryExpr {
     pub fn compile_assignment(&self, compiler: &mut Compiler) {
-        let lhs = &self.lhs;
+        let _lhs = &self.lhs;
         let initializer = &self.rhs;
         initializer.to_bytecode(compiler);
         let Node::Identifier(name) = self.lhs.as_ref() else {
@@ -59,7 +58,7 @@ impl CompileToBytecode for BinaryExpr {
         lhs.to_bytecode(compiler);
         rhs.to_bytecode(compiler);
 
-        let chunk = &mut compiler.bytecode.function.chunk;
+        let _chunk = &mut compiler.bytecode.function.chunk;
         match op.kind {
             TokenKind::Plus => compiler.bytecode.write_add_op(),
             TokenKind::Dash => compiler.bytecode.write_sub_op(),

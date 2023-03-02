@@ -2,7 +2,6 @@ use crate::{
     common::opcode::OpCode,
     frontend::{
         compiler::Compiler,
-        scanner::{Token, TokenKind},
     },
 };
 
