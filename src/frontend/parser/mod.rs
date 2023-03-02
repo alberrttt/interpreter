@@ -38,6 +38,13 @@ impl<'a> CompilerRef<'a> {
         }
     }
 }
+// make it so parse has to implement Into<Node>
+
+pub trait Parse<T>: Sized + Into<Node> {
+    fn parse(parser: &mut Parser) -> ParseResult<T>
+    where
+        T: Into<Node>;
+}
 
 #[derive(Debug, Default)]
 pub struct Parser<'a> {
@@ -64,192 +71,8 @@ pub struct Rule<'a> {
 }
 
 impl<'a> Parser<'a> {
-    pub fn get_rule(kind: TokenKind) -> Rule<'a> {
-        match kind {
-            TokenKind::Hash => Rule {
-                precedence: Precedence::None,
-                prefix: Some(|parser, _can_assign| {
-                    parser.advance();
-                    let ident = parser.previous();
-                    if ident.lexeme.eq("void") {
-                        return EmitFn(Box::new(|compiler| {
-                            compiler.bytecode.write_void_op();
-                        }))
-                        .into();
-                    }
-                    panic!()
-                }),
-                infix: None,
-            },
-            TokenKind::LeftParen => Rule {
-                precedence: Precedence::Grouping,
-                prefix: Some(|parser: &mut Parser, _can_assign: bool| {
-                    let expr =
-                        Expression::Grouping(Box::new(parser.expression().unwrap().to_expr()))
-                            .to_node();
-                    parser
-                        .consume(TokenKind::RightParen, "expected right parenthesis to close")
-                        .expect("msg");
-                    expr
-                }),
-                infix: Some(Self::call_expr),
-            },
-            TokenKind::While => Rule {
-                precedence: Precedence::None,
-                prefix: Some(Self::while_expr),
-                infix: None,
-            },
-            TokenKind::Equal => Rule {
-                precedence: Precedence::Assignment,
-                prefix: None,
-                infix: Some(Self::binary),
-            },
-            TokenKind::Greater
-            | TokenKind::Less
-            | TokenKind::LessEqual
-            | TokenKind::GreaterEqual
-            | TokenKind::EqualEqual
-            | TokenKind::BangEqual => Rule {
-                precedence: Precedence::Comparison,
-                prefix: None,
-                infix: Some(Self::binary),
-            },
-            TokenKind::If => Rule {
-                precedence: Precedence::None,
-                prefix: Some(Self::if_expr),
-                infix: None,
-            },
-            TokenKind::LeftBrace => Rule {
-                precedence: Precedence::None,
-                prefix: Some(Self::block),
-                infix: None,
-            },
-            TokenKind::True => Rule {
-                precedence: Precedence::None,
-                prefix: Some(|p, _| Literal(Literals::Bool(true), p.previous().clone()).as_node()),
-                infix: None,
-            },
-            TokenKind::False => Rule {
-                precedence: Precedence::None,
-                prefix: Some(|p, _| Literal(Literals::Bool(false), p.previous().clone()).as_node()),
-                infix: None,
-            },
-            TokenKind::Identifier => Rule {
-                precedence: Precedence::None,
-                prefix: Some(Self::identifier),
-                infix: None,
-            },
-            TokenKind::Number => Rule {
-                precedence: Precedence::None,
-                infix: None,
-                prefix: Some(Self::number),
-            },
-            TokenKind::Star | TokenKind::Slash => Rule {
-                precedence: Precedence::Factor,
-                prefix: None,
-                infix: Some(Self::binary),
-            },
-            TokenKind::Plus => Rule {
-                infix: Some(Self::binary),
-                prefix: None,
-                precedence: Precedence::Term,
-            },
-            TokenKind::Dash => Rule {
-                infix: Some(Self::binary),
-                prefix: Some(|parser, _can_assign| {
-                    Expression::Negate(Box::new(
-                        parser.precedence(Precedence::Unary).unwrap().to_expr(),
-                    ))
-                    .to_node()
-                }),
-                precedence: Precedence::Term,
-            },
-            TokenKind::Bang => Rule {
-                precedence: Precedence::Unary,
-                prefix: Some(|parser, _can_assign| {
-                    Expression::Not(Box::new(
-                        parser.precedence(Precedence::Unary).unwrap().to_expr(),
-                    ))
-                    .to_node()
-                }),
-                infix: None,
-            },
-            TokenKind::String => Rule {
-                precedence: Precedence::None,
-                prefix: Some(Self::string),
-
-                infix: None,
-            },
-            TokenKind::SemiColon | TokenKind::Comma => Rule {
-                precedence: Precedence::None,
-                infix: None,
-                prefix: None,
-            },
-
-            _ => Rule {
-                precedence: Precedence::Unimpl,
-                infix: None,
-                prefix: None,
-            },
-        }
-    }
-
     pub fn at_end(&mut self) -> bool {
         self.current().kind.eq(&TokenKind::EOF)
-    }
-    pub fn precedence(&mut self, prec: Precedence) -> Result<Node, String> {
-        self.advance();
-        let _path = {
-            let binding = self.diagnostics.borrow();
-            binding.file_path.to_str().unwrap()
-        };
-        let previous = self.previous();
-        let rule = Self::get_rule(previous.kind);
-        let can_assign: bool = prec <= Precedence::Assignment;
-        #[allow(unused_assignments)]
-        let mut expression: Node = Node::None;
-        if rule.prefix.is_some() {
-            expression = rule.prefix.unwrap()(self, can_assign);
-        } else {
-            return Err(format!(
-                "{} no expr {}:{}:{}",
-                previous.kind,
-                _path,
-                previous.position.line + 1,
-                previous.position.start_in_line + 1,
-            ));
-        }
-
-        loop {
-            if self.at_end() {
-                break Ok(expression);
-            }
-            let current = self.current();
-            let current_rule = Self::get_rule(current.kind);
-            // if current_rule.precedence == Precedence::Unimpl && cfg!(debug_assertions) {
-            //     println!(
-            //         "{} {}",
-            //         format!("Unimplemented rule:").bold().on_red().yellow(),
-            //         current.kind
-            //     );
-            // }
-            if prec >= current_rule.precedence {
-                break Ok(expression);
-            }
-
-            self.advance();
-            let previous = self.previous();
-
-            match Self::get_rule(previous.kind).infix {
-                None => {}
-                Some(infix) => {
-                    expression = infix(self, expression);
-                }
-            }
-        }
-    }
-    pub fn expression(&mut self) -> Result<Node, String> {
-        self.precedence(Precedence::None)
     }
     pub fn parse_file(&mut self) -> FileNode<'a> {
         let mut file = FileNode::default();
@@ -336,6 +159,9 @@ impl<'a> Parser<'a> {
         }
         node
     }
+    pub fn expression(&mut self) -> ParseResult<Node> {
+        Expression::parse(self)
+    }
     pub fn expression_statement(&mut self) -> Node {
         let expr = self.expression().unwrap().to_expr();
         self.consume(
@@ -390,33 +216,7 @@ impl<'a> Parser<'a> {
                 let node = Statement::AssertNe(lhs, rhs);
                 node.to_node()
             }
-            TokenKind::Let => {
-                self.advance();
-                let identifier = self.token_as_identifier();
-                if !self.check(TokenKind::Equal) {
-                    self.consume(
-                        TokenKind::SemiColon,
-                        "Expected 'n' after variable declaration",
-                    );
-                    return VariableDeclaration {
-                        intializer: Expression::None,
-                        identifier,
-                    }
-                    .to_node();
-                }
-                self.consume(TokenKind::Equal, "Expected '=' after variable name");
-                let initializer = self.expression().unwrap().to_expr();
-                self.consume(
-                    TokenKind::SemiColon,
-                    "Expected ';' after variable declaration",
-                );
-
-                VariableDeclaration {
-                    intializer: initializer,
-                    identifier,
-                }
-                .to_node()
-            }
+            TokenKind::Let => VariableDeclaration::parse(self).unwrap().into(),
             TokenKind::Func => {
                 self.advance();
                 let identifier = self.token_as_identifier();
@@ -552,12 +352,12 @@ impl Parser<'_> {
         .as_node()
     }
     pub fn binary(&mut self, lhs: Node) -> Node {
-        let rule = Self::get_rule(self.previous().kind);
+        let rule = Expression::get_rule(self.previous().kind);
         let op = self.previous().clone();
         // the precedence is +1 so it'll compile it as the rhs
         #[allow(unsafe_code)]
         let prec: Precedence = unsafe { transmute((rule.precedence as u8) + 1) };
-        let rhs = self.precedence(prec).unwrap();
+        let rhs = Expression::parse_precedence(self, prec).unwrap();
 
         Expression::Binary(BinaryExpr {
             lhs: Box::new(lhs),

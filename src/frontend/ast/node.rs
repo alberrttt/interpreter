@@ -24,6 +24,16 @@ pub enum Node {
     Emit(EmitFn),
 }
 
+impl From<Node> for Expression {
+    fn from(value: Node) -> Self {
+        match value {
+            Node::Expression(arg0) => arg0,
+            Node::Literal(arg0) => Expression::Literal(arg0),
+            _ => panic!("Cannot convert {value:?} to Expression"),
+        }
+    }
+}
+
 pub struct EmitFn(pub Box<dyn Fn(&mut Compiler)>);
 impl Clone for EmitFn {
     fn clone(&self) -> Self {
@@ -65,7 +75,7 @@ impl PartialEq for Node {
 impl Node {
     pub fn as_identifier(self) -> Identifier {
         let Node::Identifier(identifier) = self else {
-            panic!("{:?}", self)
+            panic!("{self:?}")
         };
 
         identifier

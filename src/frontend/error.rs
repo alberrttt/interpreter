@@ -1,6 +1,4 @@
-use std::{
-    fmt::{Display},
-};
+use std::fmt::Display;
 
 use super::scanner::{Token, TokenKind};
 pub type ParseResult<T> = Result<T, ParseError>;
@@ -26,7 +24,7 @@ impl Display for ParseError {
 }
 
 #[derive(Debug, Clone)]
-pub struct SyntaxError(Vec<Token>, String);
+pub struct SyntaxError(pub Vec<Token>, pub String);
 impl Display for SyntaxError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let (tokens, message) = (&self.0, &self.1);

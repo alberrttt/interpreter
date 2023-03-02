@@ -1,10 +1,9 @@
 use crate::{
-    common::{
-        value::{AsValue, Value},
-    },
+    common::value::{AsValue, Value},
     frontend::{
         ast::{node::Node, CompileToBytecode},
         compiler::Compiler,
+        parser::Parse,
         scanner::{Token, TokenKind},
     },
 };
@@ -16,6 +15,17 @@ pub struct BinaryExpr {
     pub lhs: Box<Node>,
     pub rhs: Box<Node>,
     pub op: Token,
+}
+
+impl Into<Expression> for BinaryExpr {
+    fn into(self) -> Expression {
+        Expression::Binary(self)
+    }
+}
+impl Into<Node> for BinaryExpr {
+    fn into(self) -> Node {
+        Node::Expression(self.into())
+    }
 }
 impl AsExpr for BinaryExpr {
     fn to_expr(self) -> Expression {

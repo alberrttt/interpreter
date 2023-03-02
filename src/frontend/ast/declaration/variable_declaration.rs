@@ -8,11 +8,12 @@ use crate::{
             CompileToBytecode,
         },
         compiler::{local::Local, Compiler},
-        scanner::Token,
+        parser::Parse,
+        scanner::{Token, TokenKind},
     },
 };
 
-use super::AsDeclaration;
+use super::{AsDeclaration, Declaration};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct VariableDeclaration {
@@ -20,6 +21,47 @@ pub struct VariableDeclaration {
     pub intializer: Expression,
     // pub mutable: bool,
 }
+
+impl Parse<Self> for VariableDeclaration {
+    fn parse(
+        parser: &mut crate::frontend::parser::Parser,
+    ) -> crate::frontend::error::ParseResult<Self> {
+        parser.advance();
+        let identifier = parser.token_as_identifier();
+        if !parser.check(TokenKind::Equal) {
+            parser.consume(
+                TokenKind::SemiColon,
+                "Expected 'n' after variable declaration",
+            )?;
+            return Ok(VariableDeclaration {
+                intializer: Expression::None,
+                identifier,
+            });
+        }
+        parser.consume(TokenKind::Equal, "Expected '=' after variable name")?;
+        let initializer = parser.expression().unwrap().into();
+        parser.consume(
+            TokenKind::SemiColon,
+            "Expected ';' after variable declaration",
+        )?;
+
+        Ok(VariableDeclaration {
+            intializer: initializer,
+            identifier,
+        })
+    }
+}
+impl From<VariableDeclaration> for Declaration {
+    fn from(value: VariableDeclaration) -> Self {
+        Declaration::VariableDeclaration(value)
+    }
+}
+impl From<VariableDeclaration> for Node {
+    fn from(value: VariableDeclaration) -> Self {
+        Node::Declaration(value.into())
+    }
+}
+
 impl CompileToBytecode for VariableDeclaration {
     fn to_bytecode(&self, compiler: &mut Compiler) {
         self.intializer.to_bytecode(compiler);
