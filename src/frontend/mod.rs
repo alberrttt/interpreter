@@ -6,7 +6,6 @@ pub mod file;
 pub mod fixedvec;
 pub mod location;
 pub mod parser;
-pub mod prelude;
 pub mod scanner;
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub enum Precedence {

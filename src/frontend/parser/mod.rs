@@ -23,10 +23,7 @@ use crate::frontend::{
     scanner::{Position, Scanner, Token, TokenKind},
     Precedence,
 };
-pub mod result_handler;
 use crate::{cli_helper::Diagnostics, common::opcode::OpCode, frontend::ast::CompileToBytecode};
-
-use self::result_handler::RESULT_HANDLER;
 
 use super::ast::literal::Literals;
 use super::error::ParseResult;
@@ -504,7 +501,7 @@ impl<'a> Parser<'a> {
         diagnostics: Rc<RefCell<Diagnostics<'a>>>,
         function_type: FunctionType,
     ) -> Parser<'a> {
-        let parser = Parser {
+        Parser {
             diagnostics,
             scanner,
             had_error: false,
@@ -517,12 +514,7 @@ impl<'a> Parser<'a> {
                 tokens: Vec::new(),
                 index: 0,
             },
-        };
-        #[allow(unsafe_code)]
-        unsafe {
-            RESULT_HANDLER.parser = Some(&parser as *const _ as *mut _);
         }
-        parser
     }
     /// if the current token matches the token kind, then advance, if not return false
     pub fn match_token(&mut self, tk: TokenKind) -> bool {
