@@ -119,6 +119,7 @@ pub enum TokenKind {
     GreaterEqual,
 
     SemiColon,
+    Colon,
     Comma,
 
     Error,
@@ -242,6 +243,7 @@ impl Scanner {
             ')' => token!(self, RightParen),
             '}' => token!(self, RightBrace),
             ';' => token!(self, SemiColon),
+            ':' => token!(self, Colon),
             ',' => token!(self, Comma),
             '!' => {
                 if self.matches('=') {

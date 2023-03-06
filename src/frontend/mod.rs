@@ -7,6 +7,7 @@ pub mod fixedvec;
 pub mod location;
 pub mod parser;
 pub mod scanner;
+pub use ast::*;
 #[derive(PartialEq, Eq, PartialOrd, Ord)]
 pub enum Precedence {
     Unimpl,

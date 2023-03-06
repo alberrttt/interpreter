@@ -1,4 +1,4 @@
-use std::{rc::Rc};
+use std::rc::Rc;
 
 use crate::{
     common::{
@@ -6,18 +6,110 @@ use crate::{
         value::{AsValue, Value},
     },
     frontend::{
-        ast::{expression::block::Block, identifier::Identifier, CompileToBytecode},
+        ast::{expression::block::Block, identifier::Identifier, node::Node, CompileToBytecode},
         compiler::{Compiler, Enclosing, FunctionType},
+        parser::Parse,
+        scanner::TokenKind,
+        types::{Annotation, Primitive},
     },
 };
 
-use super::AsDeclaration;
+use super::Declaration;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunctionDeclaration {
     pub name: Identifier,
     pub block: Block,
-    pub parameters: Vec<Identifier>,
+    pub parameters: Vec<Parameter>,
+}
+impl Parse<FunctionDeclaration> for FunctionDeclaration {
+    fn parse(
+        parser: &mut crate::frontend::parser::Parser,
+    ) -> crate::frontend::error::ParseResult<FunctionDeclaration>
+    where
+        FunctionDeclaration: Into<crate::frontend::node::Node>,
+    {
+        parser.advance();
+        let identifier = parser.token_as_identifier();
+        let mut parameters: Vec<Parameter> = Vec::new();
+        parser.consume(TokenKind::LeftParen, "err").unwrap();
+        loop {
+            if parser.match_token(TokenKind::RightParen) {
+                break;
+            }
+            parameters.push(Parameter::parse(parser)?);
+            if !parser.match_token(TokenKind::Comma) {
+                parser.advance();
+                break;
+            }
+        }
+        parser.consume(TokenKind::LeftBrace, "Expected '{'")?;
+        Ok(FunctionDeclaration {
+            parameters,
+            name: identifier,
+            block: parser.block(false),
+        })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Parameter {
+    pub name: Identifier,
+    pub type_annotation: Option<Annotation>,
+}
+impl Parse<Parameter> for Parameter {
+    fn parse(
+        parser: &mut crate::frontend::parser::Parser,
+    ) -> crate::frontend::error::ParseResult<Parameter>
+    where
+        Parameter: Into<crate::frontend::node::Node>,
+    {
+        let identifier = parser.token_as_identifier();
+        let mut primitive: Option<Primitive> = None;
+        if parser.match_token(TokenKind::Colon) {
+            let ident = parser
+                .expression()
+                .expect("expected identifier")
+                .as_identifier();
+
+            primitive = match ident.value.lexeme.as_ref() {
+                "number" => Some(Primitive::Number),
+                "string" => Some(Primitive::String),
+                "bool" | "boolean" => Some(Primitive::Boolean),
+                "void" => Some(Primitive::Void),
+
+                x => {
+                    parser.diagnostics.borrow_mut().log(
+                        Some(&ident.value.position),
+                        "Error",
+                        format!("Unknown primitive type '{x}'"),
+                    );
+                    None
+                }
+            };
+        }
+        Ok(Parameter {
+            name: identifier,
+            type_annotation: primitive.map(|primitive| Annotation {
+                    data_type: primitive,
+                }),
+        })
+    }
+}
+impl From<Parameter> for Node {
+    fn from(value: Parameter) -> Self {
+        panic!()
+    }
+}
+impl From<FunctionDeclaration> for Declaration {
+    fn from(value: FunctionDeclaration) -> Self {
+        Declaration::FunctionDeclaration(value)
+    }
+}
+impl From<FunctionDeclaration> for Node {
+    fn from(value: FunctionDeclaration) -> Self {
+        Node::Declaration(value.into())
+    }
 }
 impl<'a> Compiler<'a> {
     fn in_scope(&self) -> bool {
@@ -48,7 +140,7 @@ impl CompileToBytecode for FunctionDeclaration {
 
             // tells the compiler to recongize any parameters
             for param in &self.parameters {
-                temp_compiler.add_local(param.value.clone())
+                temp_compiler.add_local(param.name.value.clone())
             }
 
             // finally compiles the block
@@ -97,10 +189,5 @@ impl CompileToBytecode for FunctionDeclaration {
                 .emit_op(OpCode::DefineGlobal(name))
         };
         // compilation context is returned
-    }
-}
-impl AsDeclaration for FunctionDeclaration {
-    fn to_declaration(self) -> super::Declaration {
-        super::Declaration::FunctionDeclaration(self)
     }
 }

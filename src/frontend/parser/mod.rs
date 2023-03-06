@@ -188,7 +188,7 @@ impl<'a> Parser<'a> {
             }
             TokenKind::LeftBrace => {
                 self.advance();
-                self.block(false)
+                self.block(false).into()
             }
             TokenKind::Print => {
                 self.advance();
@@ -217,30 +217,7 @@ impl<'a> Parser<'a> {
                 node.to_node()
             }
             TokenKind::Let => VariableDeclaration::parse(self).unwrap().into(),
-            TokenKind::Func => {
-                self.advance();
-                let identifier = self.token_as_identifier();
-                let mut parameters: Vec<Identifier> = Vec::new();
-                self.consume(TokenKind::LeftParen, "err").unwrap();
-                loop {
-                    if self.match_token(TokenKind::RightParen) {
-                        break;
-                    }
-                    parameters.push(self.expression().unwrap().as_identifier());
-                    if !self.match_token(TokenKind::Comma) {
-                        self.advance();
-                        break;
-                    }
-                }
-                self.consume(TokenKind::LeftBrace, "Expected '{'");
-                FunctionDeclaration {
-                    parameters,
-                    name: identifier,
-                    block: self.block(false).to_expr().as_block(),
-                }
-                .to_declaration()
-                .to_node()
-            }
+            TokenKind::Func => FunctionDeclaration::parse(self).unwrap().into(),
             TokenKind::Return => {
                 self.advance();
                 if self.scope_depth == 0 && self.function_type.eq(&FunctionType::Script) {
@@ -263,19 +240,19 @@ impl<'a> Parser<'a> {
     }
 }
 impl Parser<'_> {
-    pub fn identifier(&mut self, can_assign: bool) -> Node {
+    pub fn identifier(&mut self, can_assign: bool) -> ParseResult<Node> {
         let token = self.previous().clone();
         let _is_global = self.scope_depth == 0;
         if can_assign && self.match_token(TokenKind::Equal) {
-            return BinaryExpr {
+            return Ok(BinaryExpr {
                 lhs: Box::new(Identifier { value: token }.to_node()),
                 op: self.previous().clone(),
                 rhs: Box::new(self.expression().unwrap()),
             }
             .to_expr()
-            .to_node();
+            .to_node());
         }
-        Identifier { value: token }.to_node()
+        Ok(Identifier { value: token }.to_node())
     }
     pub fn call_expr(&mut self, lhs: Node) -> Node {
         let expr = lhs.to_expr();
@@ -327,7 +304,7 @@ impl Parser<'_> {
         .to_expr()
         .to_node()
     }
-    pub fn block(&mut self, _can_assign: bool) -> Node {
+    pub fn block(&mut self, _can_assign: bool) -> Block {
         self.begin_scope();
         let mut block = Block {
             declarations: Vec::new(),
@@ -342,7 +319,7 @@ impl Parser<'_> {
         self.consume(TokenKind::RightBrace, "Expected '}' after block to close")
             .unwrap();
         self.end_scope();
-        block.to_node()
+        block
     }
     pub fn string(&mut self, _can_assign: bool) -> Node {
         Literal(
@@ -473,9 +450,10 @@ impl<'a> Parser<'a> {
     pub fn synchronize(&mut self) {
         self.panic_mode = false;
         loop {
-            if self.current().kind.eq(&TokenKind::EOF) {
-                return;
-            }
+            match self.current().kind {
+                TokenKind::EOF | TokenKind::RightBrace => return,
+                _ => {}
+            };
             if self.previous().kind.eq(&TokenKind::SemiColon) {
                 return;
             };

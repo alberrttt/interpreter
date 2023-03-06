@@ -28,7 +28,6 @@ pub mod block;
 pub mod call_expr;
 pub mod if_expr;
 pub mod while_expr;
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Grouping(Box<Expression>),
@@ -116,7 +115,7 @@ impl Expression {
             },
             TokenKind::LeftBrace => Rule {
                 precedence: Precedence::None,
-                prefix: Some(Parser::block),
+                prefix: Some(|parser, _can_assign| parser.block(_can_assign).into()),
                 infix: None,
             },
             TokenKind::True => Rule {
@@ -131,7 +130,9 @@ impl Expression {
             },
             TokenKind::Identifier => Rule {
                 precedence: Precedence::None,
-                prefix: Some(Parser::identifier),
+                prefix: Some(|parser, can_assign| {
+                    Parser::identifier(parser, can_assign).expect("expected identifier")
+                }),
                 infix: None,
             },
             TokenKind::Number => Rule {

@@ -9,13 +9,22 @@ use crate::{
     },
 };
 
-use super::AsExpr;
+use super::{AsExpr, Expression};
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Block {
     pub declarations: Vec<Node>,
 }
-
+impl From<Block> for Expression {
+    fn from(value: Block) -> Self {
+        Expression::Block(value)
+    }
+}
+impl From<Block> for Node {
+    fn from(value: Block) -> Self {
+        Node::Expression(value.into())
+    }
+}
 impl CompileToBytecode for Block {
     fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         compiler.begin_scope();

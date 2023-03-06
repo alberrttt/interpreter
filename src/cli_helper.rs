@@ -29,7 +29,7 @@ impl<'a> Diagnostics<'a> {
             location = format!("{}:{}", position.line + 1, position.start_in_line + 1);
         }
         print!(
-            "[ {} ] - {title} \n\t{} - {}",
+            "[ {} ] - {title} \n\t{} - {}\n",
             "rottenmangos".bold(),
             format!("{}:{location}", self.file_path()).bold().yellow(),
             msg
