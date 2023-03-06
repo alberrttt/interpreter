@@ -1,5 +1,7 @@
-func f(x: number) {
+let x = "string";
+
+func f(x: number) -> number {
     return x;
 }
 
-f("string")
+f(x); 

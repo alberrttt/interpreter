@@ -117,6 +117,7 @@ pub enum TokenKind {
     LessEqual,
     Greater,
     GreaterEqual,
+    RightArrow,
 
     SemiColon,
     Colon,
@@ -223,6 +224,9 @@ impl Scanner {
             '-' => {
                 if self.matches('=') {
                     return token!(self, DashEqual);
+                }
+                if self.matches('>') {
+                    return token!(self, RightArrow);
                 }
                 token!(self, Dash)
             }

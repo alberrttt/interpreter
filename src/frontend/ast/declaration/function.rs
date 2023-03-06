@@ -20,6 +20,7 @@ use super::Declaration;
 pub struct FunctionDeclaration {
     pub name: Identifier,
     pub block: Block,
+    pub return_type: Option<Annotation>,
     pub parameters: Vec<Parameter>,
 }
 impl Parse<FunctionDeclaration> for FunctionDeclaration {
@@ -44,10 +45,17 @@ impl Parse<FunctionDeclaration> for FunctionDeclaration {
             }
         }
         parser.consume(TokenKind::LeftBrace, "Expected '{'")?;
+        let mut return_type: Option<Annotation> = None;
+        if parser.match_token(TokenKind::RightArrow) {
+
+        }
+
+
         Ok(FunctionDeclaration {
-            parameters,
             name: identifier,
+            parameters,
             block: parser.block(false),
+            return_type,
         })
     }
 }
@@ -66,6 +74,7 @@ impl Parse<Parameter> for Parameter {
     {
         let identifier = parser.token_as_identifier();
         let mut primitive: Option<Primitive> = None;
+        // reuse this
         if parser.match_token(TokenKind::Colon) {
             let ident = parser
                 .expression()
@@ -91,8 +100,8 @@ impl Parse<Parameter> for Parameter {
         Ok(Parameter {
             name: identifier,
             type_annotation: primitive.map(|primitive| Annotation {
-                    data_type: primitive,
-                }),
+                data_type: primitive,
+            }),
         })
     }
 }
