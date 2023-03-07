@@ -1,4 +1,4 @@
-
+use std::collections::HashMap;
 
 use crate::common::{
     function::Function,
@@ -8,6 +8,7 @@ use crate::common::{
 use super::{
     ast::expression::Expression,
     compiler::{local::Local, FunctionType},
+    types::Signature,
 };
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Upvalue {
@@ -30,6 +31,7 @@ pub struct Bytecode {
     pub eliminated: bool,
     pub upvalues: Vec<Upvalue>,
     pub globals: Vec<String>,
+    pub scope: Vec<HashMap<String, Signature>>,
 }
 
 impl Default for Bytecode {
@@ -49,6 +51,7 @@ impl Default for Bytecode {
 
             eliminated: Default::default(),
             upvalues: vec![Upvalue::default(); 512],
+            scope: vec![HashMap::new()],
         }
     }
 }

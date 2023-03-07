@@ -44,12 +44,14 @@ impl Parse<FunctionDeclaration> for FunctionDeclaration {
                 break;
             }
         }
-        parser.consume(TokenKind::LeftBrace, "Expected '{'")?;
         let mut return_type: Option<Annotation> = None;
         if parser.match_token(TokenKind::RightArrow) {
-
+            let primitive: Primitive = parser.expression().unwrap().as_identifier().into();
+            return_type = Some(Annotation {
+                data_type: primitive,
+            });
         }
-
+        parser.consume(TokenKind::LeftBrace, "Expected '{'")?;
 
         Ok(FunctionDeclaration {
             name: identifier,
@@ -81,21 +83,7 @@ impl Parse<Parameter> for Parameter {
                 .expect("expected identifier")
                 .as_identifier();
 
-            primitive = match ident.value.lexeme.as_ref() {
-                "number" => Some(Primitive::Number),
-                "string" => Some(Primitive::String),
-                "bool" | "boolean" => Some(Primitive::Boolean),
-                "void" => Some(Primitive::Void),
-
-                x => {
-                    parser.diagnostics.borrow_mut().log(
-                        Some(&ident.value.position),
-                        "Error",
-                        format!("Unknown primitive type '{x}'"),
-                    );
-                    None
-                }
-            };
+            primitive = Some(ident.into())
         }
         Ok(Parameter {
             name: identifier,
@@ -129,6 +117,12 @@ impl CompileToBytecode for FunctionDeclaration {
     fn to_bytecode(&self, compiler: &mut crate::frontend::compiler::Compiler) {
         // uses the current compiler's compilation context for the function
         // which is returned later
+        compiler
+            .bytecode
+            .scope
+            .last_mut()
+            .unwrap()
+            .insert(self.name.value.lexeme.clone(), self.clone().into());
         let lexeme = self.name.value.lexeme.clone();
         let _name = compiler
             .bytecode

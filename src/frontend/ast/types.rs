@@ -12,6 +12,7 @@ pub enum Signature {
     },
     Variable(Box<Annotation>),
 }
+
 impl From<FunctionDeclaration> for Signature {
     fn from(value: FunctionDeclaration) -> Self {
         let params: Vec<Annotation> = value
@@ -53,7 +54,7 @@ impl From<Identifier> for Primitive {
             "string" => Primitive::String,
             "bool" | "boolean" => Primitive::Boolean,
             "void" => Primitive::Void,
-            _ => Primitive::Void,
+            string => panic!("{string}"),
         }
     }
 }

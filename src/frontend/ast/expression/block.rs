@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     common::opcode::OpCode,
     frontend::{
@@ -37,6 +39,7 @@ impl CompileToBytecode for Block {
 impl<'a> Compiler<'a> {
     pub fn begin_scope(&mut self) {
         self.bytecode.scope_depth += 1;
+        self.bytecode.scope.push(HashMap::new());
     }
     pub fn end_scope(&mut self) {
         self.bytecode.scope_depth -= 1;
@@ -54,7 +57,8 @@ impl<'a> Compiler<'a> {
         self.bytecode
             .function
             .chunk
-            .emit_many(std::mem::take(&mut self.bytecode.emit_after_block))
+            .emit_many(std::mem::take(&mut self.bytecode.emit_after_block));
+        self.bytecode.scope.pop();
     }
 }
 impl AsExpr for Block {
