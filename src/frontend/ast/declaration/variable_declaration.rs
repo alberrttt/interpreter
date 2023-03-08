@@ -10,6 +10,7 @@ use crate::{
         compiler::{local::Local, Compiler},
         parser::Parse,
         scanner::{Token, TokenKind},
+        types::{Primitive, Signature},
     },
 };
 
@@ -72,6 +73,21 @@ impl CompileToBytecode for VariableDeclaration {
         let function = &mut compiler.bytecode.function;
         let lexeme = self.identifier.value.lexeme.clone();
         let name = function.chunk.emit_value(lexeme.to_value());
+        compiler
+            .bytecode
+            .scope
+            .last_mut()
+            .unwrap()
+            .insert(lexeme.clone(), {
+                let initializer = self.intializer.clone();
+                let typed: Primitive = match initializer {
+                    Expression::Literal(lit) => lit.into(),
+                    Expression::None => panic!(),
+                    _ => panic!(),
+                };
+
+                Signature::Variable(Box::new(typed))
+            });
         compiler.bytecode.globals.push(lexeme);
         function.chunk.emit_op(OpCode::DefineGlobal(name))
     }

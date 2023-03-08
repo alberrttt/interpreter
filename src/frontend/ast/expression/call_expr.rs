@@ -1,10 +1,16 @@
 use core::panic;
 
+use colored::Colorize;
+
 use crate::{
     backend::vm::natives::MACROS::idx_to_str,
     common::opcode::OpCode,
     frontend::{
-        ast::CompileToBytecode, identifier::Identifier, literal::Literal, types::Primitive,
+        ast::CompileToBytecode,
+        declaration::function::Parameter,
+        identifier::Identifier,
+        literal::Literal,
+        types::{Primitive, Signature},
     },
 };
 
@@ -40,12 +46,51 @@ impl CompileToBytecode for Call {
             .get(&ident.value.lexeme)
             .unwrap()
             .clone();
+        let Signature::Function { params, return_type } = call_sig else {
+            panic!()
+        };
         self.expr.to_bytecode(compiler);
-        self.parameters.iter().for_each(|param| {
-            let param_type: Primitive = param.clone().into();
-            dbg!(&call_sig);
+        self.parameters.iter().enumerate().for_each(|(idx, param)| {
+            let param_sig = params[idx].clone();
+            let param_type = param.clone();
+            let param_type = match param_type {
+                Expression::Literal(lit) => {
+                    let type_of: Primitive = lit.into();
+                    type_of
+                }
+                Expression::Identifier(ident) => {
+                    let type_of = compiler
+                        .bytecode
+                        .scope
+                        .last()
+                        .unwrap()
+                        .get(&ident.value.lexeme)
+                        .unwrap()
+                        .clone();
+                    let Signature::Variable(type_of) = type_of else {
+                        panic!()
+                    };
+                    *type_of
+                }
+                x => panic!("{x:?}"),
+            };
+            if param_sig != param_type {
+                compiler.diagnostics.borrow_mut().log(
+                    None,
+                    "Type Error",
+                    format!(
+                        "Expected {expect} but got {got}",
+                        expect = format!("{param_sig:?}").yellow(),
+                        got = format!("{param_type:?}").bright_red()
+                    )
+                    .bold()
+                    .to_string(),
+                );
+                panic!()
+            }
             param.clone().to_bytecode(compiler);
         });
+
         compiler
             .bytecode
             .function

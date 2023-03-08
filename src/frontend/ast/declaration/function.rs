@@ -10,7 +10,7 @@ use crate::{
         compiler::{Compiler, Enclosing, FunctionType},
         parser::Parse,
         scanner::TokenKind,
-        types::{Annotation, Primitive},
+        types::Primitive,
     },
 };
 
@@ -20,7 +20,7 @@ use super::Declaration;
 pub struct FunctionDeclaration {
     pub name: Identifier,
     pub block: Block,
-    pub return_type: Option<Annotation>,
+    pub return_type: Option<Primitive>,
     pub parameters: Vec<Parameter>,
 }
 impl Parse<FunctionDeclaration> for FunctionDeclaration {
@@ -44,12 +44,10 @@ impl Parse<FunctionDeclaration> for FunctionDeclaration {
                 break;
             }
         }
-        let mut return_type: Option<Annotation> = None;
+        let mut return_type: Option<Primitive> = None;
         if parser.match_token(TokenKind::RightArrow) {
             let primitive: Primitive = parser.expression().unwrap().as_identifier().into();
-            return_type = Some(Annotation {
-                data_type: primitive,
-            });
+            return_type = Some(primitive);
         }
         parser.consume(TokenKind::LeftBrace, "Expected '{'")?;
 
@@ -65,7 +63,7 @@ impl Parse<FunctionDeclaration> for FunctionDeclaration {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parameter {
     pub name: Identifier,
-    pub type_annotation: Option<Annotation>,
+    pub type_annotation: Option<Primitive>,
 }
 impl Parse<Parameter> for Parameter {
     fn parse(
@@ -87,9 +85,7 @@ impl Parse<Parameter> for Parameter {
         }
         Ok(Parameter {
             name: identifier,
-            type_annotation: primitive.map(|primitive| Annotation {
-                data_type: primitive,
-            }),
+            type_annotation: primitive,
         })
     }
 }
