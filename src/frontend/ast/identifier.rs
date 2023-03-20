@@ -1,5 +1,3 @@
-
-
 use colored::Colorize;
 
 use crate::{
@@ -12,6 +10,7 @@ use crate::{
 
 use super::{
     node::{AsNode, Node},
+    types::{Primitive, Signature},
     CompileToBytecode,
 };
 
@@ -19,7 +18,16 @@ use super::{
 pub struct Identifier {
     pub value: Token,
 }
-
+impl Identifier {
+    pub fn get_type(self, compiler: &Compiler) -> Primitive {
+        let current_scope = compiler.bytecode.scope.last().expect("wat");
+        let resolved_type = current_scope.get(&self.value.lexeme).expect("what");
+        match resolved_type {
+            Signature::Variable(t) => *t.to_owned(),
+            _ => panic!(),
+        }
+    }
+}
 impl CompileToBytecode for Identifier {
     fn to_bytecode(&self, compiler: &mut Compiler) {
         let local = compiler.resolve_local(&self.value);
@@ -27,10 +35,7 @@ impl CompileToBytecode for Identifier {
         let mut op: OpCode = OpCode::Nop;
         if let Some(arg) = local {
             op = OpCode::GetLocal(arg as u16);
-        } else if let Some(arg) = {
-            let tmp = compiler.resolve_up_value(&self.value);
-            tmp
-        } {
+        } else if let Some(arg) = { compiler.resolve_up_value(&self.value) } {
             op = OpCode::GetUpValue(arg as u16);
         } else {
             let function = &mut compiler.bytecode.function;

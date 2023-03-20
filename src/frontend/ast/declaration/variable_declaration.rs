@@ -63,6 +63,8 @@ impl From<VariableDeclaration> for Node {
     }
 }
 
+impl VariableDeclaration {}
+
 impl CompileToBytecode for VariableDeclaration {
     fn to_bytecode(&self, compiler: &mut Compiler) {
         self.intializer.to_bytecode(compiler);
@@ -70,24 +72,27 @@ impl CompileToBytecode for VariableDeclaration {
             compiler.add_local(self.identifier.value.clone());
             return;
         }
-        let function = &mut compiler.bytecode.function;
         let lexeme = self.identifier.value.lexeme.clone();
-        let name = function.chunk.emit_value(lexeme.to_value());
+        let signature = {
+            let initializer = self.intializer.clone();
+            let typed: Primitive = match initializer {
+                Expression::Literal(lit) => Primitive::from(lit),
+                Expression::None => panic!(),
+                Expression::Identifier(identifier) => identifier.get_type(compiler),
+                _ => panic!(),
+            };
+
+            Signature::Variable(Box::new(typed))
+        };
         compiler
             .bytecode
             .scope
             .last_mut()
             .unwrap()
-            .insert(lexeme.clone(), {
-                let initializer = self.intializer.clone();
-                let typed: Primitive = match initializer {
-                    Expression::Literal(lit) => lit.into(),
-                    Expression::None => panic!(),
-                    _ => panic!(),
-                };
+            .insert(lexeme.clone(), signature);
+        let function = &mut compiler.bytecode.function;
+        let name = function.chunk.emit_value(lexeme.to_value());
 
-                Signature::Variable(Box::new(typed))
-            });
         compiler.bytecode.globals.push(lexeme);
         function.chunk.emit_op(OpCode::DefineGlobal(name))
     }

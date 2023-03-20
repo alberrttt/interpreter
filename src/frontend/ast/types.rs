@@ -3,7 +3,9 @@ use super::{
     identifier::Identifier,
     literal::*,
 };
-
+pub trait Typecheck {
+    fn typecheck(&self);
+}
 #[derive(Debug, PartialEq, Clone)]
 pub enum Signature {
     Function {

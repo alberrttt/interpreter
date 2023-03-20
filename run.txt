@@ -1,4 +1,6 @@
-let x = "string";
+let y = "string";
+
+let x = y;
 
 func f(x: number) -> number {
     return x;

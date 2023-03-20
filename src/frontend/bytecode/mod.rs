@@ -48,7 +48,6 @@ impl Default for Bytecode {
             compiling_statement: Default::default(),
             returned: Default::default(),
             current_expr: Default::default(),
-
             eliminated: Default::default(),
             upvalues: vec![Upvalue::default(); 512],
             scope: vec![HashMap::new()],

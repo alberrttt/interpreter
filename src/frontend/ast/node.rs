@@ -10,7 +10,10 @@ use super::{
     statement::Statement,
     CompileToBytecode,
 };
-
+pub trait Children {
+    fn ref_children(&self) -> &Vec<Node>;
+    fn mut_children(&mut self) -> &mut Vec<Node>;
+}
 #[derive(Clone)]
 pub enum Node {
     Expression(Expression),
@@ -29,6 +32,7 @@ impl From<Node> for Expression {
         match value {
             Node::Expression(arg0) => arg0,
             Node::Literal(arg0) => Expression::Literal(arg0),
+            Node::Identifier(arg0) => Expression::Identifier(arg0),
             _ => panic!("Cannot convert {value:?} to Expression"),
         }
     }
