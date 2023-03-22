@@ -1,9 +1,9 @@
-use crate::frontend::scanner::{Token};
+use crate::frontend::scanner::Token;
 
 #[derive(Debug, Default, Clone)]
 pub struct Local {
     pub name: Token,
-    pub depth: u8,
+    pub depth: usize,
     pub is_captured: bool,
 }
 impl Local {

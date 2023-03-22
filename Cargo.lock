@@ -174,7 +174,6 @@ dependencies = [
  "lazy_static",
  "macros",
  "once_cell",
- "proc-macro2",
  "strum",
  "strum_macros",
 ]

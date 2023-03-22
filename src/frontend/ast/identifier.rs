@@ -3,14 +3,17 @@ use colored::Colorize;
 use crate::{
     common::{opcode::OpCode, value::AsValue},
     frontend::{
+        bytecode::scope,
         compiler::Compiler,
         scanner::{Token, TokenKind},
+        typesystem::ResolveSignature,
     },
 };
 
 use super::{
+    super::typesystem::{Primitive, Signature},
+    expression::Expression,
     node::{AsNode, Node},
-    types::{Primitive, Signature},
     CompileToBytecode,
 };
 
@@ -18,14 +21,39 @@ use super::{
 pub struct Identifier {
     pub value: Token,
 }
-impl Identifier {
-    pub fn get_type(self, compiler: &Compiler) -> Primitive {
-        let current_scope = compiler.bytecode.scope.last().expect("wat");
-        let resolved_type = current_scope.get(&self.value.lexeme).expect("what");
-        match resolved_type {
-            Signature::Variable(t) => *t.to_owned(),
+impl From<Identifier> for Expression {
+    fn from(ident: Identifier) -> Self {
+        Expression::Identifier(ident)
+    }
+}
+impl From<Expression> for Identifier {
+    fn from(expr: Expression) -> Self {
+        match expr {
+            Expression::Identifier(ident) => ident,
             _ => panic!(),
         }
+    }
+}
+impl ResolveSignature for Identifier {
+    fn resolve_signature(&self, compiler: &mut Compiler) -> Signature {
+        // check if the surrounding scope has a signature
+        // if it does, then return that signature
+        for scope_depth in 0..(compiler.bytecode.scope_depth + 1) {
+            let scope = compiler.bytecode.scope.get(scope_depth).unwrap();
+            if let Some(signature) = scope.get(&self.value.lexeme) {
+                return signature.clone();
+            }
+        }
+
+        // if the surrounding scope does not have a signature, that means that the identifier is refering to a non-existant variable
+        compiler.diagnostics.borrow_mut().log(
+            Some(&self.value.position),
+            "Compiler",
+            format!("Unable to find variable '{}' \n", self.value.lexeme)
+                .bright_red()
+                .to_string(),
+        );
+        panic!()
     }
 }
 impl CompileToBytecode for Identifier {
@@ -47,7 +75,7 @@ impl CompileToBytecode for Identifier {
                 compiler.diagnostics.borrow_mut().log(
                     Some(&self.value.position),
                     "Compiler",
-                    format!("Undefined variable '{}' \n", self.value.lexeme)
+                    format!("Unable to find variable '{}' \n", self.value.lexeme)
                         .bright_red()
                         .to_string(),
                 )

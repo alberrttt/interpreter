@@ -8,7 +8,7 @@ use crate::common::{
 use super::{
     ast::expression::Expression,
     compiler::{local::Local, FunctionType},
-    types::Signature,
+    typesystem::Signature,
 };
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Upvalue {
@@ -20,7 +20,7 @@ pub mod scope;
 pub struct Bytecode {
     pub stack_info: Vec<StackInfo>,
     pub function: Function,
-    pub scope_depth: u8,
+    pub scope_depth: usize,
     pub locals: Vec<Local>,
     pub local_count: usize,
     pub emit_after_block: Vec<OpCode>,

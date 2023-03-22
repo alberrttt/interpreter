@@ -44,7 +44,7 @@ impl<'a> Compiler<'a> {
     pub fn end_scope(&mut self) {
         self.bytecode.scope_depth -= 1;
         while self.bytecode.local_count > 0
-            && self.bytecode.locals[self.bytecode.local_count - 1].depth > self.bytecode.scope_depth
+            && self.bytecode.locals[self.bytecode.local_count - 1].depth > self.bytecode.scope_depth 
         {
             if self.bytecode.locals[self.bytecode.local_count - 1].is_captured {
                 self.bytecode.write_close_upvalue_op()

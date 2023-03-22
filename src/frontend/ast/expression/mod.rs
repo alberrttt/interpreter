@@ -6,6 +6,7 @@ use crate::{
         error::{ParseResult, SyntaxError},
         parser::{Parse, Parser, Rule},
         scanner::TokenKind,
+        typesystem::{ResolveSignature, Signature},
         Precedence,
     },
 };
@@ -41,6 +42,14 @@ pub enum Expression {
     While(While),
     CallExpr(Call),
     None,
+}
+impl ResolveSignature for Expression {
+    fn resolve_signature(&self, compiler: &mut Compiler) -> Signature {
+        match self {
+            Expression::Identifier(ident) => ident.resolve_signature(compiler),
+            _ => panic!(),
+        }
+    }
 }
 impl Parse<Node> for Expression {
     fn parse(parser: &mut Parser) -> crate::frontend::error::ParseResult<Node> {

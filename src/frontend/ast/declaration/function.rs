@@ -10,7 +10,7 @@ use crate::{
         compiler::{Compiler, Enclosing, FunctionType},
         parser::Parse,
         scanner::TokenKind,
-        types::Primitive,
+        typesystem::Primitive,
     },
 };
 
@@ -63,7 +63,7 @@ impl Parse<FunctionDeclaration> for FunctionDeclaration {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Parameter {
     pub name: Identifier,
-    pub type_annotation: Option<Primitive>,
+    pub type_annotation: Option<Identifier>,
 }
 impl Parse<Parameter> for Parameter {
     fn parse(
@@ -73,16 +73,13 @@ impl Parse<Parameter> for Parameter {
         Parameter: Into<crate::frontend::node::Node>,
     {
         let identifier = parser.token_as_identifier();
-        let mut primitive: Option<Primitive> = None;
+        let mut primitive: Option<Identifier> = if parser.match_token(TokenKind::Colon) {
+            Some(parser.expression()?.as_identifier())
+        } else {
+            None
+        };
         // reuse this
-        if parser.match_token(TokenKind::Colon) {
-            let ident = parser
-                .expression()
-                .expect("expected identifier")
-                .as_identifier();
 
-            primitive = Some(ident.into())
-        }
         Ok(Parameter {
             name: identifier,
             type_annotation: primitive,

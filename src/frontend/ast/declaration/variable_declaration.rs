@@ -10,7 +10,7 @@ use crate::{
         compiler::{local::Local, Compiler},
         parser::Parse,
         scanner::{Token, TokenKind},
-        types::{Primitive, Signature},
+        typesystem::{Primitive, ResolveSignature, Signature},
     },
 };
 
@@ -75,14 +75,14 @@ impl CompileToBytecode for VariableDeclaration {
         let lexeme = self.identifier.value.lexeme.clone();
         let signature = {
             let initializer = self.intializer.clone();
-            let typed: Primitive = match initializer {
-                Expression::Literal(lit) => Primitive::from(lit),
+            let typed: Signature = match initializer {
+                Expression::Literal(lit) => Primitive::from(lit).into(),
                 Expression::None => panic!(),
-                Expression::Identifier(identifier) => identifier.get_type(compiler),
-                _ => panic!(),
+                Expression::Identifier(identifier) => identifier.resolve_signature(compiler),
+                x => panic!("Cannot infer type of variable declaration from expression: {x:?}",),
             };
 
-            Signature::Variable(Box::new(typed))
+            typed
         };
         compiler
             .bytecode
@@ -101,7 +101,10 @@ impl<'a> Compiler<'a> {
     pub fn add_local(&mut self, name: Token) {
         self.bytecode.locals.push(Local {
             name,
-            depth: self.bytecode.scope_depth,
+            depth: {
+                assert!(self.bytecode.scope_depth < 256);
+                self.bytecode.scope_depth
+            },
             is_captured: false,
         });
         self.bytecode.local_count += 1;
