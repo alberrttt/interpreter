@@ -1,11 +1,13 @@
-let a = "string";
+let a = 1;
 let b = a;
 let c = b;
 let d = c;
 let x = d;
-
+let y = x;
+let z = "string";
 func f(x: number) -> number {
-    return x;
+    return x+2;
 }
-
-f(x); 
+print(f(z));
+ q: who is sza
+ a: 

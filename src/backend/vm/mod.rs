@@ -357,7 +357,7 @@ impl VirtualMachine {
                     let callee = std::mem::take(&mut self.stack[tmp]);
 
                     let Value::Closure(callee) = callee else {
-                        panic!()
+                        panic!("{callee:?} is not a closure")
                     };
 
                     self.call(Box::into_raw(callee), arg_count);

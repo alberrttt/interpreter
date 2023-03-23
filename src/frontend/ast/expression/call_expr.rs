@@ -105,31 +105,55 @@ impl Call {
     }
     pub fn compile_parameters(&self, compiler: &mut Compiler) {
         let function_definition: FunctionSignature = self.resolve_function_definition(compiler);
-        for (i, (call_param, declared_param)) in self
+        for (i, (argument, declared_param)) in self
             .parameters
             .iter()
             .zip(function_definition.params.iter())
             .enumerate()
         {
-            let call_param: Signature = call_param.resolve_signature(compiler);
-
-            if call_param.ne(&declared_param) {
-                compiler.diagnostics.borrow_mut().log(
+            let argument_type: Signature = argument.resolve_signature(compiler);
+         
+            if argument_type.eq(declared_param.type_annotation.as_ref().unwrap()) {
+                argument.to_bytecode(compiler);
+                return;
+            }
+            match argument_type {
+                Signature::Function(_) => todo!(),
+                Signature::Variable(variable_type) => compiler.diagnostics.borrow_mut().log(
                     None,
-                    "Type Error",
+                    "Mismatched Types",
+                    format!(
+                        "`{argument}` has type {} but {expect} was expected",
+                        variable_type.as_ref().to_string().yellow(),
+                        expect = declared_param
+                            .type_annotation
+                            .as_ref()
+                            .unwrap()
+                            .to_string()
+                            .yellow(),
+                        argument = Identifier::from(argument.to_owned()).value.lexeme.bold()
+                    )
+                    .bright_red()
+                    .to_string(),
+                ),
+                Signature::Primitive(_) => compiler.diagnostics.borrow_mut().log(
+                    None,
+                    "Mismatched Types",
                     format!(
                         "Expected {expect} but got {got}",
-                        expect = format!("{declared_param:?}").yellow(),
-                        got = format!("{call_param:?}").bright_red()
+                        expect = format!("{}", declared_param.type_annotation.as_ref().unwrap())
+                            .yellow(),
+                        got = format!("{argument_type}").yellow()
                     )
-                    .bold()
+                    .bright_red()
                     .to_string(),
-                );
-                panic!()
-            }
+                ),
+                Signature::Parameter(_) => todo!(),
+            };
+
+            panic!()
         }
     }
-    fn typecast_parameter(&mut self) {}
 }
 
 impl AsExpr for Call {

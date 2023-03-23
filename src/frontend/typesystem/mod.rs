@@ -1,3 +1,7 @@
+use std::fmt::Display;
+
+use crate::println_with_source;
+
 use super::{
     compiler::Compiler,
     declaration::function::{FunctionDeclaration, Parameter},
@@ -13,12 +17,44 @@ pub trait ResolveSignature {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Signature {
     Function(FunctionSignature),
-    Variable(Box<Primitive>),
+    Variable(Box<Signature>),
     Primitive(Primitive),
+    Parameter(ParameterSignature),
+}
+impl Display for Signature {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Signature::Function(function_signature) => {
+                write!(f, "FunctionSignature({function_signature:?})",)
+            }
+            Signature::Variable(signature) => write!(f, "{signature}"),
+            Signature::Primitive(primitive) => write!(f, "{primitive:?}",),
+            Signature::Parameter(parameter_signature) => {
+                write!(f, "ParameterSignature({parameter_signature:?})",)
+            }
+        }
+    }
+}
+// create a parameter signature
+#[derive(Debug, PartialEq, Clone)]
+pub struct ParameterSignature {
+    pub name: Identifier,
+    pub type_annotation: Option<Box<Signature>>,
+}
+impl From<Parameter> for ParameterSignature {
+    fn from(value: Parameter) -> Self {
+        ParameterSignature {
+            name: value.name,
+            type_annotation: value.type_annotation.map(|type_annotation| {
+                let type_annotation = Signature::from(Primitive::from(type_annotation));
+                Box::new(type_annotation)
+            }),
+        }
+    }
 }
 #[derive(Debug, PartialEq, Clone)]
 pub struct FunctionSignature {
-    pub params: Vec<Signature>,
+    pub params: Vec<ParameterSignature>,
     pub return_type: Box<Primitive>,
 }
 impl From<Primitive> for Signature {
@@ -28,13 +64,17 @@ impl From<Primitive> for Signature {
 }
 impl From<FunctionDeclaration> for Signature {
     fn from(value: FunctionDeclaration) -> Self {
-        let params: Vec<Signature> = value
+        let params: Vec<ParameterSignature> = value
             .parameters
             .into_iter()
             .map(|param| {
-                dbg!("probably seperate this part out into it's own function");
-                let type_annotation = param.type_annotation.expect("inference is not added (yet)");
-                std::convert::Into::<Primitive>::into(type_annotation).into()
+                println_with_source!("probably seperate this part out into it's own function");
+                let type_annotation =
+                    Primitive::from(param.type_annotation.expect("inference is not added (yet)"));
+                return ParameterSignature {
+                    name: param.name,
+                    type_annotation: Some(Box::new(Signature::Primitive(type_annotation))),
+                };
             })
             .collect();
         let return_type = Box::new(value.return_type.unwrap_or_else(|| {

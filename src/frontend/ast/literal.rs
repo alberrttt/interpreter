@@ -15,6 +15,7 @@ use super::{
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Literal(pub Literals, pub Token);
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum Literals {
     Number(f64),

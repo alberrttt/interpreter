@@ -84,12 +84,14 @@ impl CompileToBytecode for VariableDeclaration {
 
             typed
         };
-        compiler
-            .bytecode
-            .scope
-            .last_mut()
-            .unwrap()
-            .insert(lexeme.clone(), signature);
+
+        compiler.bytecode.scope.last_mut().unwrap().insert(
+            lexeme.clone(),
+            match signature {
+                Signature::Variable(var) => *var,
+                _ => Signature::Variable(Box::new(signature)),
+            },
+        );
         let function = &mut compiler.bytecode.function;
         let name = function.chunk.emit_value(lexeme.to_value());
 

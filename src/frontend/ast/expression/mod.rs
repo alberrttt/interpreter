@@ -6,7 +6,7 @@ use crate::{
         error::{ParseResult, SyntaxError},
         parser::{Parse, Parser, Rule},
         scanner::TokenKind,
-        typesystem::{ResolveSignature, Signature},
+        typesystem::{Primitive, ResolveSignature, Signature},
         Precedence,
     },
 };
@@ -47,6 +47,7 @@ impl ResolveSignature for Expression {
     fn resolve_signature(&self, compiler: &mut Compiler) -> Signature {
         match self {
             Expression::Identifier(ident) => ident.resolve_signature(compiler),
+            Expression::Literal(literal) => Primitive::from(literal.to_owned()).into(),
             _ => panic!(),
         }
     }
