@@ -1,6 +1,8 @@
-use std::fmt::Display;
+use std::{fmt::Display, primitive};
 
-use crate::println_with_source;
+use strum::Display;
+
+use crate::debug_println;
 
 use super::{
     compiler::Compiler,
@@ -25,7 +27,7 @@ impl Display for Signature {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Signature::Function(function_signature) => {
-                write!(f, "FunctionSignature({function_signature:?})",)
+                write!(f, "{function_signature}",)
             }
             Signature::Variable(signature) => write!(f, "{signature}"),
             Signature::Primitive(primitive) => write!(f, "{primitive:?}",),
@@ -57,6 +59,20 @@ pub struct FunctionSignature {
     pub params: Vec<ParameterSignature>,
     pub return_type: Box<Primitive>,
 }
+impl Display for FunctionSignature {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "func({}) -> {}",
+            self.params
+                .iter()
+                .map(|f| f.type_annotation.as_ref().unwrap().to_string())
+                .collect::<Vec<String>>()
+                .join(", "),
+            self.return_type.as_ref()
+        )
+    }
+}
 impl From<Primitive> for Signature {
     fn from(value: Primitive) -> Self {
         Signature::Primitive(value)
@@ -68,17 +84,20 @@ impl From<FunctionDeclaration> for Signature {
             .parameters
             .into_iter()
             .map(|param| {
-                println_with_source!("probably seperate this part out into it's own function");
-                let type_annotation =
-                    Primitive::from(param.type_annotation.expect("inference is not added (yet)"));
-                return ParameterSignature {
+                debug_println!("probably seperate this part out into it's own function");
+                let type_annotation = Primitive::from(
+                    param
+                        .type_annotation
+                        .expect("inference has not been added (yet)"),
+                );
+                ParameterSignature {
                     name: param.name,
                     type_annotation: Some(Box::new(Signature::Primitive(type_annotation))),
-                };
+                }
             })
             .collect();
         let return_type = Box::new(value.return_type.unwrap_or_else(|| {
-            println!(
+            debug_println!(
                 "inference hasn't been added yet, so it will infer that it is a void return type."
             );
             Primitive::Void
@@ -97,8 +116,23 @@ pub enum Primitive {
     Boolean,
     #[default]
     Void,
+    Function,
 }
-
+impl From<Signature> for Primitive {
+    fn from(signature: Signature) -> Self {
+        match signature {
+            Signature::Function(function_signature) => Primitive::Function,
+            Signature::Variable(variable) => Primitive::from(*variable),
+            Signature::Primitive(primitive) => primitive,
+            Signature::Parameter(param) => (*param.type_annotation.unwrap()).into(),
+        }
+    }
+}
+impl Display for Primitive {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", format!("{self:?}").to_lowercase())
+    }
+}
 impl From<Identifier> for Primitive {
     fn from(value: Identifier) -> Self {
         match value.value.lexeme.as_ref() {
@@ -106,6 +140,7 @@ impl From<Identifier> for Primitive {
             "string" => Primitive::String,
             "bool" | "boolean" => Primitive::Boolean,
             "void" => Primitive::Void,
+            "function" => Primitive::Function,
             string => panic!("{string}"),
         }
     }

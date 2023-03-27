@@ -7,8 +7,9 @@ pub mod prelude;
 pub mod rust_bindings;
 pub(crate) mod macros {
     #[macro_export]
-    macro_rules! println_with_source {
+    macro_rules! debug_println {
     ($($arg:tt)*) => {
+        #[cfg(debug_assertions)]
         println!("[{}:{}]: {}", file!(), line!(), format_args!($($arg)*));
     }
 }

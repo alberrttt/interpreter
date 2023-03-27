@@ -8,7 +8,7 @@ use crate::{
     frontend::{
         ast::CompileToBytecode,
         compiler::Compiler,
-        declaration::function::Parameter,
+        declaration::{self, function::Parameter},
         identifier::Identifier,
         literal::Literal,
         typesystem::{FunctionSignature, Primitive, ResolveSignature, Signature},
@@ -112,46 +112,66 @@ impl Call {
             .enumerate()
         {
             let argument_type: Signature = argument.resolve_signature(compiler);
-         
-            if argument_type.eq(declared_param.type_annotation.as_ref().unwrap()) {
+
+            let res = {
+                let type_annotation = declared_param.type_annotation.as_ref().unwrap().as_ref();
+                match argument_type {
+                    Signature::Function(_) => {
+                        if let Signature::Primitive(primitive) = type_annotation {
+                            matches!(primitive, Primitive::Function)
+                        } else {
+                            argument_type.eq(type_annotation)
+                        }
+                    }
+                    _ => argument_type.eq(type_annotation),
+                }
+            };
+            if res {
                 argument.to_bytecode(compiler);
                 return;
             }
             match argument_type {
-                Signature::Function(_) => todo!(),
-                Signature::Variable(variable_type) => compiler.diagnostics.borrow_mut().log(
-                    None,
-                    "Mismatched Types",
-                    format!(
-                        "`{argument}` has type {} but {expect} was expected",
-                        variable_type.as_ref().to_string().yellow(),
-                        expect = declared_param
-                            .type_annotation
-                            .as_ref()
-                            .unwrap()
-                            .to_string()
-                            .yellow(),
-                        argument = Identifier::from(argument.to_owned()).value.lexeme.bold()
-                    )
-                    .bright_red()
-                    .to_string(),
-                ),
-                Signature::Primitive(_) => compiler.diagnostics.borrow_mut().log(
-                    None,
-                    "Mismatched Types",
-                    format!(
-                        "Expected {expect} but got {got}",
-                        expect = format!("{}", declared_param.type_annotation.as_ref().unwrap())
-                            .yellow(),
-                        got = format!("{argument_type}").yellow()
-                    )
-                    .bright_red()
-                    .to_string(),
-                ),
+                Signature::Variable(variable_type) => {
+                    compiler.diagnostics.borrow_mut().log(
+                        None,
+                        "Mismatched Types",
+                        format!(
+                            "`{argument}` has type {} but {expect} was expected",
+                            variable_type.as_ref().to_string().yellow(),
+                            expect = declared_param
+                                .type_annotation
+                                .as_ref()
+                                .unwrap()
+                                .to_string()
+                                .yellow(),
+                            argument = Identifier::from(argument.to_owned()).value.lexeme.bold()
+                        )
+                        .bright_red()
+                        .to_string(),
+                    );
+                    panic!()
+                }
+                Signature::Primitive(_) | Signature::Function(_) => {
+                    compiler.diagnostics.borrow_mut().log(
+                        None,
+                        "Mismatched Types",
+                        format!(
+                            "Expected {expect} but got {got}",
+                            expect =
+                                format!("{}", declared_param.type_annotation.as_ref().unwrap())
+                                    .yellow(),
+                            got = format!("{argument_type}").yellow()
+                        )
+                        .bright_red()
+                        .to_string(),
+                    );
+                    panic!(
+                        "{:?} {argument_type:?}",
+                        declared_param.type_annotation.as_ref().unwrap()
+                    );
+                }
                 Signature::Parameter(_) => todo!(),
             };
-
-            panic!()
         }
     }
 }

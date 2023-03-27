@@ -1,6 +1,10 @@
 use std::{cell::RefCell, collections::HashMap, rc::Rc, time::Instant};
 
+use colored::Colorize;
+use strum::VariantNames;
+
 use crate::common::interner::InternedString;
+use crate::debug_println;
 use crate::{
     backend::vm::natives::NATIVES,
     common::{
@@ -294,7 +298,16 @@ impl VirtualMachine {
                             lhs.push_str(rhs.as_str());
                             *string_ref = InternedString::from(lhs.as_ref());
                         }
-                        _ => unimplemented!(),
+                        _ => unimplemented!(
+                            "{}",
+                            format!(
+                                "\nAddition operation is not implemented for `{}` and `{}`\n",
+                                lhs, &rhs
+                            )
+                            .bold()
+                            .red()
+                            .to_string()
+                        ),
                     }
                 }
                 OpCode::Sub => {
@@ -337,7 +350,7 @@ impl VirtualMachine {
                     self.frame_count -= 1;
 
                     if self.frame_count == 0 {
-                        println!("vm took {}", start.elapsed().as_secs_f64());
+                        debug_println!("vm took {}", start.elapsed().as_secs_f64());
                         return;
                     }
 

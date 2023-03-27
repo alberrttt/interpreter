@@ -8,7 +8,7 @@ use crate::common::{
 use super::{
     ast::expression::Expression,
     compiler::{local::Local, FunctionType},
-    typesystem::Signature,
+    typesystem::{Primitive, Signature},
 };
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Upvalue {
@@ -27,11 +27,11 @@ pub struct Bytecode {
     pub function_type: FunctionType,
     pub compiling_statement: bool,
     pub current_expr: Option<*const Expression>,
-    pub returned: bool,
     pub eliminated: bool,
     pub upvalues: Vec<Upvalue>,
     pub globals: Vec<String>,
     pub scope: Vec<HashMap<String, Signature>>,
+    pub return_type: Option<Primitive>,
 }
 
 impl Default for Bytecode {
@@ -46,11 +46,11 @@ impl Default for Bytecode {
             emit_after_block: Default::default(),
             function_type: Default::default(),
             compiling_statement: Default::default(),
-            returned: Default::default(),
             current_expr: Default::default(),
             eliminated: Default::default(),
             upvalues: vec![Upvalue::default(); 512],
             scope: vec![HashMap::new()],
+            return_type: None,
         }
     }
 }

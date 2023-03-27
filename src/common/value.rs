@@ -7,7 +7,7 @@ use std::{
     rc::Rc,
 };
 
-
+use strum::EnumVariantNames;
 
 use super::{
     closure::Closure,
@@ -16,7 +16,7 @@ use super::{
 };
 
 #[repr(u8)]
-#[derive(Clone, Default)]
+#[derive(Clone, Default, EnumVariantNames)]
 pub enum Value {
     Number(f64),
     Boolean(bool),
@@ -28,6 +28,15 @@ pub enum Value {
     #[default]
     None,
     UpvalueLocation(Rc<RefCell<Value>>),
+}
+
+impl Value {
+    pub fn discriminant(&self) -> u8 {
+        #[allow(unsafe_code)]
+        unsafe {
+            *(self as *const Self as *const u8)
+        }
+    }
 }
 #[derive(Debug, Clone)]
 pub struct RuntimeUpvalue {

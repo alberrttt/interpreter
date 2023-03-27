@@ -5,9 +5,8 @@ let d = c;
 let x = d;
 let y = x;
 let z = "string";
-func f(x: number) -> number {
-    return x+2;
+func f(x: function) -> number {
+    return x;
 }
-print(f(z));
- q: who is sza
- a: 
+func x() {}
+print(f(x));

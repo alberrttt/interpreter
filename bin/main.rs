@@ -17,7 +17,6 @@ pub fn main() {
     let elapsed = duration.elapsed();
     let (compiled, file_node) = compiler.compile(source).unwrap();
 
-    println!("Compiled in {}s", elapsed.as_secs_f64() * 1000.0);
     if cli.display_bytecode {
         dissasemble_chunk(&compiled.chunk, "main");
     }

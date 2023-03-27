@@ -10,6 +10,7 @@ use crate::{
         compiler::{Compiler, Enclosing, FunctionType},
         parser::Parse,
         scanner::TokenKind,
+        statement::return_stmt::ReturnStmt,
         typesystem::Primitive,
     },
 };
@@ -125,6 +126,7 @@ impl CompileToBytecode for FunctionDeclaration {
         compiler.bytecode.globals.push(lexeme);
         let mut temp_compiler = Compiler::new(compiler.diagnostics.clone(), FunctionType::Function);
         temp_compiler.enclosing = Some(Enclosing(compiler));
+        temp_compiler.bytecode.return_type = self.return_type.clone();
         temp_compiler
             .bytecode
             .globals
@@ -134,16 +136,22 @@ impl CompileToBytecode for FunctionDeclaration {
             temp_compiler.bytecode.function.arity = self.parameters.len() as u8;
             temp_compiler.bytecode.function.name = self.name.value.lexeme.clone();
 
-            // tells the compiler to recongize any parameters
+            // parameters need to be added to be scope and local array
             for param in &self.parameters {
-                temp_compiler.add_local(param.name.value.clone())
+                temp_compiler.add_local(param.name.value.clone());
+                let scope = temp_compiler.bytecode.scope.last_mut().unwrap();
+                scope.insert(
+                    param.name.value.lexeme.to_owned(),
+                    Primitive::from(param.type_annotation.to_owned().unwrap()).into(),
+                );
             }
 
             // finally compiles the block
+            // typechecking will happen in `<ReturnStmt as CompileToBytecode>::to_bytecode`
+
             self.block.to_bytecode(&mut temp_compiler);
-            // unecessary return if the source code for the function already includes one
-            // i.e `func x() {return 1;}` will have two return ops
-            if !temp_compiler.bytecode.returned {
+
+            if self.return_type.is_none() {
                 temp_compiler.bytecode.write_void_op();
                 temp_compiler
                     .bytecode
